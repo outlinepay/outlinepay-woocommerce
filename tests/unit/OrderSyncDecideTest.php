@@ -123,4 +123,24 @@ class OrderSyncDecideTest extends TestCase {
 		$this->assertNull( Order_Sync::pick( array() ) );
 		$this->assertNull( Order_Sync::pick( array( 'junk', null ) ) );
 	}
+
+	public function test_a_paid_payment_this_store_did_not_open_is_foreign() {
+		$this->assertSame( Order_Sync::HOLD_FOREIGN, Order_Sync::decide( $this->payment(), 42, 25000, 'KRW', 'inst_1', array( 'ppay_other' ) ) );
+		$this->assertSame( Order_Sync::HOLD_FOREIGN, Order_Sync::decide( $this->payment(), 42, 25000, 'KRW', 'inst_1', array() ) );
+	}
+
+	public function test_other_statuses_of_a_foreign_payment_are_ignored() {
+		foreach ( array( 'awaiting_payment', 'awaiting_deposit', 'failed', 'needs_review', 'duplicate' ) as $status ) {
+			$this->assertSame( Order_Sync::MISMATCH, Order_Sync::decide( $this->payment( array( 'status' => $status ) ), 42, 25000, 'KRW', 'inst_1', array( 'ppay_other' ) ), $status );
+		}
+	}
+
+	public function test_an_attempt_this_store_opened_is_judged_normally() {
+		$this->assertSame( Order_Sync::COMPLETE, Order_Sync::decide( $this->payment(), 42, 25000, 'KRW', 'inst_1', array( 'ppay_x', 'ppay_abc' ) ) );
+		$this->assertSame( Order_Sync::HOLD_MISMATCH, Order_Sync::decide( $this->payment( array( 'amount' => 1 ) ), 42, 25000, 'KRW', 'inst_1', array( 'ppay_abc' ) ) );
+	}
+
+	public function test_the_order_id_check_comes_before_the_attempt_check() {
+		$this->assertSame( Order_Sync::MISMATCH, Order_Sync::decide( $this->payment( array( 'order_id' => '43' ) ), 42, 25000, 'KRW', 'inst_1', array() ) );
+	}
 }

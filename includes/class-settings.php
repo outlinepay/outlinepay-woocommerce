@@ -84,6 +84,7 @@ final class Settings {
 		delete_option( self::OPTION_INSTALLATION );
 		delete_option( self::OPTION_METHODS );
 		delete_option( self::OPTION_VERSION );
+		delete_option( Scheduler::OPTION_CURSOR );
 	}
 
 	/**

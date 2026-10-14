@@ -4,7 +4,8 @@
  *
  * Idempotent: applying the same payment and status twice changes nothing the
  * second time. Unknown statuses change nothing. A payment for another order
- * or another installation is ignored.
+ * or another installation is ignored. A payment this store did not open for
+ * the order never completes it.
  *
  * @package OutlinePay\WooCommerce
  */
@@ -19,14 +20,18 @@ defined( 'ABSPATH' ) || exit;
 final class Order_Sync {
 
 	const META_PAYMENT_ID = '_outlinepay_payment_id';
+	const META_ATTEMPTS   = '_outlinepay_attempts';
 	const META_APPLIED    = '_outlinepay_applied';
 	const META_HOLD       = '_outlinepay_hold';
+	const META_SETTLED    = '_outlinepay_settled';
 	const META_VA         = '_outlinepay_virtual_account';
+	const META_MODE       = '_outlinepay_mode';
 
 	const COMPLETE       = 'complete';
 	const HOLD_MISMATCH  = 'hold_mismatch';
 	const HOLD_DEPOSIT   = 'hold_deposit';
 	const HOLD_REVIEW    = 'hold_review';
+	const HOLD_FOREIGN   = 'hold_foreign';
 	const RETRY          = 'retry';
 	const WAIT           = 'wait';
 	const NOTE_DUPLICATE = 'note_duplicate';
@@ -36,6 +41,11 @@ final class Order_Sync {
 	const BUSY           = 'busy';
 
 	/**
+	 * Most attempt ids kept per order.
+	 */
+	const MAX_ATTEMPTS = 50;
+
+	/**
 	 * Decides what a payment means for an order. Pure: no WordPress calls.
 	 *
 	 * @param mixed       $payment         Payment JSON.
@@ -43,10 +53,11 @@ final class Order_Sync {
 	 * @param int|null    $order_krw       The order total in whole KRW, null when not whole.
 	 * @param string      $order_currency  The order currency.
 	 * @param string|null $installation_id Our installation id, when known.
+	 * @param array|null  $attempts        Payment ids this store opened for the order. Null skips the check.
 	 * @return string One of the decision constants.
 	 */
-	public static function decide( $payment, $order_id, $order_krw, $order_currency, $installation_id = null ) {
-		if ( ! is_array( $payment ) || ! isset( $payment['id'], $payment['status'], $payment['order_id'] ) || ! is_string( $payment['status'] ) ) {
+	public static function decide( $payment, $order_id, $order_krw, $order_currency, $installation_id = null, $attempts = null ) {
+		if ( ! is_array( $payment ) || ! isset( $payment['id'], $payment['status'], $payment['order_id'] ) || ! is_string( $payment['status'] ) || ! is_string( $payment['id'] ) ) {
 			return self::IGNORE;
 		}
 		if ( ! is_scalar( $payment['order_id'] ) || (string) $payment['order_id'] !== (string) $order_id ) {
@@ -54,6 +65,11 @@ final class Order_Sync {
 		}
 		if ( $installation_id && isset( $payment['installation'] ) && is_string( $payment['installation'] ) && $payment['installation'] !== $installation_id ) {
 			return self::MISMATCH;
+		}
+		if ( is_array( $attempts ) && ! in_array( $payment['id'], $attempts, true ) ) {
+			// Same order id, but not an attempt this store opened: another copy of
+			// the store (a staging clone with the same credentials) made it.
+			return 'paid' === $payment['status'] ? self::HOLD_FOREIGN : self::MISMATCH;
 		}
 
 		switch ( $payment['status'] ) {
@@ -103,13 +119,44 @@ final class Order_Sync {
 	}
 
 	/**
-	 * True when the order was placed with one of our gateways.
+	 * Payment ids this store opened for the order.
 	 *
 	 * @param \WC_Order $order Order.
+	 * @return string[]
+	 */
+	public static function attempts( $order ) {
+		$attempts = $order->get_meta( self::META_ATTEMPTS );
+		return is_array( $attempts ) ? array_values( array_filter( $attempts, 'is_string' ) ) : array();
+	}
+
+	/**
+	 * Records an attempt this store opened. The caller saves the order.
+	 *
+	 * @param \WC_Order $order      Order.
+	 * @param string    $payment_id Payment id.
+	 * @return void
+	 */
+	public static function add_attempt( $order, $payment_id ) {
+		$attempts = self::attempts( $order );
+		if ( ! in_array( $payment_id, $attempts, true ) ) {
+			$attempts[] = $payment_id;
+		}
+		$order->update_meta_data( self::META_ATTEMPTS, array_slice( $attempts, -self::MAX_ATTEMPTS ) );
+	}
+
+	/**
+	 * True when OutlinePay may have taken money for the order: it was placed with
+	 * one of our gateways, or it carries an attempt we opened (the shopper may
+	 * have switched gateways since and still paid in our window).
+	 *
+	 * @param mixed $order Order.
 	 * @return bool
 	 */
 	public static function is_ours( $order ) {
-		return $order instanceof \WC_Order && null !== Settings::method_for_gateway( $order->get_payment_method() );
+		if ( ! $order instanceof \WC_Order ) {
+			return false;
+		}
+		return null !== Settings::method_for_gateway( $order->get_payment_method() ) || array() !== self::attempts( $order );
 	}
 
 	/**
@@ -124,7 +171,7 @@ final class Order_Sync {
 			return self::IGNORE;
 		}
 		$order_id = $order->get_id();
-		if ( ! self::lock( $order_id ) ) {
+		if ( ! Order_Lock::acquire( $order_id ) ) {
 			Logger::warning( 'Order busy, sync skipped', array( 'order_id' => $order_id ) );
 			return self::BUSY;
 		}
@@ -143,7 +190,8 @@ final class Order_Sync {
 				$order_id,
 				Amount::to_krw( $order->get_total() ),
 				$order->get_currency(),
-				isset( $installation['id'] ) ? $installation['id'] : null
+				isset( $installation['id'] ) ? $installation['id'] : null,
+				self::attempts( $order )
 			);
 			$context      = array(
 				'order_id'   => $order_id,
@@ -166,7 +214,10 @@ final class Order_Sync {
 				return $decision;
 			}
 
-			self::act( $order, $payment, $decision );
+			if ( isset( $payment['mode'] ) && is_string( $payment['mode'] ) ) {
+				$order->update_meta_data( self::META_MODE, 'test' === $payment['mode'] ? 'test' : 'live' );
+			}
+			self::act( $order, $payment, $decision, $context );
 
 			$applied[] = $key;
 			$order->update_meta_data( self::META_APPLIED, array_slice( $applied, -20 ) );
@@ -174,8 +225,22 @@ final class Order_Sync {
 			Logger::info( 'Payment applied', $context );
 			return $decision;
 		} finally {
-			self::unlock( $order_id );
+			Order_Lock::release( $order_id );
 		}
+	}
+
+	/**
+	 * Adds " (test mode)" to a note when the payment is a test payment.
+	 *
+	 * @param string $note    Note.
+	 * @param array  $payment Payment.
+	 * @return string
+	 */
+	public static function note( $note, array $payment ) {
+		if ( isset( $payment['mode'] ) && 'test' === $payment['mode'] ) {
+			$note .= ' ' . __( '(test mode)', 'outlinepay-for-woocommerce' );
+		}
+		return $note;
 	}
 
 	/**
@@ -184,25 +249,55 @@ final class Order_Sync {
 	 * @param \WC_Order $order    Order.
 	 * @param array     $payment  Payment.
 	 * @param string    $decision Decision.
+	 * @param array     $context  Log context.
 	 * @return void
 	 */
-	private static function act( $order, array $payment, $decision ) {
+	private static function act( $order, array $payment, $decision, array $context ) {
 		$payment_id = (string) $payment['id'];
 		$paid       = $order->is_paid();
 
 		switch ( $decision ) {
 			case self::COMPLETE:
 				if ( $paid ) {
+					if ( null === Settings::method_for_gateway( $order->get_payment_method() ) ) {
+						// Paid through another gateway, and our window was paid too.
+						$order->update_meta_data( self::META_SETTLED, 'double' );
+						$order->add_order_note(
+							self::note(
+								/* translators: %s: OutlinePay payment id. */
+								sprintf( __( 'OutlinePay payment %s was paid, but this order was already paid with another payment method. The shopper paid twice. To refund the OutlinePay payment, use your payment provider dashboard.', 'outlinepay-for-woocommerce' ), $payment_id ),
+								$payment
+							)
+						);
+						Logger::warning( 'Shopper paid twice: OutlinePay payment on an order paid with another method', $context );
+					}
 					return;
 				}
+				self::take_back_gateway( $order, $payment );
 				$order->update_meta_data( self::META_PAYMENT_ID, $payment_id );
 				$order->delete_meta_data( self::META_HOLD );
 				$transaction = isset( $payment['transaction_id'] ) && is_string( $payment['transaction_id'] ) ? $payment['transaction_id'] : '';
 				$order->add_order_note(
 					/* translators: %s: OutlinePay payment id. */
-					sprintf( __( 'OutlinePay payment %s is paid.', 'outlinepay-for-woocommerce' ), $payment_id )
+					self::note( sprintf( __( 'OutlinePay payment %s is paid.', 'outlinepay-for-woocommerce' ), $payment_id ), $payment )
 				);
 				$order->payment_complete( $transaction );
+				return;
+
+			case self::HOLD_FOREIGN:
+				Logger::warning( 'Payment from another copy of this store', $context );
+				$note = self::note(
+					/* translators: %s: OutlinePay payment id. */
+					sprintf( __( 'OutlinePay payment %s was made for this order number from another copy of this store, such as a staging site. It does not pay this order. Check it before shipping.', 'outlinepay-for-woocommerce' ), $payment_id ),
+					$payment
+				);
+				if ( $paid ) {
+					$order->add_order_note( $note );
+					return;
+				}
+				$order->update_meta_data( self::META_HOLD, 'foreign' );
+				$order->update_meta_data( self::META_SETTLED, 'foreign' );
+				$order->update_status( 'on-hold', $note );
 				return;
 
 			case self::HOLD_MISMATCH:
@@ -210,10 +305,11 @@ final class Order_Sync {
 					return;
 				}
 				$order->update_meta_data( self::META_HOLD, 'mismatch' );
+				$order->update_meta_data( self::META_SETTLED, 'mismatch' );
 				$order->update_status(
 					'on-hold',
 					/* translators: %s: OutlinePay payment id. */
-					sprintf( __( 'OutlinePay payment %s reports paid, but the amount or currency does not match this order. Check it before shipping.', 'outlinepay-for-woocommerce' ), $payment_id )
+					self::note( sprintf( __( 'OutlinePay payment %s reports paid, but the amount or currency does not match this order. Check it before shipping.', 'outlinepay-for-woocommerce' ), $payment_id ), $payment )
 				);
 				return;
 
@@ -233,7 +329,7 @@ final class Order_Sync {
 				);
 				$order->update_meta_data( self::META_HOLD, 'deposit' );
 				if ( $order->has_status( array( 'pending', 'failed' ) ) ) {
-					$order->update_status( 'on-hold', __( 'OutlinePay issued a virtual account. Waiting for the deposit.', 'outlinepay-for-woocommerce' ) );
+					$order->update_status( 'on-hold', self::note( __( 'OutlinePay issued a virtual account. Waiting for the deposit.', 'outlinepay-for-woocommerce' ), $payment ) );
 				}
 				return;
 
@@ -247,13 +343,16 @@ final class Order_Sync {
 					$order->update_status(
 						'pending',
 						/* translators: %s: OutlinePay payment id. */
-						sprintf( __( 'OutlinePay payment %s expired before the deposit arrived.', 'outlinepay-for-woocommerce' ), $payment_id )
+						self::note( sprintf( __( 'OutlinePay payment %s expired before the deposit arrived.', 'outlinepay-for-woocommerce' ), $payment_id ), $payment )
 					);
 					return;
 				}
 				$order->add_order_note(
-					/* translators: 1: OutlinePay payment id, 2: status such as failed or expired. */
-					sprintf( __( 'OutlinePay payment %1$s is %2$s. The order is waiting for payment.', 'outlinepay-for-woocommerce' ), $payment_id, $payment['status'] )
+					self::note(
+						/* translators: 1: OutlinePay payment id, 2: status such as failed or expired. */
+						sprintf( __( 'OutlinePay payment %1$s is %2$s. The order is waiting for payment.', 'outlinepay-for-woocommerce' ), $payment_id, $payment['status'] ),
+						$payment
+					)
 				);
 				return;
 
@@ -262,20 +361,48 @@ final class Order_Sync {
 					return;
 				}
 				$order->update_meta_data( self::META_HOLD, 'review' );
+				$order->update_meta_data( self::META_SETTLED, 'review' );
 				$order->update_status(
 					'on-hold',
 					/* translators: %s: OutlinePay payment id. */
-					sprintf( __( 'OutlinePay payment %s needs review: it was paid for a different amount than ordered. OutlinePay has been alerted. Do not ship until it is settled.', 'outlinepay-for-woocommerce' ), $payment_id )
+					self::note( sprintf( __( 'OutlinePay payment %s needs review: it was paid for a different amount than ordered. OutlinePay has been alerted. Do not ship until it is settled.', 'outlinepay-for-woocommerce' ), $payment_id ), $payment )
 				);
 				return;
 
 			case self::NOTE_DUPLICATE:
 				$order->add_order_note(
-					/* translators: %s: OutlinePay payment id. */
-					sprintf( __( 'OutlinePay payment %s was paid after this order was already paid. The shopper paid twice. OutlinePay has been alerted. Refund the second payment in your payment provider dashboard.', 'outlinepay-for-woocommerce' ), $payment_id )
+					self::note(
+						/* translators: %s: OutlinePay payment id. */
+						sprintf( __( 'OutlinePay payment %s was paid after this order was already paid. The shopper paid twice. OutlinePay has been alerted. Refund the second payment in your payment provider dashboard.', 'outlinepay-for-woocommerce' ), $payment_id ),
+						$payment
+					)
 				);
 				return;
 		}
+	}
+
+	/**
+	 * When the shopper switched the order to another gateway and then paid in an
+	 * OutlinePay window anyway, the order goes back to the matching OutlinePay gateway.
+	 *
+	 * @param \WC_Order $order   Order.
+	 * @param array     $payment Payment.
+	 * @return void
+	 */
+	private static function take_back_gateway( $order, array $payment ) {
+		if ( null !== Settings::method_for_gateway( $order->get_payment_method() ) ) {
+			return;
+		}
+		$method = isset( $payment['payment_method'] ) && in_array( $payment['payment_method'], Settings::METHODS, true ) ? $payment['payment_method'] : 'card';
+		$order->set_payment_method( Settings::gateway_id( $method ) );
+		$order->set_payment_method_title( Settings::label( $method ) );
+		$order->add_order_note(
+			self::note(
+				/* translators: %s: OutlinePay payment id. */
+				sprintf( __( 'The shopper chose another payment method for this order, but then paid OutlinePay payment %s. The payment method is set back to OutlinePay.', 'outlinepay-for-woocommerce' ), (string) $payment['id'] ),
+				$payment
+			)
+		);
 	}
 
 	/**
@@ -291,46 +418,5 @@ final class Order_Sync {
 		}
 		clean_post_cache( $order_id );
 		wp_cache_delete( $order_id, 'orders' );
-	}
-
-	/**
-	 * Takes a short per-order lock so a callback and a return cannot apply at once.
-	 *
-	 * An INSERT IGNORE on the options table is atomic, unlike add_option(), which
-	 * upserts. The row is never cached and never autoloaded.
-	 *
-	 * @param int $order_id Order id.
-	 * @return bool
-	 */
-	private static function lock( $order_id ) {
-		global $wpdb;
-		$option = 'outlinepay_lock_' . (int) $order_id;
-		for ( $try = 0; $try < 12; $try++ ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic lock row; caching would defeat it.
-			$inserted = $wpdb->query( $wpdb->prepare( "INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')", $option, (string) time() ) );
-			if ( 1 === (int) $inserted ) {
-				return true;
-			}
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- reads the lock row itself.
-			$since = (int) $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $option ) );
-			if ( $since > 0 && time() - $since > 30 ) {
-				self::unlock( $order_id );
-				continue;
-			}
-			usleep( 250000 );
-		}
-		return false;
-	}
-
-	/**
-	 * Releases the lock.
-	 *
-	 * @param int $order_id Order id.
-	 * @return void
-	 */
-	private static function unlock( $order_id ) {
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- removes the lock row.
-		$wpdb->delete( $wpdb->options, array( 'option_name' => 'outlinepay_lock_' . (int) $order_id ) );
 	}
 }

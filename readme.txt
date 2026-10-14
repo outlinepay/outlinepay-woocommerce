@@ -33,7 +33,8 @@ What the plugin does:
 * Works with the Checkout block and the classic checkout.
 * Marks an order paid only after OutlinePay confirms the payment, for the exact order total.
 * Puts a virtual account order on hold and shows the bank, account number and deadline on the thank-you page and in the order email. The order moves to processing when the deposit arrives.
-* Checks recent unpaid orders every 15 minutes, so a payment is not missed when the shopper closes the window early.
+* Checks unpaid orders every 15 minutes, so a payment is not missed when the shopper closes the window early.
+* Marks test payments as test payments in order notes and on the order screen.
 * Supports High-Performance Order Storage (HPOS).
 
 The store currency must be Korean won (KRW).
@@ -87,6 +88,7 @@ What is sent, and when:
 * Once after each plugin update: the same version numbers.
 * When a shopper clicks to pay: the order id, order number, total, currency, chosen method and the address to return the shopper to. Also the shopper's billing name, email, phone and address. OutlinePay passes these to your payment provider to open the payment window and does not store them.
 * To check a payment: the order id and payment id. This happens when the shopper returns, when OutlinePay notifies your store, every 15 minutes for recent unpaid orders, and before WooCommerce cancels an unpaid order.
+* When an order with an open OutlinePay payment is finished with another payment method: a request to close that payment.
 * Every hour, and when you open the OutlinePay page: a request for the methods your provider has enabled.
 * When you click Disconnect or delete the plugin: a request to disconnect.
 

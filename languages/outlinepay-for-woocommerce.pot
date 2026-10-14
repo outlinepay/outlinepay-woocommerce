@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-14T13:48:48+00:00\n"
+"POT-Creation-Date: 2026-10-14T14:23:05+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: outlinepay-for-woocommerce\n"
@@ -233,92 +233,122 @@ msgid "The order total must be a whole number of won. Contact the store."
 msgstr ""
 
 #: includes/class-gateway.php:137
-#: includes/class-gateway.php:252
+#: includes/class-gateway.php:257
 msgid "The payment could not be started. Try again in a moment."
 msgstr ""
 
-#: includes/class-gateway.php:235
-msgid "This order is already paid. Check your order status."
+#: includes/class-gateway.php:240
+msgid "This order cannot be paid right now. Contact the store."
 msgstr ""
 
-#: includes/class-gateway.php:242
+#: includes/class-gateway.php:247
 msgid "A payment for this order is being reviewed. The store will contact you. Do not pay again."
 msgstr ""
 
-#: includes/class-gateway.php:245
+#: includes/class-gateway.php:250
 msgid "A payment for this order is already being opened. Wait a moment and try again."
 msgstr ""
 
-#: includes/class-gateway.php:249
+#: includes/class-gateway.php:254
 msgid "This payment method is not available right now. Choose another method."
 msgstr ""
 
-#: includes/class-order-display.php:72
-#: includes/class-order-display.php:104
-#: includes/class-order-display.php:111
+#: includes/class-order-display.php:81
+msgid "Test payment"
+msgstr ""
+
+#: includes/class-order-display.php:81
+msgid "OutlinePay took this payment in test mode. No real money moved."
+msgstr ""
+
+#: includes/class-order-display.php:96
+#: includes/class-order-display.php:128
+#: includes/class-order-display.php:135
 msgid "Deposit details"
 msgstr ""
 
-#: includes/class-order-display.php:73
+#: includes/class-order-display.php:97
 msgid "Your order ships after the deposit arrives. Deposit the exact order total to this account."
 msgstr ""
 
-#: includes/class-order-display.php:75
 #: includes/class-order-display.php:99
+#: includes/class-order-display.php:123
 msgid "Bank"
 msgstr ""
 
-#: includes/class-order-display.php:76
 #: includes/class-order-display.php:100
+#: includes/class-order-display.php:124
 msgid "Account number"
 msgstr ""
 
-#: includes/class-order-display.php:77
 #: includes/class-order-display.php:101
+#: includes/class-order-display.php:125
 msgid "Deposit by"
 msgstr ""
 
-#. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:203
-#, php-format
-msgid "OutlinePay payment %s is paid."
-msgstr ""
-
-#. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:216
-#, php-format
-msgid "OutlinePay payment %s reports paid, but the amount or currency does not match this order. Check it before shipping."
-msgstr ""
-
-#: includes/class-order-sync.php:236
-msgid "OutlinePay issued a virtual account. Waiting for the deposit."
-msgstr ""
-
-#. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:250
-#, php-format
-msgid "OutlinePay payment %s expired before the deposit arrived."
-msgstr ""
-
-#. translators: 1: OutlinePay payment id, 2: status such as failed or expired.
-#: includes/class-order-sync.php:256
-#, php-format
-msgid "OutlinePay payment %1$s is %2$s. The order is waiting for payment."
+#: includes/class-order-sync.php:241
+msgid "(test mode)"
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
 #: includes/class-order-sync.php:268
 #, php-format
+msgid "OutlinePay payment %s was paid, but this order was already paid with another payment method. The shopper paid twice. To refund the OutlinePay payment, use your payment provider dashboard."
+msgstr ""
+
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:282
+#, php-format
+msgid "OutlinePay payment %s is paid."
+msgstr ""
+
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:291
+#, php-format
+msgid "OutlinePay payment %s was made for this order number from another copy of this store, such as a staging site. It does not pay this order. Check it before shipping."
+msgstr ""
+
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:312
+#, php-format
+msgid "OutlinePay payment %s reports paid, but the amount or currency does not match this order. Check it before shipping."
+msgstr ""
+
+#: includes/class-order-sync.php:332
+msgid "OutlinePay issued a virtual account. Waiting for the deposit."
+msgstr ""
+
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:346
+#, php-format
+msgid "OutlinePay payment %s expired before the deposit arrived."
+msgstr ""
+
+#. translators: 1: OutlinePay payment id, 2: status such as failed or expired.
+#: includes/class-order-sync.php:353
+#, php-format
+msgid "OutlinePay payment %1$s is %2$s. The order is waiting for payment."
+msgstr ""
+
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:368
+#, php-format
 msgid "OutlinePay payment %s needs review: it was paid for a different amount than ordered. OutlinePay has been alerted. Do not ship until it is settled."
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:275
+#: includes/class-order-sync.php:376
 #, php-format
 msgid "OutlinePay payment %s was paid after this order was already paid. The shopper paid twice. OutlinePay has been alerted. Refund the second payment in your payment provider dashboard."
 msgstr ""
 
-#: includes/class-plugin.php:85
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:402
+#, php-format
+msgid "The shopper chose another payment method for this order, but then paid OutlinePay payment %s. The payment method is set back to OutlinePay."
+msgstr ""
+
+#: includes/class-plugin.php:86
 msgid "OutlinePay for WooCommerce needs WooCommerce to be installed and active."
 msgstr ""
 

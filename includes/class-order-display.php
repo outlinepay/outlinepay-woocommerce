@@ -24,6 +24,7 @@ final class Order_Display {
 			add_action( 'woocommerce_thankyou_' . $gateway_id, array( self::class, 'thankyou' ) );
 		}
 		add_action( 'woocommerce_email_before_order_table', array( self::class, 'email' ), 10, 3 );
+		add_action( 'woocommerce_admin_order_data_after_order_details', array( self::class, 'admin_test_mode' ) );
 	}
 
 	/**
@@ -55,6 +56,29 @@ final class Order_Display {
 			return '';
 		}
 		return wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $time );
+	}
+
+	/**
+	 * True when the order's OutlinePay payment is a test payment.
+	 *
+	 * @param mixed $order Order.
+	 * @return bool
+	 */
+	public static function is_test_payment( $order ) {
+		return $order instanceof \WC_Order && 'test' === $order->get_meta( Order_Sync::META_MODE );
+	}
+
+	/**
+	 * "Test payment" line in the admin order view.
+	 *
+	 * @param \WC_Order $order Order.
+	 * @return void
+	 */
+	public static function admin_test_mode( $order ) {
+		if ( ! self::is_test_payment( $order ) ) {
+			return;
+		}
+		echo '<p class="form-field form-field-wide outlinepay-test-payment"><strong>' . esc_html__( 'Test payment', 'outlinepay-for-woocommerce' ) . '</strong><br>' . esc_html__( 'OutlinePay took this payment in test mode. No real money moved.', 'outlinepay-for-woocommerce' ) . '</p>';
 	}
 
 	/**

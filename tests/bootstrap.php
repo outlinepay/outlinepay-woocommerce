@@ -9,3 +9,5 @@ define( 'OUTLINEPAY_VERSION', '0.1.0' );
 
 require dirname( __DIR__ ) . '/vendor/autoload.php';
 require dirname( __DIR__ ) . '/includes/autoload.php';
+require __DIR__ . '/fakes/class-wc-order.php';
+require __DIR__ . '/fakes/ArrayLockStore.php';

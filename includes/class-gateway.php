@@ -138,6 +138,10 @@ class Gateway extends \WC_Payment_Gateway {
 		}
 
 		$order->update_meta_data( Order_Sync::META_PAYMENT_ID, $payment['id'] );
+		Order_Sync::add_attempt( $order, $payment['id'] );
+		if ( isset( $payment['mode'] ) && is_string( $payment['mode'] ) ) {
+			$order->update_meta_data( Order_Sync::META_MODE, 'test' === $payment['mode'] ? 'test' : 'live' );
+		}
 		$order->save();
 		Logger::info(
 			'Payment opened',
@@ -232,7 +236,8 @@ class Gateway extends \WC_Payment_Gateway {
 						'redirect' => $this->get_return_url( $order ),
 					);
 				}
-				return $this->refuse( __( 'This order is already paid. Check your order status.', 'outlinepay-for-woocommerce' ) );
+				// A paid payment this store did not open puts the order on hold instead (see Order_Sync).
+				return $this->refuse( __( 'This order cannot be paid right now. Contact the store.', 'outlinepay-for-woocommerce' ) );
 
 			case 'order_needs_review':
 				$payment = $error->get_payment();

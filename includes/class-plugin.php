@@ -36,6 +36,7 @@ final class Plugin {
 		Callback_Controller::register();
 		Scheduler::register();
 		Unpaid_Guard::register();
+		Switch_Guard::register();
 		Order_Display::register();
 	}
 
