@@ -1,0 +1,31 @@
+<?php
+/**
+ * Uninstall: tell OutlinePay the store is gone (best effort), then delete options.
+ *
+ * Orders and their notes stay. They are the merchant's records.
+ *
+ * @package OutlinePay\WooCommerce
+ */
+
+defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
+
+if ( ! defined( 'OUTLINEPAY_VERSION' ) ) {
+	define( 'OUTLINEPAY_VERSION', '0.1.0' );
+}
+require_once __DIR__ . '/includes/autoload.php';
+
+if ( OutlinePay\WooCommerce\Credentials::present() ) {
+	try {
+		( new OutlinePay\WooCommerce\Api_Client() )->disconnect();
+	} catch ( OutlinePay\WooCommerce\Api_Error $outlinepay_error ) {
+		// Best effort. The partner can revoke the installation from their side.
+		unset( $outlinepay_error );
+	}
+}
+
+OutlinePay\WooCommerce\Settings::clear_connection();
+OutlinePay\WooCommerce\Scheduler::unschedule_all();
+
+foreach ( OutlinePay\WooCommerce\Settings::gateway_ids() as $outlinepay_gateway_id ) {
+	delete_option( 'woocommerce_' . $outlinepay_gateway_id . '_settings' );
+}

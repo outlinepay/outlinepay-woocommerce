@@ -1,0 +1,339 @@
+# Copyright (C) 2026 OutlinePay
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: OutlinePay for WooCommerce 0.1.0\n"
+"Report-Msgid-Bugs-To: https://outlinepay.com\n"
+"Last-Translator: OutlinePay <dev@outlinepay.com>\n"
+"Language-Team: OutlinePay <dev@outlinepay.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-10-14T13:48:48+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: outlinepay-for-woocommerce\n"
+
+#. Plugin Name of the plugin
+#: outlinepay-for-woocommerce.php
+msgid "OutlinePay for WooCommerce"
+msgstr ""
+
+#. Plugin URI of the plugin
+#. Author URI of the plugin
+#: outlinepay-for-woocommerce.php
+msgid "https://outlinepay.com"
+msgstr ""
+
+#. Description of the plugin
+#: outlinepay-for-woocommerce.php
+msgid "Accept Korean payment methods (cards, bank transfer, virtual accounts, wallets) through your payment provider, connected by OutlinePay."
+msgstr ""
+
+#. Author of the plugin
+#: outlinepay-for-woocommerce.php
+#: includes/class-admin-page.php:53
+#: includes/class-admin-page.php:54
+#: includes/class-admin-page.php:162
+msgid "OutlinePay"
+msgstr ""
+
+#: includes/class-admin-page.php:68
+msgid "Settings"
+msgstr ""
+
+#: includes/class-admin-page.php:166
+msgid "The saved connection can no longer be read. This happens when the site security keys change. Disconnect, then connect again with a new code."
+msgstr ""
+
+#. translators: %s: currency code such as USD.
+#: includes/class-admin-page.php:184
+#, php-format
+msgid "Your store currency is %s. OutlinePay methods show at checkout only when the store currency is KRW."
+msgstr ""
+
+#: includes/class-admin-page.php:191
+msgid "OutlinePay no longer accepts this store's connection. Payments are off. Ask your payment provider for a new connect code, then disconnect and connect again."
+msgstr ""
+
+#: includes/class-admin-page.php:226
+msgid "Connect your store"
+msgstr ""
+
+#: includes/class-admin-page.php:227
+msgid "Your payment provider gives you a connect code. Paste it here to start taking payments."
+msgstr ""
+
+#: includes/class-admin-page.php:228
+msgid "Connecting sends this store's address, its callback address and its software versions to OutlinePay."
+msgstr ""
+
+#: includes/class-admin-page.php:232
+msgid "Connect code"
+msgstr ""
+
+#: includes/class-admin-page.php:234
+msgid "Connect"
+msgstr ""
+
+#: includes/class-admin-page.php:247
+msgid "Connected"
+msgstr ""
+
+#: includes/class-admin-page.php:248
+msgid "Disconnected by OutlinePay"
+msgstr ""
+
+#: includes/class-admin-page.php:249
+msgid "Pending"
+msgstr ""
+
+#: includes/class-admin-page.php:251
+msgid "Connection"
+msgstr ""
+
+#: includes/class-admin-page.php:253
+msgid "Test mode"
+msgstr ""
+
+#: includes/class-admin-page.php:257
+msgid "Status"
+msgstr ""
+
+#: includes/class-admin-page.php:258
+msgid "Mode"
+msgstr ""
+
+#: includes/class-admin-page.php:258
+msgid "Test. No real money moves."
+msgstr ""
+
+#: includes/class-admin-page.php:258
+msgid "Live"
+msgstr ""
+
+#: includes/class-admin-page.php:259
+msgid "Payment provider"
+msgstr ""
+
+#: includes/class-admin-page.php:260
+msgid "Installation"
+msgstr ""
+
+#: includes/class-admin-page.php:262
+msgid "Connected since"
+msgstr ""
+
+#: includes/class-admin-page.php:274
+msgid "Payment methods"
+msgstr ""
+
+#: includes/class-admin-page.php:276
+msgid "Your payment provider has no methods enabled for this store yet. Reload this page later."
+msgstr ""
+
+#: includes/class-admin-page.php:279
+msgid "These are the methods your payment provider has enabled for your store. You can hide any of them. To add a method, ask your payment provider."
+msgstr ""
+
+#: includes/class-admin-page.php:283
+msgid "Method"
+msgstr ""
+
+#: includes/class-admin-page.php:283
+#: includes/class-gateway.php:57
+msgid "Show at checkout"
+msgstr ""
+
+#: includes/class-admin-page.php:290
+msgid "Save methods"
+msgstr ""
+
+#: includes/class-admin-page.php:304
+#: includes/class-admin-page.php:309
+msgid "Disconnect"
+msgstr ""
+
+#: includes/class-admin-page.php:305
+msgid "Disconnecting turns off OutlinePay payments in this store. Reconnecting needs a new connect code from your payment provider."
+msgstr ""
+
+#: includes/class-admin-page.php:306
+msgid "Disconnect this store from OutlinePay?"
+msgstr ""
+
+#: includes/class-admin-page.php:343
+msgid "Your store is connected."
+msgstr ""
+
+#: includes/class-admin-page.php:344
+msgid "Your store is disconnected."
+msgstr ""
+
+#: includes/class-admin-page.php:345
+msgid "Payment methods saved."
+msgstr ""
+
+#: includes/class-admin-page.php:346
+msgid "Enter the connect code from your payment provider."
+msgstr ""
+
+#: includes/class-admin-page.php:347
+msgid "This connect code is not valid. It may have expired or already been used. Ask your payment provider for a new code."
+msgstr ""
+
+#: includes/class-admin-page.php:348
+msgid "OutlinePay could not accept this store's address. The store must be reachable over HTTPS from the internet."
+msgstr ""
+
+#: includes/class-admin-page.php:349
+msgid "Too many connect attempts. Wait a minute and try again."
+msgstr ""
+
+#: includes/class-admin-page.php:350
+msgid "OutlinePay could not be reached. Check that this server can make outgoing HTTPS requests, then try again."
+msgstr ""
+
+#: includes/class-admin-page.php:351
+msgid "The store could not be connected. Try again in a moment."
+msgstr ""
+
+#: includes/class-admin-page.php:388
+msgid "You do not have permission to change OutlinePay settings."
+msgstr ""
+
+#. translators: %s: payment method name, such as 신용카드 (credit card).
+#: includes/class-gateway.php:36
+#, php-format
+msgid "OutlinePay: %s"
+msgstr ""
+
+#: includes/class-gateway.php:39
+msgid "Takes payment through your payment provider, connected by OutlinePay. Connect the store and choose which methods to show on the OutlinePay page."
+msgstr ""
+
+#: includes/class-gateway.php:59
+msgid "Show this method at checkout when your provider has it enabled"
+msgstr ""
+
+#: includes/class-gateway.php:73
+msgid "Open the OutlinePay page"
+msgstr ""
+
+#: includes/class-gateway.php:107
+msgid "This order could not be found."
+msgstr ""
+
+#: includes/class-gateway.php:110
+msgid "This payment method takes Korean won (KRW) only."
+msgstr ""
+
+#: includes/class-gateway.php:114
+msgid "The order total must be a whole number of won. Contact the store."
+msgstr ""
+
+#: includes/class-gateway.php:137
+#: includes/class-gateway.php:252
+msgid "The payment could not be started. Try again in a moment."
+msgstr ""
+
+#: includes/class-gateway.php:235
+msgid "This order is already paid. Check your order status."
+msgstr ""
+
+#: includes/class-gateway.php:242
+msgid "A payment for this order is being reviewed. The store will contact you. Do not pay again."
+msgstr ""
+
+#: includes/class-gateway.php:245
+msgid "A payment for this order is already being opened. Wait a moment and try again."
+msgstr ""
+
+#: includes/class-gateway.php:249
+msgid "This payment method is not available right now. Choose another method."
+msgstr ""
+
+#: includes/class-order-display.php:72
+#: includes/class-order-display.php:104
+#: includes/class-order-display.php:111
+msgid "Deposit details"
+msgstr ""
+
+#: includes/class-order-display.php:73
+msgid "Your order ships after the deposit arrives. Deposit the exact order total to this account."
+msgstr ""
+
+#: includes/class-order-display.php:75
+#: includes/class-order-display.php:99
+msgid "Bank"
+msgstr ""
+
+#: includes/class-order-display.php:76
+#: includes/class-order-display.php:100
+msgid "Account number"
+msgstr ""
+
+#: includes/class-order-display.php:77
+#: includes/class-order-display.php:101
+msgid "Deposit by"
+msgstr ""
+
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:203
+#, php-format
+msgid "OutlinePay payment %s is paid."
+msgstr ""
+
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:216
+#, php-format
+msgid "OutlinePay payment %s reports paid, but the amount or currency does not match this order. Check it before shipping."
+msgstr ""
+
+#: includes/class-order-sync.php:236
+msgid "OutlinePay issued a virtual account. Waiting for the deposit."
+msgstr ""
+
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:250
+#, php-format
+msgid "OutlinePay payment %s expired before the deposit arrived."
+msgstr ""
+
+#. translators: 1: OutlinePay payment id, 2: status such as failed or expired.
+#: includes/class-order-sync.php:256
+#, php-format
+msgid "OutlinePay payment %1$s is %2$s. The order is waiting for payment."
+msgstr ""
+
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:268
+#, php-format
+msgid "OutlinePay payment %s needs review: it was paid for a different amount than ordered. OutlinePay has been alerted. Do not ship until it is settled."
+msgstr ""
+
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:275
+#, php-format
+msgid "OutlinePay payment %s was paid after this order was already paid. The shopper paid twice. OutlinePay has been alerted. Refund the second payment in your payment provider dashboard."
+msgstr ""
+
+#: includes/class-plugin.php:85
+msgid "OutlinePay for WooCommerce needs WooCommerce to be installed and active."
+msgstr ""
+
+#: includes/class-return-handler.php:97
+msgid "Your payment was not completed. Try again or choose another method."
+msgstr ""
+
+#: includes/class-return-handler.php:99
+msgid "We could not confirm your payment yet. If you paid, this order updates in a few minutes. Otherwise, pay again below."
+msgstr ""
+
+#: includes/class-return-handler.php:123
+msgid "This payment link is not valid."
+msgstr ""
+
+#: includes/class-return-handler.php:124
+msgid "Payment"
+msgstr ""

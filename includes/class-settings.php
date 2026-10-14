@@ -1,0 +1,273 @@
+<?php
+/**
+ * Plugin options: the installation summary and the cached method list.
+ *
+ * @package OutlinePay\WooCommerce
+ */
+
+namespace OutlinePay\WooCommerce;
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Option access in one place.
+ */
+final class Settings {
+
+	const OPTION_INSTALLATION = 'outlinepay_installation';
+	const OPTION_METHODS      = 'outlinepay_methods';
+	const OPTION_VERSION      = 'outlinepay_reported_version';
+
+	/**
+	 * Every method key the server may offer, in checkout order.
+	 */
+	const METHODS = array( 'card', 'foreign_card_krw', 'bank_transfer', 'virtual_account', 'kakaopay', 'naverpay', 'carrier_billing' );
+
+	/**
+	 * DRAFT shopper-facing description shown under each method at checkout.
+	 * Korean source on purpose: the shoppers are in Korea. Wording awaits review.
+	 */
+	const DRAFT_DESCRIPTION_KO = '쿠키페이로 안전하게 결제됩니다';
+
+	/**
+	 * Installation fields kept locally. Never credentials.
+	 */
+	const INSTALLATION_FIELDS = array( 'id', 'mode', 'status', 'provider', 'permissions', 'connected_at', 'token_last4' );
+
+	/**
+	 * The installation summary, or an empty array.
+	 *
+	 * @return array
+	 */
+	public static function installation() {
+		$value = get_option( self::OPTION_INSTALLATION, array() );
+		return is_array( $value ) ? $value : array();
+	}
+
+	/**
+	 * Saves the non-secret installation fields from an API answer.
+	 *
+	 * @param array $installation Installation JSON.
+	 * @return void
+	 */
+	public static function save_installation( array $installation ) {
+		$keep = array();
+		foreach ( self::INSTALLATION_FIELDS as $field ) {
+			if ( array_key_exists( $field, $installation ) ) {
+				$keep[ $field ] = $installation[ $field ];
+			}
+		}
+		update_option( self::OPTION_INSTALLATION, $keep, true );
+	}
+
+	/**
+	 * Marks the local installation revoked after the server refused the token.
+	 *
+	 * @return void
+	 */
+	public static function mark_revoked() {
+		$installation = self::installation();
+		if ( empty( $installation ) ) {
+			return;
+		}
+		$installation['status'] = 'revoked';
+		update_option( self::OPTION_INSTALLATION, $installation, true );
+	}
+
+	/**
+	 * Forgets everything about the connection, credentials included.
+	 *
+	 * @return void
+	 */
+	public static function clear_connection() {
+		Credentials::clear();
+		delete_option( self::OPTION_INSTALLATION );
+		delete_option( self::OPTION_METHODS );
+		delete_option( self::OPTION_VERSION );
+	}
+
+	/**
+	 * True when this store holds working credentials for a connected installation.
+	 *
+	 * @return bool
+	 */
+	public static function is_connected() {
+		$installation = self::installation();
+		return isset( $installation['status'] ) && 'connected' === $installation['status'] && Credentials::present();
+	}
+
+	/**
+	 * True when the installation runs in test mode.
+	 *
+	 * @return bool
+	 */
+	public static function is_test_mode() {
+		$installation = self::installation();
+		return isset( $installation['mode'] ) && 'test' === $installation['mode'];
+	}
+
+	/**
+	 * Cached method list from the server.
+	 *
+	 * @return array List of array( 'method' => ..., 'label_ko' => ... ).
+	 */
+	public static function methods() {
+		$value = get_option( self::OPTION_METHODS, array() );
+		return is_array( $value ) && isset( $value['methods'] ) && is_array( $value['methods'] ) ? $value['methods'] : array();
+	}
+
+	/**
+	 * Unix time the method list was last fetched, 0 if never.
+	 *
+	 * @return int
+	 */
+	public static function methods_fetched_at() {
+		$value = get_option( self::OPTION_METHODS, array() );
+		return is_array( $value ) && isset( $value['fetched_at'] ) ? (int) $value['fetched_at'] : 0;
+	}
+
+	/**
+	 * Saves the method list, keeping only keys this plugin knows.
+	 *
+	 * @param array $methods From Api_Client::get_methods().
+	 * @return void
+	 */
+	public static function save_methods( array $methods ) {
+		$known = array();
+		foreach ( $methods as $row ) {
+			if ( isset( $row['method'] ) && in_array( $row['method'], self::METHODS, true ) ) {
+				$known[] = array(
+					'method'   => $row['method'],
+					'label_ko' => isset( $row['label_ko'] ) ? (string) $row['label_ko'] : '',
+				);
+			}
+		}
+		update_option(
+			self::OPTION_METHODS,
+			array(
+				'fetched_at' => time(),
+				'methods'    => $known,
+			),
+			true
+		);
+	}
+
+	/**
+	 * True when the server has the method enabled for this store.
+	 *
+	 * @param string $method Method key.
+	 * @return bool
+	 */
+	public static function method_enabled_by_server( $method ) {
+		foreach ( self::methods() as $row ) {
+			if ( $row['method'] === $method ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Korean label from the server, or the method key when unknown.
+	 *
+	 * @param string $method Method key.
+	 * @return string
+	 */
+	public static function label( $method ) {
+		foreach ( self::methods() as $row ) {
+			if ( $row['method'] === $method && '' !== $row['label_ko'] ) {
+				return $row['label_ko'];
+			}
+		}
+		return $method;
+	}
+
+	/**
+	 * Gateway id for a method key.
+	 *
+	 * @param string $method Method key.
+	 * @return string
+	 */
+	public static function gateway_id( $method ) {
+		return 'outlinepay_' . $method;
+	}
+
+	/**
+	 * All gateway ids.
+	 *
+	 * @return string[]
+	 */
+	public static function gateway_ids() {
+		return array_map( array( self::class, 'gateway_id' ), self::METHODS );
+	}
+
+	/**
+	 * Method key for a gateway id, or null when it is not ours.
+	 *
+	 * @param string $gateway_id Gateway id.
+	 * @return string|null
+	 */
+	public static function method_for_gateway( $gateway_id ) {
+		$gateway_id = (string) $gateway_id;
+		if ( 0 !== strpos( $gateway_id, 'outlinepay_' ) ) {
+			return null;
+		}
+		$method = substr( $gateway_id, strlen( 'outlinepay_' ) );
+		return in_array( $method, self::METHODS, true ) ? $method : null;
+	}
+
+	/**
+	 * Whether the merchant shows the method at checkout (the gateway's enabled setting).
+	 *
+	 * @param string $method Method key.
+	 * @return bool
+	 */
+	public static function shown( $method ) {
+		$settings = get_option( 'woocommerce_' . self::gateway_id( $method ) . '_settings', array() );
+		return ! is_array( $settings ) || ! isset( $settings['enabled'] ) || 'no' !== $settings['enabled'];
+	}
+
+	/**
+	 * Shows or hides a method at checkout by writing the gateway's enabled setting.
+	 *
+	 * @param string $method Method key.
+	 * @param bool   $shown  Show it.
+	 * @return void
+	 */
+	public static function set_shown( $method, $shown ) {
+		$option   = 'woocommerce_' . self::gateway_id( $method ) . '_settings';
+		$settings = get_option( $option, array() );
+		if ( ! is_array( $settings ) ) {
+			$settings = array();
+		}
+		$settings['enabled'] = $shown ? 'yes' : 'no';
+		update_option( $option, $settings );
+	}
+
+	/**
+	 * Host versions as the server wants them: short strings under known keys.
+	 *
+	 * @return array
+	 */
+	public static function platform_versions() {
+		$versions = array(
+			'php'         => PHP_VERSION,
+			'wordpress'   => (string) get_bloginfo( 'version' ),
+			'woocommerce' => defined( 'WC_VERSION' ) ? WC_VERSION : '',
+			'plugin'      => OUTLINEPAY_VERSION,
+		);
+		foreach ( $versions as $key => $value ) {
+			$versions[ $key ] = substr( (string) $value, 0, 50 );
+		}
+		return $versions;
+	}
+
+	/**
+	 * Callback URL sent on connect.
+	 *
+	 * @return string
+	 */
+	public static function callback_url() {
+		return rest_url( 'outlinepay/v1/callback' );
+	}
+}
