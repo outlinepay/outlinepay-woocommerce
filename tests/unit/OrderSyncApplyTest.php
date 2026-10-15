@@ -194,4 +194,64 @@ class OrderSyncApplyTest extends TestCase {
 		// Fewer attempts keep the test fast: acquire directly with one try.
 		$this->assertFalse( Order_Lock::acquire( 42, time(), 1 ) );
 	}
+
+	public function test_a_duplicate_on_an_order_held_for_a_foreign_payment_is_flagged_as_likely_the_real_one() {
+		$this->order->status                          = 'on-hold';
+		$this->order->meta[ Order_Sync::META_HOLD ]    = 'foreign';
+		$this->order->meta[ Order_Sync::META_SETTLED ] = 'foreign';
+		Order_Sync::apply( $this->order, $this->payment( array( 'status' => 'duplicate' ) ) );
+		$this->assertSame( 'on-hold', $this->order->status, 'stays on hold' );
+		$this->assertSame( 0, $this->order->completed_calls, 'not auto-completed' );
+		$note = end( $this->order->notes );
+		$this->assertStringContainsString( 'probably the shopper', $note );
+		$this->assertStringNotContainsString( 'Refund the second payment', $note );
+	}
+
+	public function test_a_plain_duplicate_keeps_the_refund_note() {
+		$this->order->status = 'processing';
+		Order_Sync::apply( $this->order, $this->payment( array( 'status' => 'duplicate' ) ) );
+		$this->assertStringContainsString( 'Refund the second payment', end( $this->order->notes ) );
+	}
+
+	public function test_an_order_another_gateway_already_charged_is_never_taken_back() {
+		// 3-D Secure race: the other gateway took the money, the status has not caught up.
+		$this->order->payment_method = 'stripe';
+		$this->order->status         = 'pending';
+		$this->order->date_paid      = '2026-10-14T10:00:00+00:00';
+
+		Order_Sync::apply( $this->order, $this->payment() );
+		$this->assertSame( 'stripe', $this->order->payment_method );
+		$this->assertSame( 0, $this->order->completed_calls );
+		$this->assertSame( 'double', $this->order->meta[ Order_Sync::META_SETTLED ] );
+		$this->assertStringContainsString( 'paid twice', end( $this->order->notes ) );
+	}
+
+	public function test_a_transaction_id_from_another_gateway_counts_as_paid_too() {
+		$this->order->payment_method = 'stripe';
+		$this->order->transaction    = 'pi_123';
+		Order_Sync::apply( $this->order, $this->payment() );
+		$this->assertSame( 0, $this->order->completed_calls );
+	}
+
+	public function test_the_mode_is_written_only_when_outlinepay_completes_the_order() {
+		$this->order->meta[ Order_Sync::META_ATTEMPTS ] = array( 'ppay_mine' );
+		Order_Sync::apply(
+			$this->order,
+			$this->payment(
+				array(
+					'mode'            => 'test',
+					'status'          => 'awaiting_deposit',
+					'virtual_account' => array( 'account_number' => '9' ),
+				)
+			)
+		);
+		$this->assertArrayNotHasKey( Order_Sync::META_MODE, $this->order->meta );
+	}
+
+	public function test_test_payment_line_needs_our_gateway_and_a_test_completion() {
+		$this->order->meta[ Order_Sync::META_MODE ] = 'test';
+		$this->assertTrue( \OutlinePay\WooCommerce\Order_Display::is_test_payment( $this->order ) );
+		$this->order->payment_method = 'bacs';
+		$this->assertFalse( \OutlinePay\WooCommerce\Order_Display::is_test_payment( $this->order ) );
+	}
 }

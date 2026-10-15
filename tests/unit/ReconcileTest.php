@@ -114,4 +114,35 @@ class ReconcileTest extends TestCase {
 		$order->payment_method = 'outlinepay_card';
 		$this->assertFalse( Switch_Guard::switched_away( $order ), 'still ours' );
 	}
+
+	public function test_the_walk_never_starts_before_the_query_window() {
+		$old = Scheduler::clamp_cursor(
+			array(
+				't'   => 0,
+				'ids' => array( 3 ),
+			),
+			self::NOW
+		);
+		$this->assertSame( self::NOW - Scheduler::QUERY_WINDOW, $old['t'] );
+		$this->assertSame( array(), $old['ids'] );
+		$recent = array(
+			't'   => self::NOW - self::DAY,
+			'ids' => array( 3 ),
+		);
+		$this->assertSame( $recent, Scheduler::clamp_cursor( $recent, self::NOW ) );
+		$this->assertGreaterThanOrEqual( Scheduler::PENDING_WINDOW, Scheduler::QUERY_WINDOW );
+	}
+
+	public function test_an_order_failing_with_server_errors_is_stepped_past_after_three_tries() {
+		$failures = array();
+		$first    = Scheduler::note_failure( $failures, 7 );
+		$this->assertFalse( $first['step_past'] );
+		$second = Scheduler::note_failure( $first['failures'], 7 );
+		$this->assertFalse( $second['step_past'] );
+		$third = Scheduler::note_failure( $second['failures'], 7 );
+		$this->assertTrue( $third['step_past'] );
+		$this->assertArrayNotHasKey( 7, $third['failures'], 'count cleared once stepped past' );
+		$other = Scheduler::note_failure( $second['failures'], 8 );
+		$this->assertSame( 2, $other['failures'][7], 'counts are per order' );
+	}
 }

@@ -14,6 +14,7 @@ class WC_Order {
 	public $transaction     = '';
 	public $completed_calls = 0;
 	public $saves           = 0;
+	public $date_paid       = null;
 
 	public function __construct( $id = 42 ) {
 		$this->id = $id;
@@ -72,6 +73,15 @@ class WC_Order {
 	}
 	public function get_currency() {
 		return $this->currency;
+	}
+	public function get_date_paid() {
+		return $this->date_paid;
+	}
+	public function get_transaction_id() {
+		return $this->transaction;
+	}
+	public function get_checkout_order_received_url() {
+		return 'https://shop.example/checkout/order-received/' . $this->id . '/';
 	}
 	public function get_date_created() {
 		return null;

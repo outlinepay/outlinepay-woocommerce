@@ -106,6 +106,10 @@ class Gateway extends \WC_Payment_Gateway {
 		if ( ! $order instanceof \WC_Order ) {
 			return $this->refuse( __( 'This order could not be found.', 'outlinepay-for-woocommerce' ) );
 		}
+		if ( ! Settings::is_connected() ) {
+			// Disconnected, revoked, or a copy of the store (see Site_Identity).
+			return $this->refuse( __( 'This payment method is not available right now. Choose another method.', 'outlinepay-for-woocommerce' ) );
+		}
 		if ( 'KRW' !== $order->get_currency() ) {
 			return $this->refuse( __( 'This payment method takes Korean won (KRW) only.', 'outlinepay-for-woocommerce' ) );
 		}
@@ -139,9 +143,6 @@ class Gateway extends \WC_Payment_Gateway {
 
 		$order->update_meta_data( Order_Sync::META_PAYMENT_ID, $payment['id'] );
 		Order_Sync::add_attempt( $order, $payment['id'] );
-		if ( isset( $payment['mode'] ) && is_string( $payment['mode'] ) ) {
-			$order->update_meta_data( Order_Sync::META_MODE, 'test' === $payment['mode'] ? 'test' : 'live' );
-		}
 		$order->save();
 		Logger::info(
 			'Payment opened',

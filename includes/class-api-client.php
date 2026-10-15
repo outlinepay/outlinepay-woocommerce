@@ -14,8 +14,9 @@ defined( 'ABSPATH' ) || exit;
  */
 class Api_Client {
 
-	const DEFAULT_BASE = 'https://api.outlinepay.com/plugin/v1';
-	const TIMEOUT      = 20;
+	const DEFAULT_BASE  = 'https://api.outlinepay.com/plugin/v1';
+	const TIMEOUT       = 20;
+	const SHORT_TIMEOUT = 5;
 
 	/**
 	 * Sends one request. Receives ( method, url, headers, body|null, timeout ) and
@@ -41,6 +42,13 @@ class Api_Client {
 	private $base;
 
 	/**
+	 * Seconds to wait for an answer.
+	 *
+	 * @var int
+	 */
+	private $timeout = self::TIMEOUT;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param callable|null $token_provider Returns the store token or null.
@@ -51,6 +59,28 @@ class Api_Client {
 		$this->token_provider = $token_provider ? $token_provider : array( Credentials::class, 'token' );
 		$this->transport      = $transport ? $transport : array( self::class, 'wp_transport' );
 		$this->base           = rtrim( null !== $base ? $base : self::configured_base(), '/' );
+	}
+
+	/**
+	 * A copy of this client that waits at most $seconds per request. For calls
+	 * made inside another gateway's checkout, where a slow answer holds the shopper.
+	 *
+	 * @param int $seconds Timeout.
+	 * @return Api_Client
+	 */
+	public function with_timeout( $seconds ) {
+		$copy          = clone $this;
+		$copy->timeout = max( 1, (int) $seconds );
+		return $copy;
+	}
+
+	/**
+	 * Seconds this client waits per request.
+	 *
+	 * @return int
+	 */
+	public function timeout() {
+		return $this->timeout;
 	}
 
 	/**
@@ -245,7 +275,7 @@ class Api_Client {
 		}
 
 		try {
-			$response = call_user_func( $this->transport, $method, $this->base . $path, $headers, $encoded, self::TIMEOUT );
+			$response = call_user_func( $this->transport, $method, $this->base . $path, $headers, $encoded, $this->timeout );
 		} catch ( Api_Error $error ) {
 			Logger::warning( 'API network failure on ' . $operation, array( 'code' => $error->get_error_code() ) );
 			throw $error;

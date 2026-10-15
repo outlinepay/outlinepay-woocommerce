@@ -85,16 +85,21 @@ final class Settings {
 		delete_option( self::OPTION_METHODS );
 		delete_option( self::OPTION_VERSION );
 		delete_option( Scheduler::OPTION_CURSOR );
+		delete_option( Scheduler::OPTION_FAILURES );
+		delete_option( Site_Identity::OPTION );
 	}
 
 	/**
-	 * True when this store holds working credentials for a connected installation.
+	 * True when this store holds working credentials for a connected
+	 * installation, at the address it was connected at. A copy of the store
+	 * (see Site_Identity) is never connected: it takes no payments and calls
+	 * nothing.
 	 *
 	 * @return bool
 	 */
 	public static function is_connected() {
 		$installation = self::installation();
-		return isset( $installation['status'] ) && 'connected' === $installation['status'] && Credentials::present();
+		return isset( $installation['status'] ) && 'connected' === $installation['status'] && Credentials::present() && ! Site_Identity::is_copy();
 	}
 
 	/**

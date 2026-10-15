@@ -29,6 +29,10 @@ final class Admin_Page {
 		add_action( 'admin_post_outlinepay_connect', array( self::class, 'connect' ) );
 		add_action( 'admin_post_outlinepay_disconnect', array( self::class, 'disconnect' ) );
 		add_action( 'admin_post_outlinepay_methods', array( self::class, 'save_methods' ) );
+		add_action( 'admin_post_outlinepay_copy_separate', array( self::class, 'copy_separate' ) );
+		add_action( 'admin_post_outlinepay_copy_moved', array( self::class, 'copy_moved' ) );
+		add_action( 'admin_notices', array( self::class, 'copy_notice' ) );
+		add_action( 'admin_init', array( Site_Identity::class, 'ensure_saved' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( OUTLINEPAY_PLUGIN_FILE ), array( self::class, 'action_links' ) );
 	}
 
@@ -95,6 +99,7 @@ final class Admin_Page {
 		}
 
 		Credentials::save( $installation['token'], $installation['signing_secret'] );
+		Site_Identity::remember_current();
 		unset( $installation['token'], $installation['signing_secret'] );
 		Settings::save_installation( $installation );
 		update_option( Settings::OPTION_VERSION, OUTLINEPAY_VERSION, false );
@@ -113,7 +118,8 @@ final class Admin_Page {
 	public static function disconnect() {
 		self::require_capability();
 		check_admin_referer( 'outlinepay_disconnect' );
-		if ( Credentials::present() ) {
+		// Never from a copy of the store: that would revoke the live store's connection.
+		if ( Credentials::present() && ! Site_Identity::is_copy() ) {
 			try {
 				( new Api_Client() )->disconnect();
 			} catch ( Api_Error $error ) {
@@ -124,6 +130,121 @@ final class Admin_Page {
 		Settings::clear_connection();
 		Scheduler::unschedule_all();
 		self::back( 'disconnected' );
+	}
+
+	/**
+	 * "Connect this copy separately": removes the copied connection from this
+	 * site only. OutlinePay is not told, so the live store keeps working.
+	 *
+	 * @return void
+	 */
+	public static function copy_separate() {
+		self::require_capability();
+		check_admin_referer( 'outlinepay_copy_separate' );
+		if ( ! Site_Identity::is_copy() ) {
+			self::back( 'copy_none' );
+		}
+		Site_Identity::forget_copied_connection();
+		self::back( 'copy_cleared' );
+	}
+
+	/**
+	 * "I moved my store to this address", after the confirm step.
+	 *
+	 * @return void
+	 */
+	public static function copy_moved() {
+		self::require_capability();
+		check_admin_referer( 'outlinepay_copy_moved' );
+		if ( ! Site_Identity::is_copy() ) {
+			self::back( 'copy_none' );
+		}
+		$updated = Site_Identity::accept_move();
+		Scheduler::schedule_recurring();
+		self::back( $updated ? 'moved' : 'moved_callback_failed' );
+	}
+
+	/**
+	 * Admin notice on every admin page while this site looks like a copy.
+	 * The OutlinePay page shows its own banner instead.
+	 *
+	 * @return void
+	 */
+	public static function copy_notice() {
+		if ( ! current_user_can( self::CAPABILITY ) || ! Site_Identity::is_copy() ) {
+			return;
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- only decides which page is showing.
+		if ( isset( $_GET['page'] ) && self::SLUG === sanitize_key( wp_unslash( $_GET['page'] ) ) ) {
+			return;
+		}
+		echo '<div class="notice notice-error outlinepay-copy-notice">';
+		self::copy_text();
+		echo '<p><a class="button button-primary" href="' . esc_url( self::url() ) . '">' . esc_html__( 'Open the OutlinePay page', 'outlinepay-for-woocommerce' ) . '</a></p>';
+		echo '</div>';
+	}
+
+	/**
+	 * The copy explanation, shared by the notice and the banner.
+	 *
+	 * @return void
+	 */
+	private static function copy_text() {
+		echo '<p><strong>' . esc_html__( 'This looks like a copy of your store.', 'outlinepay-for-woocommerce' ) . '</strong></p>';
+		echo '<p>' . esc_html(
+			sprintf(
+				/* translators: 1: address the store was connected at, 2: this site's address. */
+				__( 'It was connected at %1$s. This site is %2$s.', 'outlinepay-for-woocommerce' ),
+				Site_Identity::saved(),
+				Site_Identity::current()
+			)
+		) . '</p>';
+		echo '<p>' . esc_html__( 'OutlinePay is off here, so this copy cannot take real payments.', 'outlinepay-for-woocommerce' ) . '</p>';
+	}
+
+	/**
+	 * The banner and the two ways out, on the OutlinePay page.
+	 *
+	 * @return void
+	 */
+	private static function render_copy_banner() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only: shows the confirm step, which posts with its own nonce.
+		$confirm = isset( $_GET['outlinepay_confirm_move'] );
+		echo '<div class="notice notice-error inline outlinepay-copy-banner">';
+		self::copy_text();
+		echo '</div>';
+
+		if ( $confirm ) {
+			echo '<h2>' . esc_html__( 'Confirm the move', 'outlinepay-for-woocommerce' ) . '</h2>';
+			echo '<p>' . esc_html(
+				sprintf(
+					/* translators: %s: this site's address. */
+					__( 'Only confirm if %s is now your real store.', 'outlinepay-for-woocommerce' ),
+					Site_Identity::current()
+				)
+			) . '</p>';
+			echo '<p>' . esc_html__( 'Payments turn back on at this address. OutlinePay sends payment updates to this address from now on.', 'outlinepay-for-woocommerce' ) . '</p>';
+			echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+			wp_nonce_field( 'outlinepay_copy_moved' );
+			echo '<input type="hidden" name="action" value="outlinepay_copy_moved">';
+			echo '<p>';
+			submit_button( __( 'Yes, my store moved here', 'outlinepay-for-woocommerce' ), 'primary', 'submit', false );
+			echo ' <a class="button" href="' . esc_url( self::url() ) . '">' . esc_html__( 'Cancel', 'outlinepay-for-woocommerce' ) . '</a></p>';
+			echo '</form>';
+			return;
+		}
+
+		echo '<h2>' . esc_html__( 'Connect this copy separately', 'outlinepay-for-woocommerce' ) . '</h2>';
+		echo '<p>' . esc_html__( 'This removes the copied connection from this site only. Your live store keeps working. You can then connect this site with its own connect code.', 'outlinepay-for-woocommerce' ) . '</p>';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		wp_nonce_field( 'outlinepay_copy_separate' );
+		echo '<input type="hidden" name="action" value="outlinepay_copy_separate">';
+		submit_button( __( 'Connect this copy separately', 'outlinepay-for-woocommerce' ), 'secondary', 'submit', false );
+		echo '</form>';
+
+		echo '<h2>' . esc_html__( 'I moved my store to this address', 'outlinepay-for-woocommerce' ) . '</h2>';
+		echo '<p>' . esc_html__( 'Choose this if this site is now your real store.', 'outlinepay-for-woocommerce' ) . '</p>';
+		echo '<p><a class="button" href="' . esc_url( self::url( array( 'outlinepay_confirm_move' => '1' ) ) ) . '">' . esc_html__( 'I moved my store to this address', 'outlinepay-for-woocommerce' ) . '</a></p>';
 	}
 
 	/**
@@ -153,7 +274,8 @@ final class Admin_Page {
 		$installation = Settings::installation();
 		$has_link     = ! empty( $installation ) && Credentials::present();
 
-		if ( $has_link ) {
+		$is_copy = $has_link && Site_Identity::is_copy();
+		if ( $has_link && ! $is_copy ) {
 			self::refresh();
 			$installation = Settings::installation();
 		}
@@ -169,6 +291,12 @@ final class Admin_Page {
 		if ( ! $has_link ) {
 			self::render_connect_form();
 			self::render_disconnect_form( Credentials::unreadable() );
+			echo '</div>';
+			return;
+		}
+
+		if ( $is_copy ) {
+			self::render_copy_banner();
 			echo '</div>';
 			return;
 		}
@@ -210,6 +338,15 @@ final class Admin_Page {
 				Settings::mark_revoked();
 			}
 			return;
+		}
+		if ( isset( $installation['callback_url'] ) && is_string( $installation['callback_url'] ) && Settings::callback_url() !== $installation['callback_url'] ) {
+			// The store moved, or a move could not be reported earlier.
+			try {
+				$client->update_installation( array( 'callback_url' => Settings::callback_url() ) );
+			} catch ( Api_Error $error ) {
+				// Logged by the client. Retried on the next page load.
+				unset( $error );
+			}
 		}
 		if ( Settings::is_connected() ) {
 			Scheduler::refresh_methods();
@@ -340,15 +477,19 @@ final class Admin_Page {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only: picks one of the fixed messages below.
 		$result   = isset( $_GET['outlinepay_result'] ) ? sanitize_key( wp_unslash( $_GET['outlinepay_result'] ) ) : '';
 		$messages = array(
-			'connected'      => array( 'success', __( 'Your store is connected.', 'outlinepay-for-woocommerce' ) ),
-			'disconnected'   => array( 'success', __( 'Your store is disconnected.', 'outlinepay-for-woocommerce' ) ),
-			'methods_saved'  => array( 'success', __( 'Payment methods saved.', 'outlinepay-for-woocommerce' ) ),
-			'code_missing'   => array( 'error', __( 'Enter the connect code from your payment provider.', 'outlinepay-for-woocommerce' ) ),
-			'code_invalid'   => array( 'error', __( 'This connect code is not valid. It may have expired or already been used. Ask your payment provider for a new code.', 'outlinepay-for-woocommerce' ) ),
-			'site_refused'   => array( 'error', __( 'OutlinePay could not accept this store\'s address. The store must be reachable over HTTPS from the internet.', 'outlinepay-for-woocommerce' ) ),
-			'rate_limited'   => array( 'error', __( 'Too many connect attempts. Wait a minute and try again.', 'outlinepay-for-woocommerce' ) ),
-			'unreachable'    => array( 'error', __( 'OutlinePay could not be reached. Check that this server can make outgoing HTTPS requests, then try again.', 'outlinepay-for-woocommerce' ) ),
-			'connect_failed' => array( 'error', __( 'The store could not be connected. Try again in a moment.', 'outlinepay-for-woocommerce' ) ),
+			'connected'             => array( 'success', __( 'Your store is connected.', 'outlinepay-for-woocommerce' ) ),
+			'disconnected'          => array( 'success', __( 'Your store is disconnected.', 'outlinepay-for-woocommerce' ) ),
+			'methods_saved'         => array( 'success', __( 'Payment methods saved.', 'outlinepay-for-woocommerce' ) ),
+			'code_missing'          => array( 'error', __( 'Enter the connect code from your payment provider.', 'outlinepay-for-woocommerce' ) ),
+			'code_invalid'          => array( 'error', __( 'This connect code is not valid. It may have expired or already been used. Ask your payment provider for a new code.', 'outlinepay-for-woocommerce' ) ),
+			'site_refused'          => array( 'error', __( 'OutlinePay could not accept this store\'s address. The store must be reachable over HTTPS from the internet.', 'outlinepay-for-woocommerce' ) ),
+			'rate_limited'          => array( 'error', __( 'Too many connect attempts. Wait a minute and try again.', 'outlinepay-for-woocommerce' ) ),
+			'unreachable'           => array( 'error', __( 'OutlinePay could not be reached. Check that this server can make outgoing HTTPS requests, then try again.', 'outlinepay-for-woocommerce' ) ),
+			'connect_failed'        => array( 'error', __( 'The store could not be connected. Try again in a moment.', 'outlinepay-for-woocommerce' ) ),
+			'copy_cleared'          => array( 'success', __( 'The copied connection is removed from this site. Your live store keeps working.', 'outlinepay-for-woocommerce' ) ),
+			'copy_none'             => array( 'error', __( 'This site no longer looks like a copy. Nothing changed.', 'outlinepay-for-woocommerce' ) ),
+			'moved'                 => array( 'success', __( 'This address is saved as your store. Payments are back on.', 'outlinepay-for-woocommerce' ) ),
+			'moved_callback_failed' => array( 'warning', __( 'This address is saved as your store and payments are back on. OutlinePay could not be told the new address yet. Open this page again later to retry.', 'outlinepay-for-woocommerce' ) ),
 		);
 		if ( ! isset( $messages[ $result ] ) ) {
 			return;

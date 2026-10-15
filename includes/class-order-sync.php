@@ -214,9 +214,6 @@ final class Order_Sync {
 				return $decision;
 			}
 
-			if ( isset( $payment['mode'] ) && is_string( $payment['mode'] ) ) {
-				$order->update_meta_data( self::META_MODE, 'test' === $payment['mode'] ? 'test' : 'live' );
-			}
 			self::act( $order, $payment, $decision, $context );
 
 			$applied[] = $key;
@@ -255,11 +252,18 @@ final class Order_Sync {
 	private static function act( $order, array $payment, $decision, array $context ) {
 		$payment_id = (string) $payment['id'];
 		$paid       = $order->is_paid();
+		// Another gateway may have taken the money already (a 3-D Secure
+		// redirect that finished, a webhook) without the status showing it yet.
+		// Its paid date or transaction id gives it away.
+		$other_gateway = null === Settings::method_for_gateway( $order->get_payment_method() );
+		if ( $other_gateway && ! $paid && ( $order->get_date_paid() || '' !== (string) $order->get_transaction_id() ) ) {
+			$paid = true;
+		}
 
 		switch ( $decision ) {
 			case self::COMPLETE:
 				if ( $paid ) {
-					if ( null === Settings::method_for_gateway( $order->get_payment_method() ) ) {
+					if ( $other_gateway ) {
 						// Paid through another gateway, and our window was paid too.
 						$order->update_meta_data( self::META_SETTLED, 'double' );
 						$order->add_order_note(
@@ -275,6 +279,9 @@ final class Order_Sync {
 				}
 				self::take_back_gateway( $order, $payment );
 				$order->update_meta_data( self::META_PAYMENT_ID, $payment_id );
+				// Written only here, when OutlinePay took the payment, so a test
+				// attempt on an order paid live elsewhere never reads as a test payment.
+				$order->update_meta_data( self::META_MODE, isset( $payment['mode'] ) && 'test' === $payment['mode'] ? 'test' : 'live' );
 				$order->delete_meta_data( self::META_HOLD );
 				$transaction = isset( $payment['transaction_id'] ) && is_string( $payment['transaction_id'] ) ? $payment['transaction_id'] : '';
 				$order->add_order_note(
@@ -370,6 +377,19 @@ final class Order_Sync {
 				return;
 
 			case self::NOTE_DUPLICATE:
+				if ( 'foreign' === $order->get_meta( self::META_HOLD ) ) {
+					// The order is on hold because a copy of the store got paid first.
+					// This later payment is most likely the shopper's real one.
+					$order->add_order_note(
+						self::note(
+							/* translators: %s: OutlinePay payment id. */
+							sprintf( __( 'OutlinePay payment %s is probably the shopper\'s real payment for this order. The earlier payment came from another copy of this store. Check both payments before you refund anything. The order stays on hold.', 'outlinepay-for-woocommerce' ), $payment_id ),
+							$payment
+						)
+					);
+					Logger::warning( 'Duplicate payment on an order held for a foreign payment', $context );
+					return;
+				}
 				$order->add_order_note(
 					self::note(
 						/* translators: %s: OutlinePay payment id. */

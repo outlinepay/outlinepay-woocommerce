@@ -15,19 +15,22 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Scheduler {
 
-	const GROUP            = 'outlinepay';
-	const HOOK_METHODS     = 'outlinepay_refresh_methods';
-	const HOOK_RECONCILE   = 'outlinepay_reconcile';
-	const HOOK_VERSIONS    = 'outlinepay_report_versions';
-	const HOOK_METHODS_NOW = 'outlinepay_refresh_methods_now';
-	const HOOK_SYNC_ORDER  = 'outlinepay_sync_order';
-	const OPTION_CURSOR    = 'outlinepay_reconcile_cursor';
+	const GROUP             = 'outlinepay';
+	const HOOK_METHODS      = 'outlinepay_refresh_methods';
+	const HOOK_RECONCILE    = 'outlinepay_reconcile';
+	const HOOK_VERSIONS     = 'outlinepay_report_versions';
+	const HOOK_METHODS_NOW  = 'outlinepay_refresh_methods_now';
+	const HOOK_SWITCH_CHECK = 'outlinepay_switch_check';
+	const OPTION_CURSOR     = 'outlinepay_reconcile_cursor';
+	const OPTION_FAILURES   = 'outlinepay_reconcile_failures';
 
 	const RECONCILE_INTERVAL = 900;
 	const METHODS_INTERVAL   = 3600;
 	const RECONCILE_LIMIT    = 50;
 	const PENDING_WINDOW     = 604800;
 	const DEPOSIT_GRACE      = 86400;
+	const QUERY_WINDOW       = 2592000;
+	const MAX_FAILURES       = 3;
 
 	/**
 	 * Hooks the actions.
@@ -39,7 +42,6 @@ final class Scheduler {
 		add_action( self::HOOK_METHODS_NOW, array( self::class, 'refresh_methods' ) );
 		add_action( self::HOOK_RECONCILE, array( self::class, 'reconcile' ) );
 		add_action( self::HOOK_VERSIONS, array( self::class, 'report_versions' ) );
-		add_action( self::HOOK_SYNC_ORDER, array( self::class, 'sync_order_id' ) );
 		add_action( 'init', array( self::class, 'maintain' ), 20 );
 	}
 
@@ -88,7 +90,7 @@ final class Scheduler {
 		if ( ! function_exists( 'as_unschedule_all_actions' ) ) {
 			return;
 		}
-		foreach ( array( self::HOOK_METHODS, self::HOOK_METHODS_NOW, self::HOOK_RECONCILE, self::HOOK_VERSIONS, self::HOOK_SYNC_ORDER ) as $hook ) {
+		foreach ( array( self::HOOK_METHODS, self::HOOK_METHODS_NOW, self::HOOK_RECONCILE, self::HOOK_VERSIONS, self::HOOK_SWITCH_CHECK ) as $hook ) {
 			as_unschedule_all_actions( $hook, array(), self::GROUP );
 		}
 	}
@@ -133,7 +135,8 @@ final class Scheduler {
 		if ( ! Settings::is_connected() ) {
 			return;
 		}
-		$cursor = self::read_cursor( get_option( self::OPTION_CURSOR, array() ) );
+		$now    = time();
+		$cursor = self::clamp_cursor( self::read_cursor( get_option( self::OPTION_CURSOR, array() ) ), $now );
 		$orders = wc_get_orders(
 			array(
 				'status'       => array( 'pending', 'on-hold' ),
@@ -166,10 +169,11 @@ final class Scheduler {
 		}
 		$batch = self::next_batch( $rows, $cursor, self::RECONCILE_LIMIT );
 
-		$client = new Api_Client();
-		$count  = 0;
-		$done   = array();
-		$now    = time();
+		$client   = new Api_Client();
+		$count    = 0;
+		$done     = array();
+		$failures = get_option( self::OPTION_FAILURES, array() );
+		$failures = is_array( $failures ) ? $failures : array();
 		foreach ( $batch['rows'] as $row ) {
 			$order = $row['order'];
 			if ( self::should_reconcile( self::facts( $order ), $now ) ) {
@@ -177,17 +181,76 @@ final class Scheduler {
 					if ( self::sync_order( $order, $client ) ) {
 						++$count;
 					}
+					unset( $failures[ $row['id'] ] );
 				} catch ( Api_Error $error ) {
-					if ( $error->is_transient() || 401 === $error->get_http_status() ) {
+					if ( 0 === $error->get_http_status() || 401 === $error->get_http_status() ) {
+						// OutlinePay unreachable or the token refused: stop, keep the place.
 						break;
 					}
+					$result   = self::note_failure( $failures, $row['id'] );
+					$failures = $result['failures'];
+					if ( ! $result['step_past'] ) {
+						// Try this order again next run, a few times at most.
+						break;
+					}
+					Logger::warning(
+						'Reconcile stepped past an order after repeated errors',
+						array(
+							'order_id' => $row['id'],
+							'code'     => $error->get_error_code(),
+						)
+					);
 				}
 			}
 			$done[] = $row;
 		}
 
+		update_option( self::OPTION_FAILURES, array_slice( $failures, -100, null, true ), false );
 		update_option( self::OPTION_CURSOR, self::advance_cursor( $cursor, $done, $batch['complete'] && count( $done ) === count( $batch['rows'] ) ), false );
 		Logger::info( 'Reconcile run finished', array( 'count' => $count ) );
+	}
+
+	/**
+	 * Orders placed before the query window are never followed (see
+	 * should_reconcile), so the walk starts no earlier than the window. Pure.
+	 *
+	 * @param array $cursor Cursor.
+	 * @param int   $now    Unix time.
+	 * @return array
+	 */
+	public static function clamp_cursor( array $cursor, $now ) {
+		$floor = $now - self::QUERY_WINDOW;
+		if ( $cursor['t'] >= $floor ) {
+			return $cursor;
+		}
+		return array(
+			't'   => $floor,
+			'ids' => array(),
+		);
+	}
+
+	/**
+	 * Counts a server error for one order. After MAX_FAILURES the run steps
+	 * past it and its count is cleared. Pure.
+	 *
+	 * @param array $failures Counts by order id.
+	 * @param int   $order_id Order id.
+	 * @return array array( 'failures' => counts, 'step_past' => bool ).
+	 */
+	public static function note_failure( array $failures, $order_id ) {
+		$count = isset( $failures[ $order_id ] ) ? (int) $failures[ $order_id ] + 1 : 1;
+		if ( $count >= self::MAX_FAILURES ) {
+			unset( $failures[ $order_id ] );
+			return array(
+				'failures'  => $failures,
+				'step_past' => true,
+			);
+		}
+		$failures[ $order_id ] = $count;
+		return array(
+			'failures'  => $failures,
+			'step_past' => false,
+		);
 	}
 
 	/**
@@ -323,34 +386,16 @@ final class Scheduler {
 	}
 
 	/**
-	 * Action handler: sync one order by id.
+	 * Queues the background switch check for an order another gateway just
+	 * marked paid (see Switch_Guard::run_background_check).
 	 *
 	 * @param int $order_id Order id.
 	 * @return void
 	 */
-	public static function sync_order_id( $order_id ) {
-		$order = wc_get_order( $order_id );
-		if ( ! Settings::is_connected() || ! Order_Sync::is_ours( $order ) ) {
-			return;
-		}
-		try {
-			self::sync_order( $order );
-		} catch ( Api_Error $error ) {
-			// Logged by the client. The reconcile run tries again.
-			return;
-		}
-	}
-
-	/**
-	 * Queues a sync of one order after the current request.
-	 *
-	 * @param int $order_id Order id.
-	 * @return void
-	 */
-	public static function queue_order_sync( $order_id ) {
+	public static function queue_switch_check( $order_id ) {
 		$args = array( (int) $order_id );
-		if ( function_exists( 'as_enqueue_async_action' ) && ! as_has_scheduled_action( self::HOOK_SYNC_ORDER, $args, self::GROUP ) ) {
-			as_enqueue_async_action( self::HOOK_SYNC_ORDER, $args, self::GROUP );
+		if ( function_exists( 'as_enqueue_async_action' ) && ! as_has_scheduled_action( self::HOOK_SWITCH_CHECK, $args, self::GROUP ) ) {
+			as_enqueue_async_action( self::HOOK_SWITCH_CHECK, $args, self::GROUP );
 		}
 	}
 

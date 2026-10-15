@@ -70,13 +70,17 @@ No. Deactivating stops background checks but keeps the connection. Use the Disco
 
 Refund it in your payment provider's dashboard. This version does not refund from WooCommerce.
 
+= What happens on a staging copy of my store? =
+
+The plugin remembers the address your store was connected at. A copy at another address, such as a one-click staging site, turns OutlinePay off by itself. The copy cannot take real payments and sends nothing to OutlinePay. The OutlinePay page then offers two choices. Connect the copy separately with its own connect code. Or confirm that your store moved to the new address.
+
 = Where are the logs? =
 
 In WooCommerce > Status > Logs, under the source "outlinepay". The logs hold order ids, payment ids, statuses and error codes. They never hold shopper details or credentials.
 
 == External services ==
 
-This plugin connects to two external services. It contacts them only after you connect the store.
+This plugin connects to two external services. It contacts them only after you connect the store. A copy of the store at another address contacts neither.
 
 = OutlinePay =
 
@@ -88,9 +92,11 @@ What is sent, and when:
 * Once after each plugin update: the same version numbers.
 * When a shopper clicks to pay: the order id, order number, total, currency, chosen method and the address to return the shopper to. Also the shopper's billing name, email, phone and address. OutlinePay passes these to your payment provider to open the payment window and does not store them.
 * To check a payment: the order id and payment id. This happens when the shopper returns, when OutlinePay notifies your store, every 15 minutes for recent unpaid orders, and before WooCommerce cancels an unpaid order.
-* When an order with an open OutlinePay payment is finished with another payment method: a request to close that payment.
-* Every hour, and when you open the OutlinePay page: a request for the methods your provider has enabled.
-* When you click Disconnect or delete the plugin: a request to disconnect.
+* When a shopper finishes an order with another payment method after opening an OutlinePay payment: the order id, and a request to close the open OutlinePay payment.
+* Every hour: a request for the methods your provider has enabled.
+* When you open the OutlinePay page: a request for the connection status and the enabled methods. If your store's notification address has changed, the new address is sent.
+* When you confirm that your store moved to a new address: the new notification address.
+* When you click Disconnect or delete the plugin: a request to disconnect. A staging copy never sends this, so it cannot switch off your live store.
 
 OutlinePay terms: https://outlinepay.com/terms
 OutlinePay privacy policy: https://outlinepay.com/privacy

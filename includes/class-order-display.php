@@ -65,7 +65,11 @@ final class Order_Display {
 	 * @return bool
 	 */
 	public static function is_test_payment( $order ) {
-		return $order instanceof \WC_Order && 'test' === $order->get_meta( Order_Sync::META_MODE );
+		// The mode is written when OutlinePay completes the order. The gateway
+		// check keeps an order that later moved to another method from showing it.
+		return $order instanceof \WC_Order
+			&& null !== Settings::method_for_gateway( $order->get_payment_method() )
+			&& 'test' === $order->get_meta( Order_Sync::META_MODE );
 	}
 
 	/**

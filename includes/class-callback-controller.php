@@ -47,14 +47,23 @@ final class Callback_Controller {
 	private $applier;
 
 	/**
+	 * True when this site is a copy of the store (see Site_Identity).
+	 *
+	 * @var callable
+	 */
+	private $copy_check;
+
+	/**
 	 * Constructor. All arguments are test seams with production defaults.
 	 *
 	 * @param callable|null $secret_provider Secret provider.
 	 * @param callable|null $payment_reader  Payment reader.
 	 * @param callable|null $order_finder    Order finder.
 	 * @param callable|null $applier         Applier.
+	 * @param callable|null $copy_check      Copy check.
 	 */
-	public function __construct( $secret_provider = null, $payment_reader = null, $order_finder = null, $applier = null ) {
+	public function __construct( $secret_provider = null, $payment_reader = null, $order_finder = null, $applier = null, $copy_check = null ) {
+		$this->copy_check      = $copy_check ? $copy_check : array( Site_Identity::class, 'is_copy' );
 		$this->secret_provider = $secret_provider ? $secret_provider : array( Credentials::class, 'signing_secret' );
 		$this->payment_reader  = $payment_reader ? $payment_reader : static function ( $payment_id ) {
 			return ( new Api_Client() )->get_payment( $payment_id );
@@ -113,6 +122,12 @@ final class Callback_Controller {
 		if ( ! is_string( $secret ) || '' === $secret || ! Signature::verify( $header, $secret, $body, $now ) ) {
 			Logger::warning( 'Callback rejected: bad or missing signature' );
 			return self::answer( 401, 'invalid_signature' );
+		}
+
+		if ( call_user_func( $this->copy_check ) ) {
+			// A copy of the store holds the live store's secret but must not touch orders.
+			Logger::warning( 'Callback received on a copy of the store, not applied' );
+			return self::answer( 200, 'ignored_copy' );
 		}
 
 		$payload    = json_decode( $body, true );

@@ -62,6 +62,12 @@ final class Return_Handler {
 		}
 
 		$decision = null;
+		if ( Site_Identity::is_copy() ) {
+			// A copy of the store does not call OutlinePay. The live store settles the order.
+			Logger::warning( 'Shopper return on a copy of the store, not applied', array( 'order_id' => $order->get_id() ) );
+			wp_safe_redirect( $order->get_checkout_order_received_url() );
+			exit;
+		}
 		try {
 			$payment  = ( new Api_Client() )->get_payment( $pid );
 			$decision = Order_Sync::apply( $order, $payment );

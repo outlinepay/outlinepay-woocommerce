@@ -29,7 +29,7 @@ class CallbackControllerTest extends TestCase {
 		);
 	}
 
-	private function controller( $secret = self::SECRET, $reader = null, $order = 'order-42', $decision = Order_Sync::COMPLETE ) {
+	private function controller( $secret = self::SECRET, $reader = null, $order = 'order-42', $decision = Order_Sync::COMPLETE, $copy = false ) {
 		$reads   = &$this->reads;
 		$applied = &$this->applied;
 		return new Callback_Controller(
@@ -49,6 +49,9 @@ class CallbackControllerTest extends TestCase {
 			static function ( $order, $payment ) use ( &$applied, $decision ) {
 				$applied[] = array( $order, $payment );
 				return $decision;
+			},
+			static function () use ( $copy ) {
+				return $copy;
 			}
 		);
 	}
@@ -134,5 +137,19 @@ class CallbackControllerTest extends TestCase {
 		$body   = $this->body();
 		$result = $this->controller( self::SECRET, null, 'order-42', Order_Sync::BUSY )->process( $body, Signature::header( self::SECRET, $body, self::NOW ), self::NOW );
 		$this->assertSame( 503, $result['status'] );
+	}
+
+	public function test_a_copy_of_the_store_answers_signed_callbacks_without_touching_orders() {
+		$body   = $this->body();
+		$result = $this->controller( self::SECRET, null, 'order-42', Order_Sync::COMPLETE, true )->process( $body, Signature::header( self::SECRET, $body, self::NOW ), self::NOW );
+		$this->assertSame( 200, $result['status'] );
+		$this->assertSame( 'ignored_copy', $result['body']['result'] );
+		$this->assertSame( array(), $this->reads, 'no call to OutlinePay' );
+		$this->assertSame( array(), $this->applied, 'no order change' );
+	}
+
+	public function test_a_copy_still_rejects_a_bad_signature() {
+		$result = $this->controller( self::SECRET, null, 'order-42', Order_Sync::COMPLETE, true )->process( $this->body(), 't=1,v1=00', self::NOW );
+		$this->assertSame( 401, $result['status'] );
 	}
 }

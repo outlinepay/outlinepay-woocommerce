@@ -14,7 +14,9 @@ if ( ! defined( 'OUTLINEPAY_VERSION' ) ) {
 }
 require_once __DIR__ . '/includes/autoload.php';
 
-if ( OutlinePay\WooCommerce\Credentials::present() ) {
+// A copy of the store holds the live store's credentials. Disconnecting from
+// here would switch off the live store, so a copy only cleans up locally.
+if ( OutlinePay\WooCommerce\Credentials::present() && ! OutlinePay\WooCommerce\Site_Identity::is_copy() ) {
 	try {
 		( new OutlinePay\WooCommerce\Api_Client() )->disconnect();
 	} catch ( OutlinePay\WooCommerce\Api_Error $outlinepay_error ) {
