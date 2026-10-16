@@ -10,7 +10,7 @@
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
 if ( ! defined( 'OUTLINEPAY_VERSION' ) ) {
-	define( 'OUTLINEPAY_VERSION', '0.1.0' );
+	define( 'OUTLINEPAY_VERSION', '0.2.0' );
 }
 require_once __DIR__ . '/includes/autoload.php';
 
@@ -27,6 +27,9 @@ if ( OutlinePay\WooCommerce\Credentials::present() && ! OutlinePay\WooCommerce\S
 
 OutlinePay\WooCommerce\Settings::clear_connection();
 OutlinePay\WooCommerce\Scheduler::unschedule_all();
+
+delete_option( OutlinePay\WooCommerce\Self_Check::OPTION_EMAIL );
+delete_option( OutlinePay\WooCommerce\Scheduler::OPTION_DAILY_AT );
 
 foreach ( OutlinePay\WooCommerce\Settings::gateway_ids() as $outlinepay_gateway_id ) {
 	delete_option( 'woocommerce_' . $outlinepay_gateway_id . '_settings' );

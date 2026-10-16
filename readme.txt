@@ -4,7 +4,7 @@ Tags: payments, korea, krw, virtual account, woocommerce
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.1.0
+Stable tag: 0.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -36,6 +36,10 @@ What the plugin does:
 * Checks unpaid orders every 15 minutes, so a payment is not missed when the shopper closes the window early.
 * Marks test payments as test payments in order notes and on the order screen.
 * Supports High-Performance Order Storage (HPOS).
+* Checks its own setup. The Self-check on the OutlinePay page shows each check, who needs to act when one fails, and a diagnostic code to send to your payment provider. It also runs once a day.
+* Can email the site admin address when a daily check starts failing. Off until you turn on "Email me when a daily check fails".
+* Adds an "OutlinePay connection" test to Tools > Site Health.
+* On WordPress 6.9 and later, offers two read-only abilities for tools and AI agents that act for a store manager: run the self-check, and read the connection status.
 
 The store currency must be Korean won (KRW).
 
@@ -74,6 +78,10 @@ Refund it in your payment provider's dashboard. This version does not refund fro
 
 The plugin remembers the address your store was connected at. A copy at another address, such as a one-click staging site, turns OutlinePay off by itself. The copy cannot take real payments and sends nothing to OutlinePay. The OutlinePay page then offers two choices. Connect the copy separately with its own connect code. Or confirm that your store moved to the new address.
 
+= What is the diagnostic code? =
+
+The Self-check shows a code. Send it to your payment provider when you need help. A code that starts with chk_ means OutlinePay received the check and your provider can look it up. A code that starts with OP-OFFLINE- was made on your site because OutlinePay could not be reached. Each letter after it names one failed check.
+
 = Where are the logs? =
 
 In WooCommerce > Status > Logs, under the source "outlinepay". The logs hold order ids, payment ids, statuses and error codes. They never hold shopper details or credentials.
@@ -97,6 +105,10 @@ What is sent, and when:
 * When you open the OutlinePay page: a request for the connection status and the enabled methods. If your store's notification address has changed, the new address is sent.
 * When you confirm that your store moved to a new address: the new notification address.
 * When you click Disconnect or delete the plugin: a request to disconnect. A staging copy never sends this, so it cannot switch off your live store.
+* When you click Run check on the OutlinePay page: the results of the store's own checks. Each result is a check name, pass or fail, who needs to act, and short details such as the store currency, the software versions, how many methods are shown and how long OutlinePay took to answer. No shopper or order details. OutlinePay then sends one signed test message to the store's notification address.
+* Once a day: the same check results.
+
+If you turn on "Email me when a daily check fails", the email goes from your own site to the site admin address. Nothing about it is sent to OutlinePay.
 
 OutlinePay terms: https://outlinepay.com/terms
 OutlinePay privacy policy: https://outlinepay.com/privacy
@@ -108,6 +120,13 @@ CookiePay is the payment provider that takes the payment. The shopper is sent to
 CookiePay privacy policy: https://www.cookiepayments.com/terms/private
 
 == Changelog ==
+
+= 0.2.0 =
+* Self-check on the OutlinePay page: each check with who needs to act, a diagnostic code with a Copy button, and the last result kept on the page.
+* The check also runs once a day and can email the site admin when a daily check starts failing (off by default).
+* The store answers OutlinePay's signed test message without touching any order.
+* New Site Health test: OutlinePay connection.
+* Two read-only abilities on WordPress 6.9 and later: outlinepay/run-self-check and outlinepay/get-connection-status.
 
 = 0.1.0 =
 * First release.

@@ -22,10 +22,33 @@ OutlinePay is operated by Arandu Payments LLC.
 | `includes/class-order-sync.php` | The one place a payment becomes an order change |
 | `includes/class-return-handler.php` | Shopper return (`?wc-api=outlinepay_return`) |
 | `includes/class-callback-controller.php` | Signed callback (`POST /wp-json/outlinepay/v1/callback`) |
-| `includes/class-scheduler.php` | Action Scheduler jobs: method refresh, reconcile, version report |
+| `includes/class-scheduler.php` | Action Scheduler jobs: method refresh, reconcile, daily self-check, version report |
+| `includes/class-self-check.php` | Self-check engine: local checks, the run against OutlinePay, offline codes, the stored result |
+| `includes/class-self-check-mail.php` | Opt-in email when a daily self-check starts failing |
+| `includes/class-site-health.php` | Site Health test "OutlinePay connection" |
+| `includes/class-abilities.php` | Abilities API (WordPress 6.9+): `outlinepay/run-self-check`, `outlinepay/get-connection-status` |
 | `includes/class-unpaid-guard.php` | Expires open attempts before WooCommerce cancels an unpaid order |
-| `includes/class-admin-page.php` | WooCommerce > OutlinePay |
+| `includes/class-admin-page.php` | WooCommerce > OutlinePay, including the Self-check section |
+| `assets/js/admin.js` | Copy button for the diagnostic code, no build step |
 | `includes/class-blocks-method.php`, `assets/js/blocks.js` | Checkout block integration, no build step |
+
+## Self-check offline codes
+
+When a self-check run reaches OutlinePay, its id (`chk_...`) is the diagnostic code. When it does not (a staging copy, no connection, OutlinePay unreachable), the plugin shows `OP-OFFLINE-` followed by one letter per failed check, in this order. A letter never changes meaning. New checks get new letters at the end.
+
+| Letter | Check | Fails when |
+| --- | --- | --- |
+| A | `connection_saved` | No saved connection, or the credentials no longer decrypt |
+| B | `connection_status` | The installation is not connected (revoked: the payment provider acts) |
+| C | `api_reachable` | OutlinePay did not answer within 5 seconds, refused the token, or did not accept the run |
+| D | `scheduler_jobs` | Reconcile or method refresh is missing or more than an hour late |
+| E | `wp_cron` | `DISABLE_WP_CRON` is set and no scheduled action ran in 2 hours |
+| F | `methods_fresh` | Methods not fetched in 2 hours, or none shown at checkout |
+| G | `store_currency` | The store currency is not KRW |
+| H | `not_a_copy` | This site is a copy of the store (see `Site_Identity`) |
+| I | `versions` | PHP, WordPress or WooCommerce below the plugin header minimums, or HPOS compatibility not registered |
+
+An offline code always has at least one letter. With every local check green, it is `OP-OFFLINE-C`.
 
 ## Development
 
