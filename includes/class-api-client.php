@@ -219,6 +219,27 @@ class Api_Client {
 	}
 
 	/**
+	 * POST /self_checks: one self-check run. The server adds its own checks
+	 * (including a signed test call to this store's callback) and answers the
+	 * whole run.
+	 *
+	 * @param string $trigger page or daily.
+	 * @param array  $checks  List of array( code, ok, side, detail? ).
+	 * @return array The run: id (chk_...), failed_count, worst_side, checks.
+	 * @throws Api_Error On any refusal; 429 with rate_limited when a run happened in the last minute.
+	 */
+	public function create_self_check( $trigger, array $checks ) {
+		return $this->request(
+			'POST',
+			'/self_checks',
+			array(
+				'trigger' => (string) $trigger,
+				'checks'  => $checks,
+			)
+		);
+	}
+
+	/**
 	 * True for a payment id we are willing to put in a URL path.
 	 *
 	 * @param mixed $payment_id Candidate.

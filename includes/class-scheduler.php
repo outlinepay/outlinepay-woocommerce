@@ -1,7 +1,7 @@
 <?php
 /**
- * Background work on Action Scheduler: method refresh, reconciliation and the
- * one-time version report after an update.
+ * Background work on Action Scheduler: method refresh, reconciliation, the
+ * daily self-check and the one-time version report after an update.
  *
  * @package OutlinePay\WooCommerce
  */
@@ -21,8 +21,10 @@ final class Scheduler {
 	const HOOK_VERSIONS     = 'outlinepay_report_versions';
 	const HOOK_METHODS_NOW  = 'outlinepay_refresh_methods_now';
 	const HOOK_SWITCH_CHECK = 'outlinepay_switch_check';
+	const HOOK_SELF_CHECK   = 'outlinepay_daily_self_check';
 	const OPTION_CURSOR     = 'outlinepay_reconcile_cursor';
 	const OPTION_FAILURES   = 'outlinepay_reconcile_failures';
+	const OPTION_DAILY_AT   = 'outlinepay_self_check_offset';
 
 	const RECONCILE_INTERVAL = 900;
 	const METHODS_INTERVAL   = 3600;
@@ -31,6 +33,7 @@ final class Scheduler {
 	const DEPOSIT_GRACE      = 86400;
 	const QUERY_WINDOW       = 2592000;
 	const MAX_FAILURES       = 3;
+	const DAY                = 86400;
 
 	/**
 	 * Hooks the actions.
@@ -42,6 +45,7 @@ final class Scheduler {
 		add_action( self::HOOK_METHODS_NOW, array( self::class, 'refresh_methods' ) );
 		add_action( self::HOOK_RECONCILE, array( self::class, 'reconcile' ) );
 		add_action( self::HOOK_VERSIONS, array( self::class, 'report_versions' ) );
+		add_action( self::HOOK_SELF_CHECK, array( Self_Check::class, 'run_daily' ) );
 		add_action( 'init', array( self::class, 'maintain' ), 20 );
 	}
 
@@ -79,6 +83,37 @@ final class Scheduler {
 		if ( ! as_has_scheduled_action( self::HOOK_METHODS, array(), self::GROUP ) ) {
 			as_schedule_recurring_action( time() + self::METHODS_INTERVAL, self::METHODS_INTERVAL, self::HOOK_METHODS, array(), self::GROUP );
 		}
+		if ( ! as_has_scheduled_action( self::HOOK_SELF_CHECK, array(), self::GROUP ) ) {
+			as_schedule_recurring_action( self::next_daily_run( time(), self::daily_offset() ), self::DAY, self::HOOK_SELF_CHECK, array(), self::GROUP );
+		}
+	}
+
+	/**
+	 * Seconds after midnight UTC this store runs its daily self-check. Picked
+	 * at random once and kept, so stores do not all check at the same moment.
+	 *
+	 * @return int
+	 */
+	public static function daily_offset() {
+		$offset = get_option( self::OPTION_DAILY_AT, null );
+		if ( is_numeric( $offset ) && (int) $offset >= 0 && (int) $offset < self::DAY ) {
+			return (int) $offset;
+		}
+		$offset = wp_rand( 0, self::DAY - 1 );
+		update_option( self::OPTION_DAILY_AT, $offset, false );
+		return $offset;
+	}
+
+	/**
+	 * The next time of day $offset (seconds after midnight UTC) after $now. Pure.
+	 *
+	 * @param int $now    Unix time.
+	 * @param int $offset Seconds after midnight UTC.
+	 * @return int
+	 */
+	public static function next_daily_run( $now, $offset ) {
+		$run = $now - ( $now % self::DAY ) + $offset;
+		return $run > $now ? $run : $run + self::DAY;
 	}
 
 	/**
@@ -90,9 +125,18 @@ final class Scheduler {
 		if ( ! function_exists( 'as_unschedule_all_actions' ) ) {
 			return;
 		}
-		foreach ( array( self::HOOK_METHODS, self::HOOK_METHODS_NOW, self::HOOK_RECONCILE, self::HOOK_VERSIONS, self::HOOK_SWITCH_CHECK ) as $hook ) {
+		foreach ( self::hooks() as $hook ) {
 			as_unschedule_all_actions( $hook, array(), self::GROUP );
 		}
+	}
+
+	/**
+	 * Every hook this plugin schedules.
+	 *
+	 * @return string[]
+	 */
+	public static function hooks() {
+		return array( self::HOOK_METHODS, self::HOOK_METHODS_NOW, self::HOOK_RECONCILE, self::HOOK_VERSIONS, self::HOOK_SWITCH_CHECK, self::HOOK_SELF_CHECK );
 	}
 
 	/**

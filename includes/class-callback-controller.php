@@ -6,6 +6,10 @@
  * look: the payment is read back with GET /payments/:id and that answer is
  * what gets applied. The callback body itself is never applied.
  *
+ * The same address answers OutlinePay's self-check ping, a signed body
+ * {"type":"self_check","installation":"inst_...","sent_at":"..."}: it only
+ * proves the address is reachable and touches no order and no option.
+ *
  * @package OutlinePay\WooCommerce
  */
 
@@ -54,6 +58,13 @@ final class Callback_Controller {
 	private $copy_check;
 
 	/**
+	 * Returns the saved installation id (inst_...) or ''.
+	 *
+	 * @var callable
+	 */
+	private $installation_id;
+
+	/**
 	 * Constructor. All arguments are test seams with production defaults.
 	 *
 	 * @param callable|null $secret_provider Secret provider.
@@ -61,9 +72,14 @@ final class Callback_Controller {
 	 * @param callable|null $order_finder    Order finder.
 	 * @param callable|null $applier         Applier.
 	 * @param callable|null $copy_check      Copy check.
+	 * @param callable|null $installation_id Saved installation id.
 	 */
-	public function __construct( $secret_provider = null, $payment_reader = null, $order_finder = null, $applier = null, $copy_check = null ) {
+	public function __construct( $secret_provider = null, $payment_reader = null, $order_finder = null, $applier = null, $copy_check = null, $installation_id = null ) {
 		$this->copy_check      = $copy_check ? $copy_check : array( Site_Identity::class, 'is_copy' );
+		$this->installation_id = $installation_id ? $installation_id : static function () {
+			$installation = Settings::installation();
+			return isset( $installation['id'] ) && is_string( $installation['id'] ) ? $installation['id'] : '';
+		};
 		$this->secret_provider = $secret_provider ? $secret_provider : array( Credentials::class, 'signing_secret' );
 		$this->payment_reader  = $payment_reader ? $payment_reader : static function ( $payment_id ) {
 			return ( new Api_Client() )->get_payment( $payment_id );
@@ -130,7 +146,11 @@ final class Callback_Controller {
 			return self::answer( 200, 'ignored_copy' );
 		}
 
-		$payload    = json_decode( $body, true );
+		$payload = json_decode( $body, true );
+		if ( is_array( $payload ) && isset( $payload['type'] ) && 'self_check' === $payload['type'] ) {
+			return $this->self_check( $payload );
+		}
+
 		$payment_id = is_array( $payload ) && isset( $payload['id'] ) ? $payload['id'] : null;
 		$order_id   = is_array( $payload ) && isset( $payload['order_id'] ) && is_scalar( $payload['order_id'] ) ? (string) $payload['order_id'] : '';
 		if ( ! Api_Client::valid_payment_id( $payment_id ) || ! preg_match( '/^\d{1,20}$/', $order_id ) ) {
@@ -164,6 +184,26 @@ final class Callback_Controller {
 			return self::answer( 503, 'retry_later' );
 		}
 		return self::answer( 200, 'received' );
+	}
+
+	/**
+	 * Answers a signed self-check ping: 200 {"ok":true} when it names this
+	 * store's installation. Nothing else happens.
+	 *
+	 * @param array $payload Decoded body.
+	 * @return array
+	 */
+	private function self_check( array $payload ) {
+		$saved = (string) call_user_func( $this->installation_id );
+		$named = isset( $payload['installation'] ) && is_string( $payload['installation'] ) ? $payload['installation'] : '';
+		if ( '' === $saved || ! hash_equals( $saved, $named ) ) {
+			Logger::warning( 'Self-check ping for another installation' );
+			return self::answer( 400, 'wrong_installation' );
+		}
+		return array(
+			'status' => 200,
+			'body'   => array( 'ok' => true ),
+		);
 	}
 
 	/**

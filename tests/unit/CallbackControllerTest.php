@@ -29,7 +29,7 @@ class CallbackControllerTest extends TestCase {
 		);
 	}
 
-	private function controller( $secret = self::SECRET, $reader = null, $order = 'order-42', $decision = Order_Sync::COMPLETE, $copy = false ) {
+	private function controller( $secret = self::SECRET, $reader = null, $order = 'order-42', $decision = Order_Sync::COMPLETE, $copy = false, $installation = 'inst_abc' ) {
 		$reads   = &$this->reads;
 		$applied = &$this->applied;
 		return new Callback_Controller(
@@ -52,7 +52,20 @@ class CallbackControllerTest extends TestCase {
 			},
 			static function () use ( $copy ) {
 				return $copy;
+			},
+			static function () use ( $installation ) {
+				return $installation;
 			}
+		);
+	}
+
+	private static function ping( $installation = 'inst_abc' ) {
+		return json_encode(
+			array(
+				'type'         => 'self_check',
+				'installation' => $installation,
+				'sent_at'      => '2026-10-16T01:02:03Z',
+			)
 		);
 	}
 
@@ -151,5 +164,47 @@ class CallbackControllerTest extends TestCase {
 	public function test_a_copy_still_rejects_a_bad_signature() {
 		$result = $this->controller( self::SECRET, null, 'order-42', Order_Sync::COMPLETE, true )->process( $this->body(), 't=1,v1=00', self::NOW );
 		$this->assertSame( 401, $result['status'] );
+	}
+
+	public function test_a_signed_self_check_ping_for_this_installation_answers_ok_and_touches_nothing() {
+		$body   = self::ping();
+		$result = $this->controller()->process( $body, Signature::header( self::SECRET, $body, self::NOW ), self::NOW );
+		$this->assertSame( 200, $result['status'] );
+		$this->assertSame( array( 'ok' => true ), $result['body'] );
+		$this->assertSame( array(), $this->reads, 'no call to OutlinePay' );
+		$this->assertSame( array(), $this->applied, 'no order change' );
+	}
+
+	public function test_a_self_check_ping_for_another_installation_is_400() {
+		$body   = self::ping( 'inst_other' );
+		$result = $this->controller()->process( $body, Signature::header( self::SECRET, $body, self::NOW ), self::NOW );
+		$this->assertSame( 400, $result['status'] );
+		$this->assertSame( array(), $this->reads );
+	}
+
+	public function test_a_self_check_ping_without_an_installation_id_is_400() {
+		$body   = json_encode( array( 'type' => 'self_check' ) );
+		$result = $this->controller()->process( $body, Signature::header( self::SECRET, $body, self::NOW ), self::NOW );
+		$this->assertSame( 400, $result['status'] );
+	}
+
+	public function test_a_self_check_ping_when_no_installation_is_saved_is_400() {
+		$body   = self::ping();
+		$result = $this->controller( self::SECRET, null, 'order-42', Order_Sync::COMPLETE, false, '' )->process( $body, Signature::header( self::SECRET, $body, self::NOW ), self::NOW );
+		$this->assertSame( 400, $result['status'] );
+	}
+
+	public function test_a_self_check_ping_with_a_bad_signature_gets_the_usual_refusal() {
+		$body   = self::ping();
+		$result = $this->controller()->process( $body, Signature::header( 'olp_isec_wrong', $body, self::NOW ), self::NOW );
+		$this->assertSame( 401, $result['status'] );
+		$this->assertSame( 'invalid_signature', $result['body']['result'] );
+	}
+
+	public function test_a_copy_answers_a_self_check_ping_as_copies_answer() {
+		$body   = self::ping();
+		$result = $this->controller( self::SECRET, null, 'order-42', Order_Sync::COMPLETE, true )->process( $body, Signature::header( self::SECRET, $body, self::NOW ), self::NOW );
+		$this->assertSame( 200, $result['status'] );
+		$this->assertSame( 'ignored_copy', $result['body']['result'] );
 	}
 }

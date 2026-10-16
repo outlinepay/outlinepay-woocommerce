@@ -87,6 +87,9 @@ final class Settings {
 		delete_option( Scheduler::OPTION_CURSOR );
 		delete_option( Scheduler::OPTION_FAILURES );
 		delete_option( Site_Identity::OPTION );
+		delete_option( Self_Check::OPTION_LAST );
+		delete_option( Self_Check::OPTION_DAILY );
+		delete_option( Self_Check::OPTION_EMAILED_AT );
 	}
 
 	/**

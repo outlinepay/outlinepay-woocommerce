@@ -51,7 +51,7 @@ class ApiClientTest extends TestCase {
 		$this->assertSame( 'GET', $request['method'] );
 		$this->assertSame( self::BASE . '/payments/ppay_abc', $request['url'] );
 		$this->assertSame( 'Bearer ' . self::TOKEN, $request['headers']['Authorization'] );
-		$this->assertSame( 'OutlinePay-WooCommerce/0.1.0', $request['headers']['User-Agent'] );
+		$this->assertSame( 'OutlinePay-WooCommerce/' . OUTLINEPAY_VERSION, $request['headers']['User-Agent'] );
 		$this->assertSame( 20, $request['timeout'] );
 		$this->assertNull( $request['body'] );
 	}
