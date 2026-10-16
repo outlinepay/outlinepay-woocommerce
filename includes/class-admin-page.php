@@ -1,6 +1,7 @@
 <?php
 /**
- * WooCommerce > OutlinePay: connect, status, method switches, disconnect.
+ * WooCommerce > OutlinePay: connect, status, self-check, method switches,
+ * disconnect.
  *
  * Nothing on this page calls OutlinePay until the merchant connects.
  *
@@ -18,6 +19,14 @@ final class Admin_Page {
 
 	const SLUG       = 'outlinepay';
 	const CAPABILITY = 'manage_woocommerce';
+	const SCRIPT     = 'outlinepay-admin';
+
+	/**
+	 * The page's hook suffix, set when the menu is added.
+	 *
+	 * @var string
+	 */
+	private static $hook_suffix = '';
 
 	/**
 	 * Hooks the page and its form handlers.
@@ -31,6 +40,9 @@ final class Admin_Page {
 		add_action( 'admin_post_outlinepay_methods', array( self::class, 'save_methods' ) );
 		add_action( 'admin_post_outlinepay_copy_separate', array( self::class, 'copy_separate' ) );
 		add_action( 'admin_post_outlinepay_copy_moved', array( self::class, 'copy_moved' ) );
+		add_action( 'admin_post_outlinepay_self_check', array( self::class, 'self_check' ) );
+		add_action( 'admin_post_outlinepay_self_check_email', array( self::class, 'save_self_check_email' ) );
+		add_action( 'admin_enqueue_scripts', array( self::class, 'enqueue' ) );
 		add_action( 'admin_notices', array( self::class, 'copy_notice' ) );
 		add_action( 'admin_init', array( Site_Identity::class, 'ensure_saved' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( OUTLINEPAY_PLUGIN_FILE ), array( self::class, 'action_links' ) );
@@ -52,7 +64,7 @@ final class Admin_Page {
 	 * @return void
 	 */
 	public static function menu() {
-		add_submenu_page(
+		self::$hook_suffix = (string) add_submenu_page(
 			'woocommerce',
 			__( 'OutlinePay', 'outlinepay-for-woocommerce' ),
 			__( 'OutlinePay', 'outlinepay-for-woocommerce' ),
@@ -60,6 +72,19 @@ final class Admin_Page {
 			self::SLUG,
 			array( self::class, 'render' )
 		);
+	}
+
+	/**
+	 * The copy-code script, on this page only. Plain script, no build step.
+	 *
+	 * @param string $hook_suffix Current admin page.
+	 * @return void
+	 */
+	public static function enqueue( $hook_suffix ) {
+		if ( '' === self::$hook_suffix || self::$hook_suffix !== $hook_suffix ) {
+			return;
+		}
+		wp_enqueue_script( self::SCRIPT, plugins_url( 'assets/js/admin.js', OUTLINEPAY_PLUGIN_FILE ), array(), OUTLINEPAY_VERSION, true );
 	}
 
 	/**
@@ -248,6 +273,32 @@ final class Admin_Page {
 	}
 
 	/**
+	 * "Run check": runs the self-check with trigger page and comes back to
+	 * the page, which shows the stored result.
+	 *
+	 * @return void
+	 */
+	public static function self_check() {
+		self::require_capability();
+		check_admin_referer( 'outlinepay_self_check' );
+		$outcome = ( new Self_Check() )->run( Self_Check::TRIGGER_PAGE );
+		self::back( $outcome['rate_limited'] ? 'self_check_rate_limited' : 'self_check_done' );
+	}
+
+	/**
+	 * Saves "Email me when a daily check fails".
+	 *
+	 * @return void
+	 */
+	public static function save_self_check_email() {
+		self::require_capability();
+		check_admin_referer( 'outlinepay_self_check_email' );
+		$on = isset( $_POST['outlinepay_self_check_email'] ) && 'yes' === sanitize_key( wp_unslash( $_POST['outlinepay_self_check_email'] ) );
+		update_option( Self_Check::OPTION_EMAIL, $on ? 'yes' : 'no', false );
+		self::back( 'self_check_email_saved' );
+	}
+
+	/**
 	 * Handles the method switches.
 	 *
 	 * @return void
@@ -297,12 +348,14 @@ final class Admin_Page {
 
 		if ( $is_copy ) {
 			self::render_copy_banner();
+			self::render_self_check();
 			echo '</div>';
 			return;
 		}
 
 		$status = isset( $installation['status'] ) ? (string) $installation['status'] : '';
 		self::render_status( $installation );
+		self::render_self_check();
 
 		if ( 'connected' === $status ) {
 			if ( 'KRW' !== get_woocommerce_currency() ) {
@@ -402,6 +455,84 @@ final class Admin_Page {
 	}
 
 	/**
+	 * The self-check: the last stored result, the code to send to the
+	 * provider, the Run check button and the email option.
+	 *
+	 * @return void
+	 */
+	private static function render_self_check() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only: picks one of the fixed messages below.
+		$notice = isset( $_GET['outlinepay_result'] ) ? sanitize_key( wp_unslash( $_GET['outlinepay_result'] ) ) : '';
+		$last   = Self_Check::last();
+
+		echo '<h2 id="outlinepay-self-check">' . esc_html__( 'Self-check', 'outlinepay-for-woocommerce' ) . '</h2>';
+		echo '<p>' . esc_html__( 'Checks the connection between this store, OutlinePay and your payment provider. No shopper or order details are checked or sent.', 'outlinepay-for-woocommerce' ) . '</p>';
+
+		if ( 'self_check_rate_limited' === $notice ) {
+			echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'A check ran less than a minute ago.', 'outlinepay-for-woocommerce' ) . '</p></div>';
+		}
+
+		if ( $last ) {
+			echo '<div class="outlinepay-check-code" style="margin:12px 0;padding:12px 16px;background:#fff;border:1px solid #c3c4c7;border-left:4px solid ' . ( 0 === (int) $last['failed_count'] ? '#00a32a' : '#d63638' ) . ';max-width:640px;box-sizing:border-box">';
+			echo '<p style="margin:0 0 4px">' . esc_html__( 'Diagnostic code', 'outlinepay-for-woocommerce' ) . '</p>';
+			echo '<p style="margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:8px"><code id="outlinepay-check-code" style="font-size:20px;padding:4px 8px;user-select:all">' . esc_html( $last['code'] ) . '</code>';
+			echo '<button type="button" class="button" id="outlinepay-copy-code" data-target="outlinepay-check-code" data-copied="' . esc_attr__( 'Copied', 'outlinepay-for-woocommerce' ) . '" data-manual="' . esc_attr__( 'Selected. Press Ctrl+C to copy.', 'outlinepay-for-woocommerce' ) . '">' . esc_html__( 'Copy', 'outlinepay-for-woocommerce' ) . '</button>';
+			echo '<span id="outlinepay-copy-status" aria-live="polite"></span></p>';
+			echo '<p style="margin:8px 0 0">' . esc_html__( 'Send this code to your payment provider if you need help.', 'outlinepay-for-woocommerce' ) . '</p>';
+			echo '<p style="margin:4px 0 0;color:#50575e">' . esc_html(
+				sprintf(
+					/* translators: %s: date and time of the last check. */
+					'daily' === $last['trigger'] ? __( 'Last run %s (daily check).', 'outlinepay-for-woocommerce' ) : __( 'Last run %s.', 'outlinepay-for-woocommerce' ),
+					wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) $last['ran_at'] )
+				)
+			);
+			if ( empty( $last['online'] ) ) {
+				echo ' ' . esc_html__( 'OutlinePay was not reached, so this code was made on this site.', 'outlinepay-for-woocommerce' );
+			}
+			echo '</p></div>';
+
+			echo '<table class="widefat striped outlinepay-checks" style="max-width:640px"><thead><tr>';
+			echo '<th scope="col" style="width:70px">' . esc_html__( 'Result', 'outlinepay-for-woocommerce' ) . '</th>';
+			echo '<th scope="col">' . esc_html__( 'Check', 'outlinepay-for-woocommerce' ) . '</th>';
+			echo '<th scope="col" style="width:150px">' . esc_html__( 'Who acts next', 'outlinepay-for-woocommerce' ) . '</th>';
+			echo '</tr></thead><tbody>';
+			foreach ( $last['checks'] as $check ) {
+				$ok = ! empty( $check['ok'] );
+				echo '<tr class="' . ( $ok ? 'outlinepay-check-ok' : 'outlinepay-check-failed' ) . '">';
+				echo '<td>' . ( $ok
+					? '<span aria-hidden="true" style="color:#00a32a;font-weight:600">&#10003;</span> ' . esc_html__( 'Pass', 'outlinepay-for-woocommerce' )
+					: '<span aria-hidden="true" style="color:#d63638;font-weight:600">&#10007;</span> <strong>' . esc_html__( 'Fail', 'outlinepay-for-woocommerce' ) . '</strong>' ) . '</td>';
+				echo '<td>' . esc_html( Self_Check::sentence( $check ) ) . '</td>';
+				echo '<td>' . ( $ok ? '' : esc_html( Self_Check::who( isset( $check['side'] ) ? $check['side'] : 'unknown' ) ) ) . '</td>';
+				echo '</tr>';
+			}
+			echo '</tbody></table>';
+		} else {
+			echo '<p>' . esc_html__( 'No check has run yet.', 'outlinepay-for-woocommerce' ) . '</p>';
+		}
+
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		wp_nonce_field( 'outlinepay_self_check' );
+		echo '<input type="hidden" name="action" value="outlinepay_self_check">';
+		submit_button( __( 'Run check', 'outlinepay-for-woocommerce' ), 'secondary', 'outlinepay_run_check', true );
+		echo '</form>';
+
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		wp_nonce_field( 'outlinepay_self_check_email' );
+		echo '<input type="hidden" name="action" value="outlinepay_self_check_email">';
+		echo '<p><label><input type="checkbox" name="outlinepay_self_check_email" value="yes"' . checked( Self_Check::email_enabled(), true, false ) . '> ';
+		echo esc_html(
+			sprintf(
+				/* translators: %s: the site admin email address. */
+				__( 'Email me when a daily check fails (to %s)', 'outlinepay-for-woocommerce' ),
+				(string) get_option( 'admin_email' )
+			)
+		) . '</label> ';
+		submit_button( __( 'Save', 'outlinepay-for-woocommerce' ), 'secondary', 'outlinepay_save_email', false );
+		echo '</p></form>';
+	}
+
+	/**
 	 * The method switches.
 	 *
 	 * @return void
@@ -477,19 +608,21 @@ final class Admin_Page {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only: picks one of the fixed messages below.
 		$result   = isset( $_GET['outlinepay_result'] ) ? sanitize_key( wp_unslash( $_GET['outlinepay_result'] ) ) : '';
 		$messages = array(
-			'connected'             => array( 'success', __( 'Your store is connected.', 'outlinepay-for-woocommerce' ) ),
-			'disconnected'          => array( 'success', __( 'Your store is disconnected.', 'outlinepay-for-woocommerce' ) ),
-			'methods_saved'         => array( 'success', __( 'Payment methods saved.', 'outlinepay-for-woocommerce' ) ),
-			'code_missing'          => array( 'error', __( 'Enter the connect code from your payment provider.', 'outlinepay-for-woocommerce' ) ),
-			'code_invalid'          => array( 'error', __( 'This connect code is not valid. It may have expired or already been used. Ask your payment provider for a new code.', 'outlinepay-for-woocommerce' ) ),
-			'site_refused'          => array( 'error', __( 'OutlinePay could not accept this store\'s address. The store must be reachable over HTTPS from the internet.', 'outlinepay-for-woocommerce' ) ),
-			'rate_limited'          => array( 'error', __( 'Too many connect attempts. Wait a minute and try again.', 'outlinepay-for-woocommerce' ) ),
-			'unreachable'           => array( 'error', __( 'OutlinePay could not be reached. Check that this server can make outgoing HTTPS requests, then try again.', 'outlinepay-for-woocommerce' ) ),
-			'connect_failed'        => array( 'error', __( 'The store could not be connected. Try again in a moment.', 'outlinepay-for-woocommerce' ) ),
-			'copy_cleared'          => array( 'success', __( 'The copied connection is removed from this site. Your live store keeps working.', 'outlinepay-for-woocommerce' ) ),
-			'copy_none'             => array( 'error', __( 'This site no longer looks like a copy. Nothing changed.', 'outlinepay-for-woocommerce' ) ),
-			'moved'                 => array( 'success', __( 'This address is saved as your store. Payments are back on.', 'outlinepay-for-woocommerce' ) ),
-			'moved_callback_failed' => array( 'warning', __( 'This address is saved as your store and payments are back on. OutlinePay could not be told the new address yet. Open this page again later to retry.', 'outlinepay-for-woocommerce' ) ),
+			'connected'              => array( 'success', __( 'Your store is connected.', 'outlinepay-for-woocommerce' ) ),
+			'disconnected'           => array( 'success', __( 'Your store is disconnected.', 'outlinepay-for-woocommerce' ) ),
+			'methods_saved'          => array( 'success', __( 'Payment methods saved.', 'outlinepay-for-woocommerce' ) ),
+			'code_missing'           => array( 'error', __( 'Enter the connect code from your payment provider.', 'outlinepay-for-woocommerce' ) ),
+			'code_invalid'           => array( 'error', __( 'This connect code is not valid. It may have expired or already been used. Ask your payment provider for a new code.', 'outlinepay-for-woocommerce' ) ),
+			'site_refused'           => array( 'error', __( 'OutlinePay could not accept this store\'s address. The store must be reachable over HTTPS from the internet.', 'outlinepay-for-woocommerce' ) ),
+			'rate_limited'           => array( 'error', __( 'Too many connect attempts. Wait a minute and try again.', 'outlinepay-for-woocommerce' ) ),
+			'unreachable'            => array( 'error', __( 'OutlinePay could not be reached. Check that this server can make outgoing HTTPS requests, then try again.', 'outlinepay-for-woocommerce' ) ),
+			'connect_failed'         => array( 'error', __( 'The store could not be connected. Try again in a moment.', 'outlinepay-for-woocommerce' ) ),
+			'copy_cleared'           => array( 'success', __( 'The copied connection is removed from this site. Your live store keeps working.', 'outlinepay-for-woocommerce' ) ),
+			'copy_none'              => array( 'error', __( 'This site no longer looks like a copy. Nothing changed.', 'outlinepay-for-woocommerce' ) ),
+			'moved'                  => array( 'success', __( 'This address is saved as your store. Payments are back on.', 'outlinepay-for-woocommerce' ) ),
+			'moved_callback_failed'  => array( 'warning', __( 'This address is saved as your store and payments are back on. OutlinePay could not be told the new address yet. Open this page again later to retry.', 'outlinepay-for-woocommerce' ) ),
+			'self_check_done'        => array( 'success', __( 'The check finished. The results are below.', 'outlinepay-for-woocommerce' ) ),
+			'self_check_email_saved' => array( 'success', __( 'Email setting saved.', 'outlinepay-for-woocommerce' ) ),
 		);
 		if ( ! isset( $messages[ $result ] ) ) {
 			return;
