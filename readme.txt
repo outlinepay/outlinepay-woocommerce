@@ -4,7 +4,7 @@ Tags: payments, korea, krw, virtual account, woocommerce
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.2.0
+Stable tag: 0.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -32,9 +32,13 @@ What the plugin does:
 * Shows each enabled method at checkout. You can hide any method. You cannot add one your provider has not enabled.
 * Works with the Checkout block and the classic checkout.
 * Marks an order paid only after OutlinePay confirms the payment, for the exact order total.
-* Puts a virtual account order on hold and shows the bank, account number and deadline on the thank-you page and in the order email. The order moves to processing when the deposit arrives.
+* Puts a virtual account order on hold and shows the bank, account number and deadline on the thank-you page, the shopper's order page and in the order email. The order moves to processing when the deposit arrives.
 * Checks unpaid orders every 15 minutes, so a payment is not missed when the shopper closes the window early.
 * Marks test payments as test payments in order notes and on the order screen.
+* Refunds from the order screen with WooCommerce's Refund button, once your payment provider turns refunds on for your store. Card, foreign card, bank transfer, KakaoPay and NaverPay payments can be refunded. Partial refunds work for card payments only.
+* Adds refunds made in your payment provider's dashboard to the order, so WooCommerce shows the same refunded total.
+* Can let shoppers cancel their own paid orders from My Account. Cancelling refunds the full payment and cancels the order. Off until you turn on "Let shoppers cancel their own paid orders".
+* Shows a "View card receipt" link for card payments on the order screen, the thank-you page, the shopper's order page and the completed-order email.
 * Supports High-Performance Order Storage (HPOS).
 * Checks its own setup. The Self-check on the OutlinePay page shows each check, who needs to act when one fails, and a diagnostic code to send to your payment provider. It also runs once a day.
 * Can email the site admin address when a daily check starts failing. Off until you turn on "Email me when a daily check fails".
@@ -70,9 +74,19 @@ Your payment provider decides whether a connection is in test mode or live mode.
 
 No. Deactivating stops background checks but keeps the connection. Use the Disconnect button to disconnect. Deleting the plugin also disconnects the store.
 
-= How do I refund a payment? =
+= How do refunds work? =
 
-Refund it in your payment provider's dashboard. This version does not refund from WooCommerce.
+When your payment provider has turned refunds on for your store, open the order and use WooCommerce's Refund button. The refund goes to your payment provider through OutlinePay. Card, foreign card, bank transfer, KakaoPay and NaverPay payments can be refunded. Partial refunds work for card payments only. Your payment provider sets a daily refund limit for your store.
+
+Sometimes the payment provider takes a moment to confirm a refund. WooCommerce then shows a message, and the refund appears on the order by itself once it is confirmed.
+
+Virtual account and mobile carrier billing payments cannot be refunded from WooCommerce. Refund them in your payment provider's dashboard. A refund made there also appears on the order.
+
+The Connection table on the OutlinePay page shows whether refunds are on.
+
+= Can shoppers cancel their orders? =
+
+Only if you turn on "Let shoppers cancel their own paid orders" on the OutlinePay page and choose the order statuses. The shopper then sees "Cancel order" on their order in My Account until anything is refunded. Cancelling refunds the full payment and sets the order to Cancelled.
 
 = What happens on a staging copy of my store? =
 
@@ -84,7 +98,7 @@ The Self-check shows a code. Send it to your payment provider when you need help
 
 = Where are the logs? =
 
-In WooCommerce > Status > Logs, under the source "outlinepay". The logs hold order ids, payment ids, statuses and error codes. They never hold shopper details or credentials.
+In WooCommerce > Status > Logs, under the source "outlinepay". The logs hold order ids, payment ids, refund ids, amounts, statuses and error codes. They never hold shopper details or credentials.
 
 == External services ==
 
@@ -100,6 +114,9 @@ What is sent, and when:
 * Once after each plugin update: the same version numbers.
 * When a shopper clicks to pay: the order id, order number, total, currency, chosen method and the address to return the shopper to. Also the shopper's billing name, email, phone and address. OutlinePay passes these to your payment provider to open the payment window and does not store them.
 * To check a payment: the order id and payment id. This happens when the shopper returns, when OutlinePay notifies your store, every 15 minutes for recent unpaid orders, and before WooCommerce cancels an unpaid order.
+* When you refund an order from the order screen: the payment id, the amount and WooCommerce's refund id. The refund reason stays in WooCommerce.
+* When a shopper cancels their own order (only if you turned this on): the payment id, the order total and a refund id made from the order id. No shopper details.
+* To check a refund that your payment provider has not confirmed yet: the refund id. This happens when OutlinePay notifies your store and every 15 minutes until it is confirmed.
 * When a shopper finishes an order with another payment method after opening an OutlinePay payment: the order id, and a request to close the open OutlinePay payment.
 * Every hour: a request for the methods your provider has enabled.
 * When you open the OutlinePay page: a request for the connection status and the enabled methods. If your store's notification address has changed, the new address is sent.
@@ -120,6 +137,14 @@ CookiePay is the payment provider that takes the payment. The shopper is sent to
 CookiePay privacy policy: https://www.cookiepayments.com/terms/private
 
 == Changelog ==
+
+= 0.3.0 =
+* Refund from the order screen with WooCommerce's Refund button, when your payment provider turns refunds on.
+* Refunds made in the payment provider's dashboard, and refunds the provider confirms later, are added to the order.
+* Optional "Cancel order" for shoppers in My Account. It refunds the full payment and cancels the order. Off by default.
+* "View card receipt" link for card payments.
+* Virtual account details on the shopper's My Account order page.
+* The Connection table shows whether refunds are on.
 
 = 0.2.0 =
 * Self-check on the OutlinePay page: each check with who needs to act, a diagnostic code with a Copy button, and the last result kept on the page.

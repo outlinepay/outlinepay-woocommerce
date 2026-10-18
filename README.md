@@ -20,9 +20,12 @@ OutlinePay is operated by Arandu Payments LLC.
 | `includes/class-api-client.php` | HTTP client for the OutlinePay plugin API |
 | `includes/class-gateway.php` | One gateway class, one instance per method (`outlinepay_<method>`) |
 | `includes/class-order-sync.php` | The one place a payment becomes an order change |
+| `includes/class-refunds.php` | Refund button, and refunds made elsewhere added to the order |
+| `includes/class-shopper-cancel.php` | Optional "Cancel order" for shoppers in My Account |
+| `includes/class-order-display.php` | Deposit details, card receipt link and test payment line |
 | `includes/class-return-handler.php` | Shopper return (`?wc-api=outlinepay_return`) |
 | `includes/class-callback-controller.php` | Signed callback (`POST /wp-json/outlinepay/v1/callback`) |
-| `includes/class-scheduler.php` | Action Scheduler jobs: method refresh, reconcile, daily self-check, version report |
+| `includes/class-scheduler.php` | Action Scheduler jobs: method refresh, reconcile (payments and unconfirmed refunds), daily self-check, version report |
 | `includes/class-self-check.php` | Self-check engine: local checks, the run against OutlinePay, offline codes, the stored result |
 | `includes/class-self-check-mail.php` | Opt-in email when a daily self-check starts failing |
 | `includes/class-site-health.php` | Site Health test "OutlinePay connection" |
