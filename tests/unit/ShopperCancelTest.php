@@ -139,6 +139,15 @@ class ShopperCancelTest extends RefundTestCase {
 		$this->assertSame( array( 'view' => array() ), Shopper_Cancel::list_action( array( 'view' => array() ), $this->order ) );
 	}
 
+	public function test_the_order_page_shows_only_the_form_not_a_second_cancel_link() {
+		Functions\when( 'is_wc_endpoint_url' )->alias(
+			static function ( $endpoint ) {
+				return 'view-order' === $endpoint;
+			}
+		);
+		$this->assertSame( array(), Shopper_Cancel::list_action( array(), $this->order ) );
+	}
+
 	public function test_woocommerce_native_cancel_is_removed_and_refused_for_a_paid_outlinepay_order() {
 		$native = array(
 			'view'   => array( 'url' => 'v' ),

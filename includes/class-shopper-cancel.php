@@ -140,6 +140,10 @@ final class Shopper_Cancel {
 		if ( ! self::can_cancel( $order, get_current_user_id() ) ) {
 			return $actions;
 		}
+		if ( function_exists( 'is_wc_endpoint_url' ) && is_wc_endpoint_url( 'view-order' ) ) {
+			// The order page carries the form itself. A second Cancel there would only jump to it.
+			return $actions;
+		}
 		$actions['outlinepay-cancel'] = array(
 			'url'        => $order->get_view_order_url() . '#outlinepay-cancel',
 			'name'       => self::label(),
@@ -165,7 +169,8 @@ final class Shopper_Cancel {
 		echo '<form method="post" action="' . esc_url( $order->get_view_order_url() ) . '" onsubmit="return window.confirm(\'' . esc_js( $confirm ) . '\');">';
 		wp_nonce_field( self::nonce_action( $order->get_id() ), self::NONCE );
 		echo '<input type="hidden" name="' . esc_attr( self::FIELD ) . '" value="' . esc_attr( (string) $order->get_id() ) . '">';
-		echo '<button type="submit" class="woocommerce-button button outlinepay-cancel-button">' . esc_html( self::label() ) . '</button>';
+		$theme_class = function_exists( 'wc_wp_theme_get_element_class_name' ) ? (string) wc_wp_theme_get_element_class_name( 'button' ) : '';
+		echo '<button type="submit" class="' . esc_attr( trim( 'woocommerce-button button outlinepay-cancel-button ' . $theme_class ) ) . '">' . esc_html( self::label() ) . '</button>';
 		echo '</form>';
 		echo '</section>';
 	}
