@@ -42,6 +42,7 @@ final class Admin_Page {
 		add_action( 'admin_post_outlinepay_copy_moved', array( self::class, 'copy_moved' ) );
 		add_action( 'admin_post_outlinepay_self_check', array( self::class, 'self_check' ) );
 		add_action( 'admin_post_outlinepay_self_check_email', array( self::class, 'save_self_check_email' ) );
+		add_action( 'admin_post_outlinepay_shopper_cancel', array( self::class, 'save_shopper_cancel' ) );
 		add_action( 'admin_enqueue_scripts', array( self::class, 'enqueue' ) );
 		add_action( 'admin_notices', array( self::class, 'copy_notice' ) );
 		add_action( 'admin_init', array( Site_Identity::class, 'ensure_saved' ) );
@@ -299,6 +300,20 @@ final class Admin_Page {
 	}
 
 	/**
+	 * Saves "Let shoppers cancel their own paid orders" and its statuses.
+	 *
+	 * @return void
+	 */
+	public static function save_shopper_cancel() {
+		self::require_capability();
+		check_admin_referer( 'outlinepay_shopper_cancel' );
+		$on       = isset( $_POST['outlinepay_cancel_enabled'] ) && 'yes' === sanitize_key( wp_unslash( $_POST['outlinepay_cancel_enabled'] ) );
+		$statuses = isset( $_POST['outlinepay_cancel_statuses'] ) && is_array( $_POST['outlinepay_cancel_statuses'] ) ? array_map( 'sanitize_key', wp_unslash( $_POST['outlinepay_cancel_statuses'] ) ) : array();
+		Settings::save_shopper_cancel( $on, $statuses );
+		self::back( 'shopper_cancel_saved' );
+	}
+
+	/**
 	 * Handles the method switches.
 	 *
 	 * @return void
@@ -368,6 +383,7 @@ final class Admin_Page {
 				) . '</p></div>';
 			}
 			self::render_methods();
+			self::render_shopper_cancel();
 		} else {
 			echo '<div class="notice notice-error inline"><p>' . esc_html__( 'OutlinePay no longer accepts this store\'s connection. Payments are off. Ask your payment provider for a new connect code, then disconnect and connect again.', 'outlinepay-for-woocommerce' ) . '</p></div>';
 		}
@@ -448,6 +464,7 @@ final class Admin_Page {
 		self::row( __( 'Mode', 'outlinepay-for-woocommerce' ), Settings::is_test_mode() ? __( 'Test. No real money moves.', 'outlinepay-for-woocommerce' ) : __( 'Live', 'outlinepay-for-woocommerce' ) );
 		self::row( __( 'Payment provider', 'outlinepay-for-woocommerce' ), self::provider_name( isset( $installation['provider'] ) ? (string) $installation['provider'] : '' ) );
 		self::row( __( 'Installation', 'outlinepay-for-woocommerce' ), isset( $installation['id'] ) ? (string) $installation['id'] : '' );
+		self::row( __( 'Refunds', 'outlinepay-for-woocommerce' ), self::refunds_on( $installation ) ? __( 'On', 'outlinepay-for-woocommerce' ) : __( 'Off', 'outlinepay-for-woocommerce' ) );
 		if ( ! empty( $installation['connected_at'] ) ) {
 			self::row( __( 'Connected since', 'outlinepay-for-woocommerce' ), Order_Display::deadline( (string) $installation['connected_at'] ) );
 		}
@@ -530,6 +547,50 @@ final class Admin_Page {
 		) . '</label> ';
 		submit_button( __( 'Save', 'outlinepay-for-woocommerce' ), 'secondary', 'outlinepay_save_email', false );
 		echo '</p></form>';
+	}
+
+	/**
+	 * Whether the payment provider turned refunds on for this store.
+	 *
+	 * @param array $installation Installation summary.
+	 * @return bool
+	 */
+	private static function refunds_on( array $installation ) {
+		if ( isset( $installation['refunds_enabled'] ) ) {
+			return true === $installation['refunds_enabled'];
+		}
+		return Settings::refunds_permitted();
+	}
+
+	/**
+	 * The shopper cancel setting.
+	 *
+	 * @return void
+	 */
+	private static function render_shopper_cancel() {
+		$setting = Settings::shopper_cancel();
+		$labels  = array(
+			'processing' => __( 'Processing', 'outlinepay-for-woocommerce' ),
+			'on-hold'    => __( 'On hold', 'outlinepay-for-woocommerce' ),
+		);
+		echo '<h2>' . esc_html__( 'Refunds and cancellations', 'outlinepay-for-woocommerce' ) . '</h2>';
+		if ( Settings::refunds_permitted() ) {
+			echo '<p>' . esc_html__( 'Refund card, foreign card, bank transfer, KakaoPay and NaverPay payments from the order screen with the Refund button. Partial refunds work for card payments only. Refund other payments in your payment provider\'s dashboard.', 'outlinepay-for-woocommerce' ) . '</p>';
+		} else {
+			echo '<p>' . esc_html__( 'Your payment provider has not turned on refunds for this store. Refund payments in your payment provider\'s dashboard. Shoppers cannot cancel paid orders until refunds are on.', 'outlinepay-for-woocommerce' ) . '</p>';
+		}
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		wp_nonce_field( 'outlinepay_shopper_cancel' );
+		echo '<input type="hidden" name="action" value="outlinepay_shopper_cancel">';
+		echo '<p><label><input type="checkbox" name="outlinepay_cancel_enabled" value="yes"' . checked( $setting['enabled'], true, false ) . '> ' . esc_html__( 'Let shoppers cancel their own paid orders', 'outlinepay-for-woocommerce' ) . '</label></p>';
+		echo '<p>' . esc_html__( 'Shoppers see "Cancel order" in My Account when the order has one of these statuses and nothing was refunded yet. Cancelling refunds the full payment and cancels the order.', 'outlinepay-for-woocommerce' ) . '</p>';
+		echo '<fieldset><legend class="screen-reader-text">' . esc_html__( 'Order statuses shoppers can cancel', 'outlinepay-for-woocommerce' ) . '</legend>';
+		foreach ( Settings::CANCEL_STATUSES as $status ) {
+			echo '<label style="margin-right:16px"><input type="checkbox" name="outlinepay_cancel_statuses[]" value="' . esc_attr( $status ) . '"' . checked( in_array( $status, $setting['statuses'], true ), true, false ) . '> ' . esc_html( $labels[ $status ] ) . '</label>';
+		}
+		echo '</fieldset>';
+		submit_button( __( 'Save', 'outlinepay-for-woocommerce' ), 'secondary', 'outlinepay_save_cancel' );
+		echo '</form>';
 	}
 
 	/**
@@ -623,6 +684,7 @@ final class Admin_Page {
 			'moved_callback_failed'  => array( 'warning', __( 'This address is saved as your store and payments are back on. OutlinePay could not be told the new address yet. Open this page again later to retry.', 'outlinepay-for-woocommerce' ) ),
 			'self_check_done'        => array( 'success', __( 'The check finished. The results are below.', 'outlinepay-for-woocommerce' ) ),
 			'self_check_email_saved' => array( 'success', __( 'Email setting saved.', 'outlinepay-for-woocommerce' ) ),
+			'shopper_cancel_saved'   => array( 'success', __( 'Cancellation setting saved.', 'outlinepay-for-woocommerce' ) ),
 		);
 		if ( ! isset( $messages[ $result ] ) ) {
 			return;

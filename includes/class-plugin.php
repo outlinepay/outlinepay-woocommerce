@@ -39,6 +39,7 @@ final class Plugin {
 		Switch_Guard::register();
 		Order_Display::register();
 		Refunds::register();
+		Shopper_Cancel::register();
 		Site_Health::register();
 		Abilities::register();
 	}
