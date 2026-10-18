@@ -583,7 +583,7 @@ final class Admin_Page {
 		wp_nonce_field( 'outlinepay_shopper_cancel' );
 		echo '<input type="hidden" name="action" value="outlinepay_shopper_cancel">';
 		echo '<p><label><input type="checkbox" name="outlinepay_cancel_enabled" value="yes"' . checked( $setting['enabled'], true, false ) . '> ' . esc_html__( 'Let shoppers cancel their own paid orders', 'outlinepay-for-woocommerce' ) . '</label></p>';
-		echo '<p>' . esc_html__( 'Shoppers see "Cancel order" in My Account when the order has one of these statuses and nothing was refunded yet. Cancelling refunds the full payment and cancels the order.', 'outlinepay-for-woocommerce' ) . '</p>';
+		echo '<p>' . esc_html__( 'Shoppers see Cancel in My Account when the order has one of these statuses and nothing was refunded yet. Cancelling refunds the full payment and cancels the order.', 'outlinepay-for-woocommerce' ) . '</p>';
 		echo '<fieldset><legend class="screen-reader-text">' . esc_html__( 'Order statuses shoppers can cancel', 'outlinepay-for-woocommerce' ) . '</legend>';
 		foreach ( Settings::CANCEL_STATUSES as $status ) {
 			echo '<label style="margin-right:16px"><input type="checkbox" name="outlinepay_cancel_statuses[]" value="' . esc_attr( $status ) . '"' . checked( in_array( $status, $setting['statuses'], true ), true, false ) . '> ' . esc_html( $labels[ $status ] ) . '</label>';

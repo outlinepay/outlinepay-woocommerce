@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-18T06:37:14+00:00\n"
+"POT-Creation-Date: 2026-10-18T06:58:40+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: outlinepay-for-woocommerce\n"
@@ -330,7 +330,7 @@ msgid "Let shoppers cancel their own paid orders"
 msgstr ""
 
 #: includes/class-admin-page.php:586
-msgid "Shoppers see \"Cancel order\" in My Account when the order has one of these statuses and nothing was refunded yet. Cancelling refunds the full payment and cancels the order."
+msgid "Shoppers see Cancel in My Account when the order has one of these statuses and nothing was refunded yet. Cancelling refunds the full payment and cancels the order."
 msgstr ""
 
 #: includes/class-admin-page.php:587
@@ -617,7 +617,7 @@ msgid "This order has no OutlinePay payment that can be refunded here. Refund it
 msgstr ""
 
 #: includes/class-refunds.php:114
-#: includes/class-shopper-cancel.php:160
+#: includes/class-shopper-cancel.php:214
 msgid "This order is being updated. Try again in a moment."
 msgstr ""
 
@@ -734,40 +734,36 @@ msgid "%1$s of OutlinePay payment %2$s was refunded. That payment did not pay th
 msgstr ""
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay refund id.
-#: includes/class-refunds.php:432
+#: includes/class-refunds.php:433
 #, php-format
 msgid "OutlinePay confirmed a refund of %1$s (refund %2$s), but WooCommerce could not add it to this order. The order may already show this refund. Check the order's refunds."
 msgstr ""
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay refund id, 3: reason.
-#: includes/class-refunds.php:452
+#: includes/class-refunds.php:455
 #, php-format
 msgid "OutlinePay confirmed a refund of %1$s (refund %2$s): %3$s."
 msgstr ""
 
-#: includes/class-refunds.php:458
-msgid "Cancelled by the shopper."
-msgstr ""
-
-#: includes/class-refunds.php:794
-#: includes/class-shopper-cancel.php:197
+#: includes/class-refunds.php:797
+#: includes/class-shopper-cancel.php:254
 msgid "Cancelled by the shopper"
 msgstr ""
 
-#: includes/class-refunds.php:798
+#: includes/class-refunds.php:801
 msgid "Refunded in the payment provider's dashboard"
 msgstr ""
 
-#: includes/class-refunds.php:800
+#: includes/class-refunds.php:803
 msgid "Duplicate payment cancelled automatically"
 msgstr ""
 
-#: includes/class-refunds.php:802
+#: includes/class-refunds.php:805
 msgid "Refund confirmed by the payment provider"
 msgstr ""
 
 #. translators: %s: amount in Korean won, such as 5,000.
-#: includes/class-refunds.php:825
+#: includes/class-refunds.php:828
 #, php-format
 msgid "%s won"
 msgstr ""
@@ -936,54 +932,49 @@ msgstr ""
 msgid "Failed."
 msgstr ""
 
-#: includes/class-shopper-cancel.php:91
-#: includes/class-shopper-cancel.php:114
-msgid "Cancel order"
-msgstr ""
-
-#. translators: %s: order number.
-#: includes/class-shopper-cancel.php:93
-#, php-format
-msgid "Cancel order %s"
-msgstr ""
-
-#: includes/class-shopper-cancel.php:109
+#: includes/class-shopper-cancel.php:163
 msgid "Cancel this order? The full payment goes back to your card or account."
 msgstr ""
 
-#: includes/class-shopper-cancel.php:152
+#: includes/class-shopper-cancel.php:206
 msgid "This order cannot be cancelled online. Contact the store."
 msgstr ""
 
-#: includes/class-shopper-cancel.php:154
+#: includes/class-shopper-cancel.php:208
 msgid "This page has expired. Reload it and try again."
 msgstr ""
 
-#: includes/class-shopper-cancel.php:182
+#: includes/class-shopper-cancel.php:236
 msgid "We could not cancel your order right now. Try again in a moment."
 msgstr ""
 
-#: includes/class-shopper-cancel.php:189
+#: includes/class-shopper-cancel.php:243
 msgid "We could not confirm the cancellation. Contact the store."
 msgstr ""
 
-#: includes/class-shopper-cancel.php:198
+#. translators: 1: amount such as 5,000 won, 2: OutlinePay refund id.
+#: includes/class-shopper-cancel.php:258
+#, php-format
+msgid "%1$s refunded through OutlinePay (refund %2$s)."
+msgstr ""
+
+#: includes/class-shopper-cancel.php:263
 msgid "Your order is cancelled. The full payment goes back to your card or account."
 msgstr ""
 
 #. translators: %s: OutlinePay refund id.
-#: includes/class-shopper-cancel.php:205
+#: includes/class-shopper-cancel.php:270
 #, php-format
 msgid "The shopper tried to cancel this order, but the payment provider refused the refund (refund %s). Nothing was refunded. The order is unchanged."
 msgstr ""
 
 #. translators: %s: OutlinePay refund id.
-#: includes/class-shopper-cancel.php:217
+#: includes/class-shopper-cancel.php:283
 #, php-format
-msgid "The shopper cancelled this order. OutlinePay is confirming the full refund with the payment provider (refund %s). The order is cancelled once it is confirmed."
+msgid "The refund is being confirmed with the payment provider (refund %s)."
 msgstr ""
 
-#: includes/class-shopper-cancel.php:222
+#: includes/class-shopper-cancel.php:290
 msgid "Your cancellation is being confirmed. We will email you."
 msgstr ""
 

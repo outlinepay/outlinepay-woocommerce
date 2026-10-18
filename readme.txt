@@ -86,7 +86,7 @@ The Connection table on the OutlinePay page shows whether refunds are on.
 
 = Can shoppers cancel their orders? =
 
-Only if you turn on "Let shoppers cancel their own paid orders" on the OutlinePay page and choose the order statuses. The shopper then sees "Cancel order" on their order in My Account until anything is refunded. Cancelling refunds the full payment and sets the order to Cancelled.
+Only if you turn on "Let shoppers cancel their own paid orders" on the OutlinePay page and choose the order statuses. The shopper then sees a Cancel button on their order in My Account until anything is refunded. A paid order never gets WooCommerce's own Cancel link, which would cancel it without a refund. Cancelling refunds the full payment and sets the order to Cancelled.
 
 = What happens on a staging copy of my store? =
 
@@ -141,7 +141,7 @@ CookiePay privacy policy: https://www.cookiepayments.com/terms/private
 = 0.3.0 =
 * Refund from the order screen with WooCommerce's Refund button, when your payment provider turns refunds on.
 * Refunds made in the payment provider's dashboard, and refunds the provider confirms later, are added to the order.
-* Optional "Cancel order" for shoppers in My Account. It refunds the full payment and cancels the order. Off by default.
+* Optional Cancel button for shoppers on paid orders in My Account. It refunds the full payment and cancels the order. Off by default.
 * "View card receipt" link for card payments.
 * Virtual account details on the shopper's My Account order page.
 * The Connection table shows whether refunds are on.

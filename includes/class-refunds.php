@@ -394,9 +394,10 @@ final class Refunds {
 	 * @param array     $refund     Refund object, status succeeded.
 	 * @param string    $reason     Reason shown on the refund.
 	 * @param bool      $by_shopper Whether the shopper cancelled.
+	 * @param string    $note       Order note to add instead of the confirmation note.
 	 * @return bool True when a WooCommerce refund was added.
 	 */
-	public static function add_wc_refund( $order, array $refund, $reason, $by_shopper ) {
+	public static function add_wc_refund( $order, array $refund, $reason, $by_shopper, $note = '' ) {
 		$order_id = $order->get_id();
 		$id       = $refund['id'];
 		$amount   = $refund['amount'];
@@ -448,14 +449,16 @@ final class Refunds {
 		self::forget_unanswered( $order, self::field( $refund, 'refund_id' ) );
 		$order->add_order_note(
 			self::note(
-				/* translators: 1: amount such as 5,000 won, 2: OutlinePay refund id, 3: reason. */
-				sprintf( __( 'OutlinePay confirmed a refund of %1$s (refund %2$s): %3$s.', 'outlinepay-for-woocommerce' ), self::won( $amount ), $id, $reason ),
+				'' !== $note
+					? $note
+					/* translators: 1: amount such as 5,000 won, 2: OutlinePay refund id, 3: reason. */
+					: sprintf( __( 'OutlinePay confirmed a refund of %1$s (refund %2$s): %3$s.', 'outlinepay-for-woocommerce' ), self::won( $amount ), $id, $reason ),
 				$refund
 			)
 		);
 		if ( $by_shopper && ! $order->has_status( 'cancelled' ) ) {
 			// WooCommerce sets the status only on a full refund, and other plugins may filter it.
-			$order->update_status( 'cancelled', __( 'Cancelled by the shopper.', 'outlinepay-for-woocommerce' ) );
+			$order->update_status( 'cancelled', Shopper_Cancel::core_cancel_note() );
 		}
 		$order->save();
 		Logger::info(

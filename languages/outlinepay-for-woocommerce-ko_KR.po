@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: OutlinePay for WooCommerce 0.3.0\n"
 "Report-Msgid-Bugs-To: https://outlinepay.com\n"
-"POT-Creation-Date: 2026-10-18T06:37:14+00:00\n"
-"PO-Revision-Date: 2026-10-18 02:40-0400\n"
+"POT-Creation-Date: 2026-10-18T06:58:40+00:00\n"
+"PO-Revision-Date: 2026-10-18 03:10-0400\n"
 "Last-Translator: OutlinePay <dev@outlinepay.com>\n"
 "Language-Team: OutlinePay <dev@outlinepay.com>\n"
 "Language: ko_KR\n"
@@ -386,12 +386,12 @@ msgstr "구매자가 결제된 자신의 주문을 취소할 수 있도록 허�
 
 #: includes/class-admin-page.php:586
 msgid ""
-"Shoppers see \"Cancel order\" in My Account when the order has one of these "
-"statuses and nothing was refunded yet. Cancelling refunds the full payment "
-"and cancels the order."
+"Shoppers see Cancel in My Account when the order has one of these statuses "
+"and nothing was refunded yet. Cancelling refunds the full payment and "
+"cancels the order."
 msgstr ""
-"주문이 아래 상태 중 하나이고 아직 환불된 금액이 없으면 구매자의 내 계정에 "
-"\"주문 취소\"가 표시됩니다. 취소하면 결제 전액이 환불되고 주문이 취소됩니다."
+"주문이 아래 상태 중 하나이고 아직 환불된 금액이 없으면 구매자의 내 계정에 취"
+"소가 표시됩니다. 취소하면 결제 전액이 환불되고 주문이 취소됩니다."
 
 #: includes/class-admin-page.php:587
 msgid "Order statuses shoppers can cancel"
@@ -756,7 +756,7 @@ msgstr ""
 "이 주문에는 여기에서 환불할 수 있는 OutlinePay 결제가 없습니다. 결제대행사 관"
 "리 화면에서 환불하십시오."
 
-#: includes/class-refunds.php:114 includes/class-shopper-cancel.php:160
+#: includes/class-refunds.php:114 includes/class-shopper-cancel.php:214
 msgid "This order is being updated. Try again in a moment."
 msgstr "이 주문을 업데이트하는 중입니다. 잠시 후 다시 시도하십시오."
 
@@ -941,7 +941,7 @@ msgstr ""
 "니므로 이 주문에는 환불이 추가되지 않습니다."
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay refund id.
-#: includes/class-refunds.php:432
+#: includes/class-refunds.php:433
 #, php-format
 msgid ""
 "OutlinePay confirmed a refund of %1$s (refund %2$s), but WooCommerce could "
@@ -953,33 +953,29 @@ msgstr ""
 "확인하십시오."
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay refund id, 3: reason.
-#: includes/class-refunds.php:452
+#: includes/class-refunds.php:455
 #, php-format
 msgid "OutlinePay confirmed a refund of %1$s (refund %2$s): %3$s."
 msgstr "OutlinePay가 %1$s 환불을 확인했습니다 (환불 %2$s): %3$s."
 
-#: includes/class-refunds.php:458
-msgid "Cancelled by the shopper."
-msgstr "구매자가 취소했습니다."
-
-#: includes/class-refunds.php:794 includes/class-shopper-cancel.php:197
+#: includes/class-refunds.php:797 includes/class-shopper-cancel.php:254
 msgid "Cancelled by the shopper"
 msgstr "구매자 취소"
 
-#: includes/class-refunds.php:798
+#: includes/class-refunds.php:801
 msgid "Refunded in the payment provider's dashboard"
 msgstr "결제대행사 관리 화면에서 환불"
 
-#: includes/class-refunds.php:800
+#: includes/class-refunds.php:803
 msgid "Duplicate payment cancelled automatically"
 msgstr "중복 결제 자동 취소"
 
-#: includes/class-refunds.php:802
+#: includes/class-refunds.php:805
 msgid "Refund confirmed by the payment provider"
 msgstr "결제대행사가 확인한 환불"
 
 #. translators: %s: amount in Korean won, such as 5,000.
-#: includes/class-refunds.php:825
+#: includes/class-refunds.php:828
 #, php-format
 msgid "%s won"
 msgstr "%s원"
@@ -1200,44 +1196,40 @@ msgstr "통과했습니다."
 msgid "Failed."
 msgstr "실패했습니다."
 
-#: includes/class-shopper-cancel.php:91 includes/class-shopper-cancel.php:114
-msgid "Cancel order"
-msgstr "주문 취소"
-
-#. translators: %s: order number.
-#: includes/class-shopper-cancel.php:93
-#, php-format
-msgid "Cancel order %s"
-msgstr "주문 %s 취소"
-
-#: includes/class-shopper-cancel.php:109
+#: includes/class-shopper-cancel.php:163
 msgid "Cancel this order? The full payment goes back to your card or account."
 msgstr ""
 "이 주문을 취소하시겠습니까? 결제 금액 전액이 카드 또는 계좌로 환불됩니다."
 
-#: includes/class-shopper-cancel.php:152
+#: includes/class-shopper-cancel.php:206
 msgid "This order cannot be cancelled online. Contact the store."
 msgstr "이 주문은 온라인으로 취소할 수 없습니다. 스토어에 문의하십시오."
 
-#: includes/class-shopper-cancel.php:154
+#: includes/class-shopper-cancel.php:208
 msgid "This page has expired. Reload it and try again."
 msgstr "이 페이지가 만료되었습니다. 새로고침한 뒤 다시 시도하십시오."
 
-#: includes/class-shopper-cancel.php:182
+#: includes/class-shopper-cancel.php:236
 msgid "We could not cancel your order right now. Try again in a moment."
 msgstr "지금은 주문을 취소하지 못했습니다. 잠시 후 다시 시도하십시오."
 
-#: includes/class-shopper-cancel.php:189
+#: includes/class-shopper-cancel.php:243
 msgid "We could not confirm the cancellation. Contact the store."
 msgstr "주문 취소를 확인하지 못했습니다. 스토어에 문의하십시오."
 
-#: includes/class-shopper-cancel.php:198
+#. translators: 1: amount such as 5,000 won, 2: OutlinePay refund id.
+#: includes/class-shopper-cancel.php:258
+#, php-format
+msgid "%1$s refunded through OutlinePay (refund %2$s)."
+msgstr "OutlinePay로 %1$s이 환불되었습니다 (환불 %2$s)."
+
+#: includes/class-shopper-cancel.php:263
 msgid ""
 "Your order is cancelled. The full payment goes back to your card or account."
 msgstr "주문이 취소되었습니다. 결제 금액 전액이 카드 또는 계좌로 환불됩니다."
 
 #. translators: %s: OutlinePay refund id.
-#: includes/class-shopper-cancel.php:205
+#: includes/class-shopper-cancel.php:270
 #, php-format
 msgid ""
 "The shopper tried to cancel this order, but the payment provider refused the "
@@ -1247,17 +1239,12 @@ msgstr ""
 "%s). 환불된 금액은 없습니다. 주문은 그대로입니다."
 
 #. translators: %s: OutlinePay refund id.
-#: includes/class-shopper-cancel.php:217
+#: includes/class-shopper-cancel.php:283
 #, php-format
-msgid ""
-"The shopper cancelled this order. OutlinePay is confirming the full refund "
-"with the payment provider (refund %s). The order is cancelled once it is "
-"confirmed."
-msgstr ""
-"구매자가 이 주문을 취소했습니다. OutlinePay가 결제대행사와 전액 환불을 확인하"
-"고 있습니다 (환불 %s). 확인되면 주문이 취소됩니다."
+msgid "The refund is being confirmed with the payment provider (refund %s)."
+msgstr "결제대행사와 환불을 확인하고 있습니다 (환불 %s)."
 
-#: includes/class-shopper-cancel.php:222
+#: includes/class-shopper-cancel.php:290
 msgid "Your cancellation is being confirmed. We will email you."
 msgstr "주문 취소를 확인하고 있습니다. 확인되면 이메일로 알려 드립니다."
 

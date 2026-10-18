@@ -1,11 +1,16 @@
 <?php
 /**
- * "Cancel order" for shoppers: a full refund of a paid order, from My Account.
+ * Cancel for shoppers: a full refund of a paid order, from My Account.
  *
  * Off until the merchant turns it on. WooCommerce's own Cancel link is a GET
- * meant for unpaid orders and moves no money, so it is left alone. The orders
- * list links to the order page, and the order page carries a POST form with a
- * nonce. Only the customer who owns the order sees it.
+ * meant for unpaid orders and moves no money. It stays for unpaid OutlinePay
+ * orders and is removed, and refused, for paid ones, so no status list widened
+ * by another plugin can cancel a paid order without a refund. Our Cancel in
+ * the orders list links to the order page, and the order page carries a POST
+ * form with a nonce. Only the customer who owns the order sees it.
+ *
+ * The label and the order note reuse WooCommerce's own wording (its text
+ * domain), so shoppers and merchants read the same words as for any cancel.
  *
  * @package OutlinePay\WooCommerce
  */
@@ -29,6 +34,7 @@ final class Shopper_Cancel {
 	 */
 	public static function register() {
 		add_filter( 'woocommerce_my_account_my_orders_actions', array( self::class, 'list_action' ), 10, 2 );
+		add_filter( 'woocommerce_valid_order_statuses_for_cancel', array( self::class, 'native_cancel_statuses' ), 100, 2 );
 		add_action( 'woocommerce_view_order', array( self::class, 'render_form' ), 20 );
 		add_action( 'wp_loaded', array( self::class, 'handle_post' ), 20 );
 	}
@@ -41,6 +47,48 @@ final class Shopper_Cancel {
 	 */
 	public static function nonce_action( $order_id ) {
 		return 'outlinepay_cancel_order_' . (int) $order_id;
+	}
+
+	/**
+	 * True for an order OutlinePay took money for: our payment id and a paid date.
+	 *
+	 * @param mixed $order Order.
+	 * @return bool
+	 */
+	public static function paid_with_outlinepay( $order ) {
+		return Order_Sync::is_ours( $order )
+			&& Api_Client::valid_payment_id( $order->get_meta( Order_Sync::META_PAYMENT_ID ) )
+			&& (bool) $order->get_date_paid();
+	}
+
+	/**
+	 * Filter: WooCommerce's own GET cancel never applies to a paid OutlinePay
+	 * order. It would cancel without a refund. Unpaid orders keep the list.
+	 *
+	 * @param mixed $statuses Statuses WooCommerce lets a customer cancel from.
+	 * @param mixed $order    Order.
+	 * @return mixed
+	 */
+	public static function native_cancel_statuses( $statuses, $order = null ) {
+		return self::paid_with_outlinepay( $order ) ? array() : $statuses;
+	}
+
+	/**
+	 * WooCommerce's label for its cancel action, in WooCommerce's translation.
+	 *
+	 * @return string
+	 */
+	public static function label() {
+		return __( 'Cancel', 'woocommerce' ); // phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- WooCommerce's own label, translated by WooCommerce.
+	}
+
+	/**
+	 * WooCommerce's order note for a cancel by the customer.
+	 *
+	 * @return string
+	 */
+	public static function core_cancel_note() {
+		return __( 'Order cancelled by customer.', 'woocommerce' ); // phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- WooCommerce's own note, translated by WooCommerce.
 	}
 
 	/**
@@ -75,7 +123,7 @@ final class Shopper_Cancel {
 	}
 
 	/**
-	 * Adds "Cancel order" to the My Account orders list. It opens the order
+	 * Adds Cancel to the My Account orders list. It opens the order
 	 * page, where the cancel is a POST.
 	 *
 	 * @param array     $actions Actions.
@@ -83,14 +131,20 @@ final class Shopper_Cancel {
 	 * @return array
 	 */
 	public static function list_action( $actions, $order ) {
-		if ( ! is_array( $actions ) || ! self::can_cancel( $order, get_current_user_id() ) ) {
+		if ( ! is_array( $actions ) ) {
+			return $actions;
+		}
+		if ( self::paid_with_outlinepay( $order ) ) {
+			unset( $actions['cancel'] );
+		}
+		if ( ! self::can_cancel( $order, get_current_user_id() ) ) {
 			return $actions;
 		}
 		$actions['outlinepay-cancel'] = array(
 			'url'        => $order->get_view_order_url() . '#outlinepay-cancel',
-			'name'       => __( 'Cancel order', 'outlinepay-for-woocommerce' ),
+			'name'       => self::label(),
 			/* translators: %s: order number. */
-			'aria-label' => sprintf( __( 'Cancel order %s', 'outlinepay-for-woocommerce' ), $order->get_order_number() ),
+			'aria-label' => sprintf( __( 'Cancel order %s', 'woocommerce' ), $order->get_order_number() ), // phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- WooCommerce's own label, translated by WooCommerce.
 		);
 		return $actions;
 	}
@@ -111,7 +165,7 @@ final class Shopper_Cancel {
 		echo '<form method="post" action="' . esc_url( $order->get_view_order_url() ) . '" onsubmit="return window.confirm(\'' . esc_js( $confirm ) . '\');">';
 		wp_nonce_field( self::nonce_action( $order->get_id() ), self::NONCE );
 		echo '<input type="hidden" name="' . esc_attr( self::FIELD ) . '" value="' . esc_attr( (string) $order->get_id() ) . '">';
-		echo '<button type="submit" class="woocommerce-button button outlinepay-cancel-button">' . esc_html__( 'Cancel order', 'outlinepay-for-woocommerce' ) . '</button>';
+		echo '<button type="submit" class="woocommerce-button button outlinepay-cancel-button">' . esc_html( self::label() ) . '</button>';
 		echo '</form>';
 		echo '</section>';
 	}
@@ -194,7 +248,18 @@ final class Shopper_Cancel {
 
 			switch ( $refund['status'] ) {
 				case 'succeeded':
-					Refunds::add_wc_refund( $order, $refund, __( 'Cancelled by the shopper', 'outlinepay-for-woocommerce' ), true );
+					Refunds::add_wc_refund(
+						$order,
+						$refund,
+						__( 'Cancelled by the shopper', 'outlinepay-for-woocommerce' ),
+						true,
+						self::core_cancel_note() . ' ' . sprintf(
+							/* translators: 1: amount such as 5,000 won, 2: OutlinePay refund id. */
+							__( '%1$s refunded through OutlinePay (refund %2$s).', 'outlinepay-for-woocommerce' ),
+							Refunds::won( $refund['amount'] ),
+							$refund['id']
+						)
+					);
 					return self::result( 'success', __( 'Your order is cancelled. The full payment goes back to your card or account.', 'outlinepay-for-woocommerce' ) );
 
 				case 'failed':
@@ -213,8 +278,11 @@ final class Shopper_Cancel {
 					Refunds::remember_pending( $order, $refund['id'], $refund['amount'], 'shopper' );
 					$order->add_order_note(
 						Order_Sync::note(
-							/* translators: %s: OutlinePay refund id. */
-							sprintf( __( 'The shopper cancelled this order. OutlinePay is confirming the full refund with the payment provider (refund %s). The order is cancelled once it is confirmed.', 'outlinepay-for-woocommerce' ), $refund['id'] ),
+							self::core_cancel_note() . ' ' . sprintf(
+								/* translators: %s: OutlinePay refund id. */
+								__( 'The refund is being confirmed with the payment provider (refund %s).', 'outlinepay-for-woocommerce' ),
+								$refund['id']
+							),
 							$refund
 						)
 					);

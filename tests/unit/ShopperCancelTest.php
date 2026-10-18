@@ -132,10 +132,36 @@ class ShopperCancelTest extends RefundTestCase {
 	public function test_the_orders_list_links_to_the_order_page_never_to_a_cancel_url() {
 		$actions = Shopper_Cancel::list_action( array( 'view' => array() ), $this->order );
 		$this->assertSame( 'https://shop.example/my-account/view-order/42/#outlinepay-cancel', $actions['outlinepay-cancel']['url'] );
-		$this->assertSame( 'Cancel order', $actions['outlinepay-cancel']['name'] );
+		$this->assertSame( 'Cancel', $actions['outlinepay-cancel']['name'], 'WooCommerce\'s own label' );
+		$this->assertSame( 'Cancel order 42', $actions['outlinepay-cancel']['aria-label'] );
 
 		$this->order->customer_id = 8;
 		$this->assertSame( array( 'view' => array() ), Shopper_Cancel::list_action( array( 'view' => array() ), $this->order ) );
+	}
+
+	public function test_woocommerce_native_cancel_is_removed_and_refused_for_a_paid_outlinepay_order() {
+		$native = array(
+			'view'   => array( 'url' => 'v' ),
+			'cancel' => array( 'url' => 'https://shop.example/?cancel_order=true' ),
+		);
+		// Even with shopper cancel off and a status list widened by another plugin.
+		$this->options['outlinepay_shopper_cancel']['enabled'] = 'no';
+		$this->assertSame( array( 'view' => array( 'url' => 'v' ) ), Shopper_Cancel::list_action( $native, $this->order ) );
+		$this->assertSame( array(), Shopper_Cancel::native_cancel_statuses( array( 'pending', 'failed', 'processing' ), $this->order ) );
+	}
+
+	public function test_an_unpaid_outlinepay_order_keeps_the_native_cancel() {
+		$native                 = array( 'cancel' => array( 'url' => 'https://shop.example/?cancel_order=true' ) );
+		$this->order->status    = 'pending';
+		$this->order->date_paid = null;
+		$this->assertSame( $native, Shopper_Cancel::list_action( $native, $this->order ) );
+		$this->assertSame( array( 'pending', 'failed' ), Shopper_Cancel::native_cancel_statuses( array( 'pending', 'failed' ), $this->order ) );
+
+		$other = new \WC_Order( 50 );
+		$other->payment_method = 'bacs';
+		$other->date_paid      = '2026-10-17T10:00:00+00:00';
+		$this->assertSame( array( 'pending', 'failed' ), Shopper_Cancel::native_cancel_statuses( array( 'pending', 'failed' ), $other ), 'another gateway\'s order is not ours' );
+		$this->assertSame( array( 'pending' ), Shopper_Cancel::native_cancel_statuses( array( 'pending' ), null ) );
 	}
 
 	public function test_the_form_is_a_post_with_a_nonce_and_a_confirm() {
@@ -150,6 +176,7 @@ class ShopperCancelTest extends RefundTestCase {
 		$this->assertStringContainsString( 'method="post"', $html );
 		$this->assertStringContainsString( 'name="_outlinepay_cancel_nonce" value="good-outlinepay_cancel_order_42"', $html );
 		$this->assertStringContainsString( 'Cancel this order? The full payment goes back to your card or account.', $html );
+		$this->assertStringContainsString( '>Cancel</button>', $html );
 
 		$this->order->customer_id = 8;
 		ob_start();
@@ -180,6 +207,7 @@ class ShopperCancelTest extends RefundTestCase {
 		$this->assertCount( 1, $this->order->refunds );
 		$this->assertSame( 'Cancelled by the shopper', $this->order->refunds[0]->get_reason() );
 		$this->assertSame( 'pref_one', $this->order->refunds[0]->meta[ Refunds::META_REFUND_ID ] );
+		$this->assertSame( 'Order cancelled by customer. 25,000 won refunded through OutlinePay (refund pref_one).', $this->find_note( 'Order cancelled by customer.' ) );
 		$this->assertSame( array(), $this->locks->rows );
 
 		$this->assertSame( 'error', $this->cancel()['type'], 'a second click is refused' );
@@ -194,10 +222,21 @@ class ShopperCancelTest extends RefundTestCase {
 		$this->assertSame( 'Your cancellation is being confirmed. We will email you.', $result['message'] );
 		$this->assertSame( 'processing', $this->order->status );
 		$this->assertSame( 'shopper', Refunds::pending( $this->order )['pref_one']['by'] );
+		$this->assertSame( 'Order cancelled by customer. The refund is being confirmed with the payment provider (refund pref_one).', $this->find_note( 'Order cancelled by customer.' ) );
 		$this->assertFalse( Shopper_Cancel::can_cancel( $this->order, self::USER ), 'no second request while it is confirmed' );
 
 		Order_Sync::apply( $this->order, self::payment(), array( self::refund( array( 'requested_by' => 'shopper', 'refund_id' => 'shopper-cancel-42' ) ) ) );
 		$this->assertSame( 'cancelled', $this->order->status );
+		$this->assertStringContainsString( 'OutlinePay confirmed a refund of 25,000 won (refund pref_one): Cancelled by the shopper.', $this->notes() );
+	}
+
+	private function find_note( $prefix ) {
+		foreach ( $this->order->notes as $note ) {
+			if ( 0 === strpos( $note, $prefix ) ) {
+				return $note;
+			}
+		}
+		return null;
 	}
 
 	/**

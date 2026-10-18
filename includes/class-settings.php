@@ -42,7 +42,7 @@ final class Settings {
 
 	/**
 	 * Methods the payment provider can refund through its API. Only used to
-	 * decide whether to offer the Refund button and Cancel order. OutlinePay
+	 * decide whether to offer the Refund button and the shopper Cancel. OutlinePay
 	 * decides every refund and refuses what the provider cannot do.
 	 */
 	const REFUNDABLE_METHODS = array( 'card', 'foreign_card_krw', 'bank_transfer', 'kakaopay', 'naverpay' );

@@ -21,7 +21,7 @@ OutlinePay is operated by Arandu Payments LLC.
 | `includes/class-gateway.php` | One gateway class, one instance per method (`outlinepay_<method>`) |
 | `includes/class-order-sync.php` | The one place a payment becomes an order change |
 | `includes/class-refunds.php` | Refund button, and refunds made elsewhere added to the order |
-| `includes/class-shopper-cancel.php` | Optional "Cancel order" for shoppers in My Account |
+| `includes/class-shopper-cancel.php` | Optional Cancel for shoppers in My Account, and no native cancel on paid orders |
 | `includes/class-order-display.php` | Deposit details, card receipt link and test payment line |
 | `includes/class-return-handler.php` | Shopper return (`?wc-api=outlinepay_return`) |
 | `includes/class-callback-controller.php` | Signed callback (`POST /wp-json/outlinepay/v1/callback`) |
