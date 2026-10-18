@@ -35,6 +35,12 @@ final class Refunds {
 	/** On the order: refund requests that got no answer, refund_id => amount. */
 	const META_UNANSWERED = '_outlinepay_unanswered_refunds';
 
+	/** On the order: store refunds that were unanswered or pending and are now on the order. */
+	const META_ANSWERED = '_outlinepay_answered_refunds';
+
+	/** How long an answered refund refuses a repeat of the same amount, in seconds. */
+	const ANSWERED_WINDOW = 86400;
+
 	/** Refund id prefix for a shopper cancel. */
 	const SHOPPER_PREFIX = 'shopper-cancel-';
 
@@ -123,6 +129,10 @@ final class Refunds {
 			// A request that got no answer is sent again under its first id, so
 			// OutlinePay answers the refund it already made instead of a second one.
 			$refund_id = self::unanswered_id( $order, $krw );
+			if ( null === $refund_id && self::take_answered( $order, $krw ) ) {
+				$order->save();
+				return self::error( __( 'This refund already went through and is on this order. Reload the page to see it.', 'outlinepay-for-woocommerce' ) );
+			}
 			if ( null === $refund_id ) {
 				$refund_id = (string) $wc_refund->get_id();
 			}
@@ -271,7 +281,7 @@ final class Refunds {
 		$order->add_order_note(
 			sprintf(
 				/* translators: %s: amount such as 5,000 won. */
-				__( 'OutlinePay did not answer a refund of %s. It may or may not have gone through. Do not refund this amount in your payment provider\'s dashboard. If it went through, it will appear on this order automatically. To check now, refund the same amount again: OutlinePay will not refund twice.', 'outlinepay-for-woocommerce' ),
+				__( 'OutlinePay did not answer a refund of %s. It may or may not have gone through. Do not refund this amount in your payment provider\'s dashboard. If it went through, it will appear on this order automatically, usually within a few minutes. Reload this order to check. Refunding the same amount again is safe: OutlinePay will not refund twice.', 'outlinepay-for-woocommerce' ),
 				self::won( $krw )
 			)
 		);
@@ -467,6 +477,12 @@ final class Refunds {
 		$wc_refund->update_meta_data( self::META_REFUND_STATUS, 'succeeded' );
 		$wc_refund->save();
 
+		$was_waiting = isset( self::pending( $order )[ $id ] ) || self::is_unanswered( $order, self::field( $refund, 'refund_id' ) );
+		if ( $was_waiting && ! $by_shopper ) {
+			// The merchant may still be on a page from before this landed, and was
+			// told a repeat is safe. The next refund of this amount is refused once.
+			self::remember_answered( $order, $id, $amount );
+		}
 		self::mark_done( $order, $id );
 		self::forget_pending( $order, $id );
 		self::forget_unanswered( $order, self::field( $refund, 'refund_id' ) );
@@ -756,6 +772,60 @@ final class Refunds {
 
 		$unanswered[ (string) $refund_id ] = (int) $krw;
 		$order->update_meta_data( self::META_UNANSWERED, array_slice( $unanswered, -10, null, true ) );
+	}
+
+	/**
+	 * Remembers a waiting store refund that is now on the order. The caller saves.
+	 *
+	 * @param \WC_Order $order  Order.
+	 * @param string    $id     Refund id (pref_...).
+	 * @param int       $amount Amount.
+	 * @return void
+	 */
+	private static function remember_answered( $order, $id, $amount ) {
+		$answered   = $order->get_meta( self::META_ANSWERED );
+		$answered   = is_array( $answered ) ? $answered : array();
+		$answered[] = array(
+			'id'     => (string) $id,
+			'amount' => (int) $amount,
+			'at'     => time(),
+		);
+		$order->update_meta_data( self::META_ANSWERED, array_slice( $answered, -10 ) );
+	}
+
+	/**
+	 * True, once, when a waiting refund of this amount landed on the order in
+	 * the last day. Consumes it, so a deliberate second refund works next time.
+	 * The caller saves.
+	 *
+	 * @param \WC_Order $order Order.
+	 * @param int       $krw   Amount.
+	 * @return bool
+	 */
+	private static function take_answered( $order, $krw ) {
+		$answered = $order->get_meta( self::META_ANSWERED );
+		if ( ! is_array( $answered ) ) {
+			return false;
+		}
+		$now   = time();
+		$keep  = array();
+		$found = false;
+		foreach ( $answered as $row ) {
+			if ( ! is_array( $row ) || ! isset( $row['amount'], $row['at'] ) || $now - (int) $row['at'] > self::ANSWERED_WINDOW ) {
+				continue;
+			}
+			if ( ! $found && (int) $row['amount'] === $krw ) {
+				$found = true;
+				continue;
+			}
+			$keep[] = $row;
+		}
+		if ( array() === $keep ) {
+			$order->delete_meta_data( self::META_ANSWERED );
+		} else {
+			$order->update_meta_data( self::META_ANSWERED, $keep );
+		}
+		return $found;
 	}
 
 	/**

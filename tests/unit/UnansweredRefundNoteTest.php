@@ -23,7 +23,7 @@ class UnansweredRefundNoteTest extends RefundTestCase {
 		$this->assertNotSame( array(), $this->order->notes, 'the merchant is told to check the notes, so the notes must say a refund of 5,000 won was asked for and may have gone through' );
 		$note = end( $this->order->notes );
 		$this->assertStringContainsString( 'OutlinePay did not answer a refund of 5,000 won. It may or may not have gone through.', $note );
-		$this->assertStringContainsString( 'Do not refund this amount in your payment provider\'s dashboard. If it went through, it will appear on this order automatically. To check now, refund the same amount again: OutlinePay will not refund twice.', $note );
+		$this->assertStringContainsString( 'Do not refund this amount in your payment provider\'s dashboard. If it went through, it will appear on this order automatically, usually within a few minutes. Reload this order to check. Refunding the same amount again is safe: OutlinePay will not refund twice.', $note );
 		$this->assertSame( array( '900' => 5000 ), $this->order->meta[ Refunds::META_UNANSWERED ] );
 	}
 
