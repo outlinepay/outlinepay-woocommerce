@@ -266,7 +266,6 @@ class ShopperCancelTest extends RefundTestCase {
 			'paused'      => array( self::refusal( 409, 'refunds_paused' ), 'Contact the store' ),
 			'cap'         => array( self::refusal( 409, 'refund_cap_reached' ), 'Contact the store' ),
 			'not full'    => array( self::refusal( 409, 'shopper_cancel_not_full' ), 'Contact the store' ),
-			'no answer'   => array( new Api_Error( 0, 'network_error' ), 'Try again in a moment' ),
 			'provider no' => array( self::json( 200, self::refund( array( 'status' => 'failed', 'failure_code' => 'not_cancellable' ) ) ), 'Contact the store' ),
 		);
 	}

@@ -132,13 +132,15 @@ final class Refunds {
 			} catch ( Api_Error $error ) {
 				return self::refused( $order, $error, $refund_id, $krw );
 			}
-			self::forget_unanswered( $order, $refund_id );
 
 			if ( ! self::readable( $refund ) ) {
+				// The refund may exist. Keep its id, so a retry gets OutlinePay's answer for it.
 				Logger::error( 'Refund answer unreadable', array( 'order_id' => $order->get_id() ) );
+				self::note_unanswered( $order, $refund_id, $krw );
 				$order->save();
 				return self::error( __( 'OutlinePay answered, but the answer could not be read. Check the order notes in a few minutes before you try again.', 'outlinepay-for-woocommerce' ) );
 			}
+			self::forget_unanswered( $order, $refund_id );
 
 			$context = array(
 				'order_id'   => $order->get_id(),
@@ -246,13 +248,33 @@ final class Refunds {
 			)
 		);
 		if ( $error->is_transient() ) {
-			self::remember_unanswered( $order, $refund_id, $krw );
+			self::note_unanswered( $order, $refund_id, $krw );
 			$order->save();
 		} else {
 			self::forget_unanswered( $order, $refund_id );
 			$order->save();
 		}
 		return self::error( self::refusal_sentence( $error ) );
+	}
+
+	/**
+	 * Remembers a store refund with no answer and tells the merchant on the
+	 * order. The caller saves.
+	 *
+	 * @param \WC_Order $order     Order.
+	 * @param string    $refund_id Refund id sent.
+	 * @param int       $krw       Amount sent.
+	 * @return void
+	 */
+	private static function note_unanswered( $order, $refund_id, $krw ) {
+		self::remember_unanswered( $order, $refund_id, $krw );
+		$order->add_order_note(
+			sprintf(
+				/* translators: %s: amount such as 5,000 won. */
+				__( 'OutlinePay did not answer a refund of %s. It may or may not have gone through. Do not refund this amount in your payment provider\'s dashboard. If it went through, it will appear on this order automatically. To check now, refund the same amount again: OutlinePay will not refund twice.', 'outlinepay-for-woocommerce' ),
+				self::won( $krw )
+			)
+		);
 	}
 
 	/**
@@ -340,7 +362,7 @@ final class Refunds {
 			$amount  = $refund['amount'];
 
 			if ( 'failed' === $refund['status'] ) {
-				if ( isset( $pending[ $id ] ) ) {
+				if ( isset( $pending[ $id ] ) || self::is_unanswered( $order, self::field( $refund, 'refund_id' ) ) ) {
 					$order->add_order_note(
 						self::note(
 							/* translators: 1: amount such as 5,000 won, 2: OutlinePay refund id. */
@@ -352,6 +374,7 @@ final class Refunds {
 				}
 				self::mark_done( $order, $id );
 				self::forget_pending( $order, $id );
+				self::forget_unanswered( $order, self::field( $refund, 'refund_id' ) );
 				$order->save();
 				continue;
 			}
@@ -711,7 +734,8 @@ final class Refunds {
 			return null;
 		}
 		foreach ( $unanswered as $refund_id => $amount ) {
-			if ( (int) $amount === $krw ) {
+			// A shopper cancel has its own id and requester. The store never reuses it.
+			if ( (int) $amount === $krw && 0 !== strpos( (string) $refund_id, self::SHOPPER_PREFIX ) ) {
 				return (string) $refund_id;
 			}
 		}
@@ -726,12 +750,24 @@ final class Refunds {
 	 * @param int       $krw       Amount sent.
 	 * @return void
 	 */
-	private static function remember_unanswered( $order, $refund_id, $krw ) {
+	public static function remember_unanswered( $order, $refund_id, $krw ) {
 		$unanswered = $order->get_meta( self::META_UNANSWERED );
 		$unanswered = is_array( $unanswered ) ? $unanswered : array();
 
 		$unanswered[ (string) $refund_id ] = (int) $krw;
 		$order->update_meta_data( self::META_UNANSWERED, array_slice( $unanswered, -10, null, true ) );
+	}
+
+	/**
+	 * True when a request under this refund id got no answer.
+	 *
+	 * @param \WC_Order $order     Order.
+	 * @param string    $refund_id Refund id.
+	 * @return bool
+	 */
+	public static function is_unanswered( $order, $refund_id ) {
+		$unanswered = $order->get_meta( self::META_UNANSWERED );
+		return '' !== (string) $refund_id && is_array( $unanswered ) && array_key_exists( (string) $refund_id, $unanswered );
 	}
 
 	/**
@@ -741,7 +777,7 @@ final class Refunds {
 	 * @param string    $refund_id Refund id.
 	 * @return void
 	 */
-	private static function forget_unanswered( $order, $refund_id ) {
+	public static function forget_unanswered( $order, $refund_id ) {
 		$unanswered = $order->get_meta( self::META_UNANSWERED );
 		if ( ! is_array( $unanswered ) || ! array_key_exists( (string) $refund_id, $unanswered ) ) {
 			return;

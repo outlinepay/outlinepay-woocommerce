@@ -238,14 +238,14 @@ final class Shopper_Cancel {
 				$context['code'] = $error->get_error_code();
 				Logger::warning( 'Shopper cancel refused', $context );
 				if ( $error->is_transient() ) {
-					return self::result( 'error', __( 'We could not cancel your order right now. Try again in a moment.', 'outlinepay-for-woocommerce' ) );
+					return self::unanswered( $order, $amount );
 				}
 				return self::result( 'error', $refused );
 			}
 
 			if ( ! Refunds::readable( $refund ) ) {
 				Logger::error( 'Shopper cancel answer unreadable', $context );
-				return self::result( 'error', __( 'We could not confirm the cancellation. Contact the store.', 'outlinepay-for-woocommerce' ) );
+				return self::unanswered( $order, $amount );
 			}
 			$context['refund_id'] = $refund['id'];
 			$context['status']    = $refund['status'];
@@ -297,6 +297,22 @@ final class Shopper_Cancel {
 		} finally {
 			Order_Lock::release( $order_id );
 		}
+	}
+
+	/**
+	 * The cancel may have gone through: remembered like a pending one, so the
+	 * button stays hidden and the refund delivery completes it, and the
+	 * merchant is told not to ship. The caller holds the lock.
+	 *
+	 * @param \WC_Order $order  Order.
+	 * @param int       $amount Amount asked for.
+	 * @return array
+	 */
+	private static function unanswered( $order, $amount ) {
+		Refunds::remember_unanswered( $order, Refunds::SHOPPER_PREFIX . $order->get_id(), $amount );
+		$order->add_order_note( __( 'The shopper asked to cancel, but OutlinePay\'s answer was lost. If the refund went through, this order will be cancelled automatically. Do not ship it until then.', 'outlinepay-for-woocommerce' ) );
+		$order->save();
+		return self::result( 'notice', __( 'We could not confirm your cancellation yet. We will email you.', 'outlinepay-for-woocommerce' ) );
 	}
 
 	/**

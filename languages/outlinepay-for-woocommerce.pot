@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-18T06:58:40+00:00\n"
+"POT-Creation-Date: 2026-10-18T07:27:44+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: outlinepay-for-woocommerce\n"
@@ -604,7 +604,7 @@ msgid "OutlinePay for WooCommerce needs WooCommerce to be installed and active."
 msgstr ""
 
 #: includes/class-refunds.php:103
-#: includes/class-refunds.php:289
+#: includes/class-refunds.php:311
 msgid "This store is not connected to OutlinePay. Refund this payment in your payment provider's dashboard."
 msgstr ""
 
@@ -617,7 +617,7 @@ msgid "This order has no OutlinePay payment that can be refunded here. Refund it
 msgstr ""
 
 #: includes/class-refunds.php:114
-#: includes/class-shopper-cancel.php:214
+#: includes/class-shopper-cancel.php:219
 msgid "This order is being updated. Try again in a moment."
 msgstr ""
 
@@ -625,145 +625,151 @@ msgstr ""
 msgid "The refund could not be started. Reload the order and try again."
 msgstr ""
 
-#: includes/class-refunds.php:140
+#: includes/class-refunds.php:141
 msgid "OutlinePay answered, but the answer could not be read. Check the order notes in a few minutes before you try again."
 msgstr ""
 
-#: includes/class-refunds.php:155
+#: includes/class-refunds.php:157
 msgid "This refund is already on this order. Reload the order to see it."
 msgstr ""
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay refund id.
-#: includes/class-refunds.php:167
+#: includes/class-refunds.php:169
 #, php-format
 msgid "Refunded %1$s through OutlinePay (refund %2$s)."
 msgstr ""
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay refund id.
-#: includes/class-refunds.php:179
+#: includes/class-refunds.php:181
 #, php-format
 msgid "The payment provider refused a refund of %1$s (refund %2$s). Nothing was refunded."
 msgstr ""
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay refund id.
-#: includes/class-refunds.php:193
+#: includes/class-refunds.php:195
 #, php-format
 msgid "OutlinePay is confirming a refund of %1$s with the payment provider (refund %2$s). It will be added to this order once confirmed."
 msgstr ""
 
-#: includes/class-refunds.php:198
+#: includes/class-refunds.php:200
 msgid "OutlinePay is confirming this refund with the payment provider. It will appear on this order automatically once confirmed."
 msgstr ""
 
-#: includes/class-refunds.php:266
+#. translators: %s: amount such as 5,000 won.
+#: includes/class-refunds.php:274
+#, php-format
+msgid "OutlinePay did not answer a refund of %s. It may or may not have gone through. Do not refund this amount in your payment provider's dashboard. If it went through, it will appear on this order automatically. To check now, refund the same amount again: OutlinePay will not refund twice."
+msgstr ""
+
+#: includes/class-refunds.php:288
 msgid "OutlinePay did not answer. The refund may or may not have gone through. Wait a minute and check the order notes. To try again, refund the same amount."
 msgstr ""
 
-#: includes/class-refunds.php:270
+#: includes/class-refunds.php:292
 msgid "Refunds are paused for this store right now. Try again later, or refund in your payment provider's dashboard."
 msgstr ""
 
-#: includes/class-refunds.php:272
+#: includes/class-refunds.php:294
 msgid "OutlinePay cannot refund this payment. Refund it in your payment provider's dashboard."
 msgstr ""
 
-#: includes/class-refunds.php:274
+#: includes/class-refunds.php:296
 msgid "This payment method cannot be refunded from WooCommerce. Refund it in your payment provider's dashboard."
 msgstr ""
 
-#: includes/class-refunds.php:276
+#: includes/class-refunds.php:298
 msgid "Partial refunds work for card payments only. Refund the full amount, or refund the rest in your payment provider's dashboard."
 msgstr ""
 
-#: includes/class-refunds.php:278
+#: includes/class-refunds.php:300
 msgid "This is more than what is left to refund."
 msgstr ""
 
-#: includes/class-refunds.php:280
+#: includes/class-refunds.php:302
 msgid "Today's refund limit for this store is reached. Ask your payment provider."
 msgstr ""
 
-#: includes/class-refunds.php:282
+#: includes/class-refunds.php:304
 msgid "A shopper cancel must refund everything that is left on the payment."
 msgstr ""
 
-#: includes/class-refunds.php:284
+#: includes/class-refunds.php:306
 msgid "OutlinePay already has a different refund with this refund's number. Reload the order and check its refunds before you try again."
 msgstr ""
 
-#: includes/class-refunds.php:286
+#: includes/class-refunds.php:308
 msgid "Your payment provider has not turned on refunds for this store. Refund it in your payment provider's dashboard."
 msgstr ""
 
-#: includes/class-refunds.php:291
+#: includes/class-refunds.php:313
 msgid "OutlinePay does not know this payment. Refund it in your payment provider's dashboard."
 msgstr ""
 
-#: includes/class-refunds.php:293
+#: includes/class-refunds.php:315
 msgid "OutlinePay could not accept this refund. Refund a whole number of won."
 msgstr ""
 
-#: includes/class-refunds.php:295
+#: includes/class-refunds.php:317
 msgid "OutlinePay did not accept this refund. Nothing was refunded. Refund it in your payment provider's dashboard."
 msgstr ""
 
-#: includes/class-refunds.php:307
+#: includes/class-refunds.php:329
 msgid "The payment provider did not accept this amount. Nothing was refunded."
 msgstr ""
 
-#: includes/class-refunds.php:309
+#: includes/class-refunds.php:331
 msgid "The payment provider refused this refund. Nothing was refunded. Refund it in your payment provider's dashboard."
 msgstr ""
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay refund id.
-#: includes/class-refunds.php:347
+#: includes/class-refunds.php:369
 #, php-format
 msgid "The payment provider did not complete the refund of %1$s (refund %2$s). Nothing was refunded."
 msgstr ""
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay payment id.
-#: includes/class-refunds.php:367
+#: includes/class-refunds.php:390
 #, php-format
 msgid "OutlinePay cancelled the duplicate payment %2$s automatically. %1$s went back to the shopper. This order's own payment is unchanged."
 msgstr ""
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay payment id.
-#: includes/class-refunds.php:369
+#: includes/class-refunds.php:392
 #, php-format
 msgid "%1$s of OutlinePay payment %2$s was refunded. That payment did not pay this order, so no refund is added to it."
 msgstr ""
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay refund id.
-#: includes/class-refunds.php:433
+#: includes/class-refunds.php:456
 #, php-format
 msgid "OutlinePay confirmed a refund of %1$s (refund %2$s), but WooCommerce could not add it to this order. The order may already show this refund. Check the order's refunds."
 msgstr ""
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay refund id, 3: reason.
-#: includes/class-refunds.php:455
+#: includes/class-refunds.php:478
 #, php-format
 msgid "OutlinePay confirmed a refund of %1$s (refund %2$s): %3$s."
 msgstr ""
 
-#: includes/class-refunds.php:797
-#: includes/class-shopper-cancel.php:254
+#: includes/class-refunds.php:833
+#: includes/class-shopper-cancel.php:259
 msgid "Cancelled by the shopper"
 msgstr ""
 
-#: includes/class-refunds.php:801
+#: includes/class-refunds.php:837
 msgid "Refunded in the payment provider's dashboard"
 msgstr ""
 
-#: includes/class-refunds.php:803
+#: includes/class-refunds.php:839
 msgid "Duplicate payment cancelled automatically"
 msgstr ""
 
-#: includes/class-refunds.php:805
+#: includes/class-refunds.php:841
 msgid "Refund confirmed by the payment provider"
 msgstr ""
 
 #. translators: %s: amount in Korean won, such as 5,000.
-#: includes/class-refunds.php:828
+#: includes/class-refunds.php:864
 #, php-format
 msgid "%s won"
 msgstr ""
@@ -932,50 +938,50 @@ msgstr ""
 msgid "Failed."
 msgstr ""
 
-#: includes/class-shopper-cancel.php:163
+#: includes/class-shopper-cancel.php:167
 msgid "Cancel this order? The full payment goes back to your card or account."
 msgstr ""
 
-#: includes/class-shopper-cancel.php:206
+#: includes/class-shopper-cancel.php:211
 msgid "This order cannot be cancelled online. Contact the store."
 msgstr ""
 
-#: includes/class-shopper-cancel.php:208
+#: includes/class-shopper-cancel.php:213
 msgid "This page has expired. Reload it and try again."
 msgstr ""
 
-#: includes/class-shopper-cancel.php:236
-msgid "We could not cancel your order right now. Try again in a moment."
-msgstr ""
-
-#: includes/class-shopper-cancel.php:243
-msgid "We could not confirm the cancellation. Contact the store."
-msgstr ""
-
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay refund id.
-#: includes/class-shopper-cancel.php:258
+#: includes/class-shopper-cancel.php:263
 #, php-format
 msgid "%1$s refunded through OutlinePay (refund %2$s)."
 msgstr ""
 
-#: includes/class-shopper-cancel.php:263
+#: includes/class-shopper-cancel.php:268
 msgid "Your order is cancelled. The full payment goes back to your card or account."
 msgstr ""
 
 #. translators: %s: OutlinePay refund id.
-#: includes/class-shopper-cancel.php:270
+#: includes/class-shopper-cancel.php:275
 #, php-format
 msgid "The shopper tried to cancel this order, but the payment provider refused the refund (refund %s). Nothing was refunded. The order is unchanged."
 msgstr ""
 
 #. translators: %s: OutlinePay refund id.
-#: includes/class-shopper-cancel.php:283
+#: includes/class-shopper-cancel.php:288
 #, php-format
 msgid "The refund is being confirmed with the payment provider (refund %s)."
 msgstr ""
 
-#: includes/class-shopper-cancel.php:290
+#: includes/class-shopper-cancel.php:295
 msgid "Your cancellation is being confirmed. We will email you."
+msgstr ""
+
+#: includes/class-shopper-cancel.php:313
+msgid "The shopper asked to cancel, but OutlinePay's answer was lost. If the refund went through, this order will be cancelled automatically. Do not ship it until then."
+msgstr ""
+
+#: includes/class-shopper-cancel.php:315
+msgid "We could not confirm your cancellation yet. We will email you."
 msgstr ""
 
 #: includes/class-site-health.php:47
