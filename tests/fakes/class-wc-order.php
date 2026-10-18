@@ -15,6 +15,9 @@ class WC_Order {
 	public $completed_calls = 0;
 	public $saves           = 0;
 	public $date_paid       = null;
+	public $customer_id     = 0;
+	/** @var WC_Order_Refund[] */
+	public $refunds         = array();
 
 	public function __construct( $id = 42 ) {
 		$this->id = $id;
@@ -86,4 +89,94 @@ class WC_Order {
 	public function get_date_created() {
 		return null;
 	}
+	public function get_customer_id() {
+		return $this->customer_id;
+	}
+	public function get_order_number() {
+		return (string) $this->id;
+	}
+	public function get_view_order_url() {
+		return 'https://shop.example/my-account/view-order/' . $this->id . '/';
+	}
+	/** Newest first, as WooCommerce returns them. */
+	public function get_refunds() {
+		$refunds = $this->refunds;
+		usort(
+			$refunds,
+			static function ( $a, $b ) {
+				return $b->get_id() - $a->get_id();
+			}
+		);
+		return $refunds;
+	}
+	public function get_total_refunded() {
+		$total = 0;
+		foreach ( $this->refunds as $refund ) {
+			$total += (float) $refund->get_amount();
+		}
+		return $total;
+	}
+}
+
+/**
+ * A minimal stand-in for WC_Order_Refund.
+ */
+class WC_Order_Refund {
+	public $id;
+	public $amount;
+	public $reason = '';
+	public $meta   = array();
+	public $saves  = 0;
+
+	public function __construct( $id, $amount, $reason = '' ) {
+		$this->id     = $id;
+		$this->amount = $amount;
+		$this->reason = $reason;
+	}
+	public function get_id() {
+		return $this->id;
+	}
+	public function get_amount() {
+		return $this->amount;
+	}
+	public function get_reason() {
+		return $this->reason;
+	}
+	public function get_meta( $key ) {
+		return isset( $this->meta[ $key ] ) ? $this->meta[ $key ] : '';
+	}
+	public function update_meta_data( $key, $value ) {
+		$this->meta[ $key ] = $value;
+	}
+	public function save() {
+		++$this->saves;
+		return $this->id;
+	}
+}
+
+/**
+ * A minimal stand-in for WP_Error.
+ */
+class WP_Error {
+	public $code;
+	public $message;
+
+	public function __construct( $code = '', $message = '' ) {
+		$this->code    = $code;
+		$this->message = $message;
+	}
+	public function get_error_code() {
+		return $this->code;
+	}
+	public function get_error_message() {
+		return $this->message;
+	}
+}
+
+/**
+ * A minimal stand-in for WC_Payment_Gateway, enough to load the gateway class.
+ */
+class WC_Payment_Gateway {
+	public $id;
+	public $supports = array();
 }

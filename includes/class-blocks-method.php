@@ -81,7 +81,7 @@ final class Blocks_Method extends AbstractPaymentMethodType {
 		return array(
 			'title'       => Settings::label( $this->method ),
 			'description' => Settings::DRAFT_DESCRIPTION_KO,
-			'supports'    => array( 'products' ),
+			'supports'    => Gateway::features( $this->method ),
 		);
 	}
 }

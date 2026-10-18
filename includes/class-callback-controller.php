@@ -6,6 +6,10 @@
  * look: the payment is read back with GET /payments/:id and that answer is
  * what gets applied. The callback body itself is never applied.
  *
+ * A refund delivery is the payment with a refunds list. Each refund in it
+ * that this order has not handled yet is read back with GET /refunds/:id,
+ * and those answers are applied, never the list itself.
+ *
  * The same address answers OutlinePay's self-check ping, a signed body
  * {"type":"self_check","installation":"inst_...","sent_at":"..."}: it only
  * proves the address is reachable and touches no order and no option.
@@ -37,6 +41,13 @@ final class Callback_Controller {
 	private $payment_reader;
 
 	/**
+	 * Reads a refund: receives a refund id, returns the refund array or throws Api_Error.
+	 *
+	 * @var callable
+	 */
+	private $refund_reader;
+
+	/**
 	 * Finds an order: receives an order id, returns WC_Order or null.
 	 *
 	 * @var callable
@@ -44,7 +55,7 @@ final class Callback_Controller {
 	private $order_finder;
 
 	/**
-	 * Applies a payment: receives ( order, payment ), returns a decision.
+	 * Applies a payment: receives ( order, payment, refunds ), returns a decision.
 	 *
 	 * @var callable
 	 */
@@ -73,8 +84,12 @@ final class Callback_Controller {
 	 * @param callable|null $applier         Applier.
 	 * @param callable|null $copy_check      Copy check.
 	 * @param callable|null $installation_id Saved installation id.
+	 * @param callable|null $refund_reader   Refund reader.
 	 */
-	public function __construct( $secret_provider = null, $payment_reader = null, $order_finder = null, $applier = null, $copy_check = null, $installation_id = null ) {
+	public function __construct( $secret_provider = null, $payment_reader = null, $order_finder = null, $applier = null, $copy_check = null, $installation_id = null, $refund_reader = null ) {
+		$this->refund_reader   = $refund_reader ? $refund_reader : static function ( $refund_id ) {
+			return ( new Api_Client() )->get_refund( $refund_id );
+		};
 		$this->copy_check      = $copy_check ? $copy_check : array( Site_Identity::class, 'is_copy' );
 		$this->installation_id = $installation_id ? $installation_id : static function () {
 			$installation = Settings::installation();
@@ -179,7 +194,27 @@ final class Callback_Controller {
 			return self::answer( 200, 'ignored' );
 		}
 
-		$decision = call_user_func( $this->applier, $order, $payment );
+		$refunds = array();
+		foreach ( Refunds::ids_to_read( $order, $payload ) as $refund_id ) {
+			try {
+				$refunds[] = call_user_func( $this->refund_reader, $refund_id );
+			} catch ( Api_Error $error ) {
+				if ( $error->is_transient() ) {
+					return self::answer( 503, 'retry_later' );
+				}
+				// Not this store's refund: skip it.
+				Logger::warning(
+					'Callback refund could not be read',
+					array(
+						'order_id'  => $order_id,
+						'refund_id' => $refund_id,
+						'code'      => $error->get_error_code(),
+					)
+				);
+			}
+		}
+
+		$decision = call_user_func( $this->applier, $order, $payment, $refunds );
 		if ( Order_Sync::BUSY === $decision ) {
 			return self::answer( 503, 'retry_later' );
 		}

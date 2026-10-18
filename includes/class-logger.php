@@ -24,7 +24,7 @@ final class Logger {
 	/**
 	 * Context keys allowed into a log line.
 	 */
-	const ALLOWED_KEYS = array( 'order_id', 'payment_id', 'status', 'method', 'code', 'http_status', 'decision', 'count' );
+	const ALLOWED_KEYS = array( 'order_id', 'payment_id', 'refund_id', 'status', 'method', 'code', 'http_status', 'decision', 'amount', 'count' );
 
 	/**
 	 * Test seam: a callable receiving ( level, line ). Null uses wc_get_logger().

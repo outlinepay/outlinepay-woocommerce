@@ -26,6 +26,7 @@ final class Order_Sync {
 	const META_SETTLED    = '_outlinepay_settled';
 	const META_VA         = '_outlinepay_virtual_account';
 	const META_MODE       = '_outlinepay_mode';
+	const META_RECEIPT    = '_outlinepay_receipt_url';
 
 	const COMPLETE       = 'complete';
 	const HOLD_MISMATCH  = 'hold_mismatch';
@@ -160,13 +161,14 @@ final class Order_Sync {
 	}
 
 	/**
-	 * Applies a payment to its order.
+	 * Applies a payment to its order, then its refunds.
 	 *
-	 * @param \WC_Order $order   Order.
-	 * @param array     $payment Payment JSON from GET /payments.
+	 * @param \WC_Order  $order   Order.
+	 * @param array      $payment Payment JSON from GET /payments.
+	 * @param array|null $refunds Refunds of the payment, each read back with GET /refunds.
 	 * @return string The decision taken.
 	 */
-	public static function apply( $order, $payment ) {
+	public static function apply( $order, $payment, $refunds = null ) {
 		if ( ! self::is_ours( $order ) ) {
 			return self::IGNORE;
 		}
@@ -210,19 +212,67 @@ final class Order_Sync {
 			$key     = $payment['id'] . ':' . $payment['status'];
 			$applied = $order->get_meta( self::META_APPLIED );
 			$applied = is_array( $applied ) ? $applied : array();
-			if ( in_array( $key, $applied, true ) ) {
-				return $decision;
+			if ( ! in_array( $key, $applied, true ) ) {
+				self::act( $order, $payment, $decision, $context );
+
+				$applied[] = $key;
+				$order->update_meta_data( self::META_APPLIED, array_slice( $applied, -20 ) );
+				$order->save();
+				Logger::info( 'Payment applied', $context );
 			}
 
-			self::act( $order, $payment, $decision, $context );
-
-			$applied[] = $key;
-			$order->update_meta_data( self::META_APPLIED, array_slice( $applied, -20 ) );
-			$order->save();
-			Logger::info( 'Payment applied', $context );
+			self::after_status( $order, $payment, $decision, is_array( $refunds ) ? $refunds : array() );
 			return $decision;
 		} finally {
 			Order_Lock::release( $order_id );
+		}
+	}
+
+	/**
+	 * What a payment carries besides its status: the card receipt and refunds.
+	 * Runs every time, so a refund delivery for a payment already applied
+	 * still lands. The caller holds the order lock.
+	 *
+	 * @param \WC_Order $order    Order.
+	 * @param array     $payment  Payment.
+	 * @param string    $decision Decision.
+	 * @param array     $refunds  Refunds read back for this payment.
+	 * @return void
+	 */
+	private static function after_status( $order, array $payment, $decision, array $refunds ) {
+		$fresh = wc_get_order( $order->get_id() );
+		$order = $fresh instanceof \WC_Order ? $fresh : $order;
+
+		$is_order_payment = self::COMPLETE === $decision
+			&& $payment['id'] === $order->get_meta( self::META_PAYMENT_ID )
+			&& '' === (string) $order->get_meta( self::META_SETTLED );
+
+		if ( $is_order_payment && isset( $payment['receipt_url'] ) ) {
+			$receipt = Order_Display::safe_receipt_url( $payment['receipt_url'] );
+			if ( '' !== $receipt && $receipt !== $order->get_meta( self::META_RECEIPT ) ) {
+				$order->update_meta_data( self::META_RECEIPT, $receipt );
+				$order->save();
+			}
+		}
+
+		if ( array() !== $refunds ) {
+			Refunds::mirror( $order, $payment, $refunds, $is_order_payment );
+		}
+
+		if ( $is_order_payment && isset( $payment['refunded_amount'] ) && is_int( $payment['refunded_amount'] ) ) {
+			$fresh    = wc_get_order( $order->get_id() );
+			$recorded = Refunds::recorded_amount( $fresh instanceof \WC_Order ? $fresh : $order );
+			if ( $payment['refunded_amount'] > $recorded ) {
+				// A refund this store has not heard about yet. Its refund delivery adds it.
+				Logger::warning(
+					'Payment shows more refunded than the order',
+					array(
+						'order_id'   => $order->get_id(),
+						'payment_id' => $payment['id'],
+						'amount'     => $payment['refunded_amount'] - $recorded,
+					)
+				);
+			}
 		}
 	}
 

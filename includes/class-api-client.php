@@ -219,6 +219,46 @@ class Api_Client {
 	}
 
 	/**
+	 * POST /payments/:id/refunds: refunds part or all of a paid payment.
+	 *
+	 * The server is the authority on what can be refunded. It answers 200 with
+	 * the refund whenever one was saved, whatever the provider said, and a
+	 * refusal (nothing moved) otherwise.
+	 *
+	 * @param string $payment_id   Payment id (ppay_...).
+	 * @param int    $amount       Whole KRW, sent as a JSON number.
+	 * @param string $refund_id    This store's own id for the refund. The idempotency key.
+	 * @param string $requested_by store or shopper.
+	 * @return array The refund (pref_...).
+	 * @throws Api_Error On any refusal.
+	 */
+	public function create_refund( $payment_id, $amount, $refund_id, $requested_by = 'store' ) {
+		return $this->request(
+			'POST',
+			'/payments/' . self::path_id( $payment_id ) . '/refunds',
+			array(
+				'amount'       => (int) $amount,
+				'refund_id'    => (string) $refund_id,
+				'requested_by' => 'shopper' === $requested_by ? 'shopper' : 'store',
+			)
+		);
+	}
+
+	/**
+	 * GET /refunds/:id.
+	 *
+	 * @param string $refund_id Refund id (pref_...).
+	 * @return array
+	 * @throws Api_Error On any refusal.
+	 */
+	public function get_refund( $refund_id ) {
+		if ( ! self::valid_refund_id( $refund_id ) ) {
+			throw new Api_Error( 0, 'invalid_refund_id', 'Malformed refund id.' );
+		}
+		return $this->request( 'GET', '/refunds/' . $refund_id );
+	}
+
+	/**
 	 * POST /self_checks: one self-check run. The server adds its own checks
 	 * (including a signed test call to this store's callback) and answers the
 	 * whole run.
@@ -250,6 +290,16 @@ class Api_Client {
 	}
 
 	/**
+	 * True for a refund id we are willing to put in a URL path.
+	 *
+	 * @param mixed $refund_id Candidate.
+	 * @return bool
+	 */
+	public static function valid_refund_id( $refund_id ) {
+		return is_string( $refund_id ) && 1 === preg_match( '/^pref_[A-Za-z0-9]{1,64}$/', $refund_id );
+	}
+
+	/**
 	 * Validates a payment id for a path segment.
 	 *
 	 * @param mixed $payment_id Candidate.
@@ -274,7 +324,7 @@ class Api_Client {
 	 * @throws Api_Error On any non-2xx answer or network failure.
 	 */
 	public function request( $method, $path, $body = null, $auth = true ) {
-		$operation = strtolower( $method ) . ' ' . preg_replace( '#/ppay_[A-Za-z0-9]+#', '/:id', strtok( $path, '?' ) );
+		$operation = strtolower( $method ) . ' ' . preg_replace( '#/(ppay|pref)_[A-Za-z0-9]+#', '/:id', strtok( $path, '?' ) );
 		$headers   = array(
 			'Accept'     => 'application/json',
 			'User-Agent' => 'OutlinePay-WooCommerce/' . ( defined( 'OUTLINEPAY_VERSION' ) ? OUTLINEPAY_VERSION : '0' ),

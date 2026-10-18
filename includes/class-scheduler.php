@@ -171,7 +171,8 @@ final class Scheduler {
 	 * Walks the unsettled orders that carry OutlinePay attempts, 50 per run,
 	 * continuing where the last run stopped, and applies what the server says.
 	 * Catches payments whose callback and return both went missing, including a
-	 * virtual account deposited days later.
+	 * virtual account deposited days later. Then follows refunds still waiting
+	 * for the provider (see Refunds::follow_pending).
 	 *
 	 * @return void
 	 */
@@ -252,6 +253,9 @@ final class Scheduler {
 		update_option( self::OPTION_FAILURES, array_slice( $failures, -100, null, true ), false );
 		update_option( self::OPTION_CURSOR, self::advance_cursor( $cursor, $done, $batch['complete'] && count( $done ) === count( $batch['rows'] ) ), false );
 		Logger::info( 'Reconcile run finished', array( 'count' => $count ) );
+
+		// Refunds the provider had not confirmed when they were asked for.
+		Refunds::follow_pending( $client );
 	}
 
 	/**

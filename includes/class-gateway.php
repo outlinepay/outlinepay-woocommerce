@@ -30,7 +30,7 @@ class Gateway extends \WC_Payment_Gateway {
 		$this->outlinepay_method = $method;
 		$this->id                = Settings::gateway_id( $method );
 		$this->has_fields        = false;
-		$this->supports          = array( 'products' );
+		$this->supports          = self::features( $method );
 		$this->method_title      = sprintf(
 			/* translators: %s: payment method name, such as 신용카드 (credit card). */
 			__( 'OutlinePay: %s', 'outlinepay-for-woocommerce' ),
@@ -44,6 +44,32 @@ class Gateway extends \WC_Payment_Gateway {
 		$this->title       = Settings::label( $method );
 		$this->description = Settings::DRAFT_DESCRIPTION_KO;
 		$this->enabled     = Settings::shown( $method ) ? 'yes' : 'no';
+	}
+
+	/**
+	 * Features for a method. Refunds only when the provider turned them on for
+	 * this store and can refund the method through its API. Otherwise
+	 * WooCommerce offers a manual refund only.
+	 *
+	 * @param string $method Method key.
+	 * @return string[]
+	 */
+	public static function features( $method ) {
+		return Settings::refundable( $method ) ? array( 'products', 'refunds' ) : array( 'products' );
+	}
+
+	/**
+	 * Refund button in the order screen. WooCommerce has saved its refund row
+	 * and deletes it when this answers an error.
+	 *
+	 * @param int        $order_id Order id.
+	 * @param float|null $amount   Amount.
+	 * @param string     $reason   Reason. Stays in WooCommerce, never sent.
+	 * @return bool|\WP_Error
+	 */
+	public function process_refund( $order_id, $amount = null, $reason = '' ) {
+		unset( $reason );
+		return Refunds::process( $order_id, $amount );
 	}
 
 	/**

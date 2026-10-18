@@ -269,4 +269,31 @@ class ApiClientTest extends TestCase {
 	public function test_the_base_defaults_to_production() {
 		$this->assertSame( 'https://api.outlinepay.com/plugin/v1', Api_Client::configured_base() );
 	}
+
+	public function test_refunds_are_posted_with_a_number_amount_and_read_back_by_id() {
+		$client = $this->client(
+			array(
+				self::json( 200, array( 'id' => 'pref_abc', 'status' => 'succeeded' ) ),
+				self::json( 200, array( 'id' => 'pref_abc', 'status' => 'succeeded' ) ),
+			)
+		);
+		$client->create_refund( 'ppay_abc', 5000, 901, 'anything else' );
+		$this->assertSame( self::BASE . '/payments/ppay_abc/refunds', $this->requests[0]['url'] );
+		$this->assertSame( '{"amount":5000,"refund_id":"901","requested_by":"store"}', $this->requests[0]['body'] );
+
+		$client->get_refund( 'pref_abc' );
+		$this->assertSame( 'GET', $this->requests[1]['method'] );
+		$this->assertSame( self::BASE . '/refunds/pref_abc', $this->requests[1]['url'] );
+	}
+
+	public function test_a_malformed_refund_id_is_never_put_in_a_path() {
+		$client = $this->client( array() );
+		try {
+			$client->get_refund( '../payments' );
+			$this->fail( 'expected a refusal' );
+		} catch ( Api_Error $error ) {
+			$this->assertSame( 'invalid_refund_id', $error->get_error_code() );
+		}
+		$this->assertSame( array(), $this->requests );
+	}
 }

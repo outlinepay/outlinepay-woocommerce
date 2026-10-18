@@ -17,6 +17,7 @@ final class Settings {
 	const OPTION_INSTALLATION = 'outlinepay_installation';
 	const OPTION_METHODS      = 'outlinepay_methods';
 	const OPTION_VERSION      = 'outlinepay_reported_version';
+	const OPTION_CANCEL       = 'outlinepay_shopper_cancel';
 
 	/**
 	 * Every method key the server may offer, in checkout order.
@@ -32,7 +33,24 @@ final class Settings {
 	/**
 	 * Installation fields kept locally. Never credentials.
 	 */
-	const INSTALLATION_FIELDS = array( 'id', 'mode', 'status', 'provider', 'permissions', 'connected_at', 'token_last4' );
+	const INSTALLATION_FIELDS = array( 'id', 'mode', 'status', 'provider', 'permissions', 'refunds_enabled', 'refund_daily_cap', 'connected_at', 'token_last4' );
+
+	/**
+	 * The permission a store token needs to refund.
+	 */
+	const REFUND_PERMISSION = 'refunds.create';
+
+	/**
+	 * Methods the payment provider can refund through its API. Only used to
+	 * decide whether to offer the Refund button and Cancel order. OutlinePay
+	 * decides every refund and refuses what the provider cannot do.
+	 */
+	const REFUNDABLE_METHODS = array( 'card', 'foreign_card_krw', 'bank_transfer', 'kakaopay', 'naverpay' );
+
+	/**
+	 * Order statuses a shopper may cancel from, when the merchant allows it.
+	 */
+	const CANCEL_STATUSES = array( 'processing', 'on-hold' );
 
 	/**
 	 * The installation summary, or an empty array.
@@ -113,6 +131,59 @@ final class Settings {
 	public static function is_test_mode() {
 		$installation = self::installation();
 		return isset( $installation['mode'] ) && 'test' === $installation['mode'];
+	}
+
+	/**
+	 * True when this store's token may refund (the provider turned refunds on).
+	 *
+	 * @return bool
+	 */
+	public static function refunds_permitted() {
+		$installation = self::installation();
+		return isset( $installation['permissions'] ) && is_array( $installation['permissions'] ) && in_array( self::REFUND_PERMISSION, $installation['permissions'], true );
+	}
+
+	/**
+	 * True when payments made with this method can be refunded from the store.
+	 *
+	 * @param string $method Method key.
+	 * @return bool
+	 */
+	public static function refundable( $method ) {
+		return in_array( $method, self::REFUNDABLE_METHODS, true ) && self::refunds_permitted();
+	}
+
+	/**
+	 * The shopper cancel setting: enabled and the statuses it applies to.
+	 *
+	 * @return array array( 'enabled' => bool, 'statuses' => string[] ).
+	 */
+	public static function shopper_cancel() {
+		$value    = get_option( self::OPTION_CANCEL, array() );
+		$value    = is_array( $value ) ? $value : array();
+		$statuses = isset( $value['statuses'] ) && is_array( $value['statuses'] ) ? array_values( array_intersect( self::CANCEL_STATUSES, $value['statuses'] ) ) : array( 'processing' );
+		return array(
+			'enabled'  => isset( $value['enabled'] ) && 'yes' === $value['enabled'],
+			'statuses' => $statuses,
+		);
+	}
+
+	/**
+	 * Saves the shopper cancel setting. Unknown statuses are dropped.
+	 *
+	 * @param bool  $enabled  On or off.
+	 * @param array $statuses Statuses.
+	 * @return void
+	 */
+	public static function save_shopper_cancel( $enabled, array $statuses ) {
+		update_option(
+			self::OPTION_CANCEL,
+			array(
+				'enabled'  => $enabled ? 'yes' : 'no',
+				'statuses' => array_values( array_intersect( self::CANCEL_STATUSES, $statuses ) ),
+			),
+			true
+		);
 	}
 
 	/**

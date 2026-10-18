@@ -38,6 +38,7 @@ final class Plugin {
 		Unpaid_Guard::register();
 		Switch_Guard::register();
 		Order_Display::register();
+		Refunds::register();
 		Site_Health::register();
 		Abilities::register();
 	}
