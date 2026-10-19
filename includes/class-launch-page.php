@@ -271,6 +271,8 @@ final class Launch_Page {
 			array(
 				'status'     => array( 'pending' ),
 				'limit'      => $limit,
+				'orderby'    => 'date',
+				'order'      => 'ASC',
 				'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- bounded to 50 orders per run, every 15 minutes.
 					array(
 						'key'     => Order_Sync::META_LAUNCH,
