@@ -285,4 +285,28 @@ class LaunchPageTest extends TestCase {
 		Launch_Page::on_closed( 42 );
 		$this->assertSame( 1, $this->order->saves, 'nothing to drop, nothing saved' );
 	}
+
+	public function test_the_personal_data_eraser_drops_the_form() {
+		$this->store_launch();
+		Launch_Page::on_erased( $this->order );
+		$this->assertArrayNotHasKey( Order_Sync::META_LAUNCH, $this->order->meta );
+		$this->assertSame( 1, $this->order->saves );
+	}
+
+	public function test_the_sweep_drops_expired_forms_and_keeps_live_ones() {
+		$live = new \WC_Order( 43 );
+		$live->meta[ Order_Sync::META_LAUNCH ] = Launch_Page::from_window( self::window(), 'ppay_live', 'Shop #43', self::NOW );
+		$this->store_launch();
+		$orders = array( $this->order, $live );
+		Functions\when( 'wc_get_orders' )->justReturn( $orders );
+
+		$this->assertSame( 0, Launch_Page::sweep_expired( self::NOW ), 'nothing has expired yet' );
+		$this->assertSame( 2, Launch_Page::sweep_expired( self::NOW + 601 ) );
+		$this->assertArrayNotHasKey( Order_Sync::META_LAUNCH, $this->order->meta );
+		$this->assertArrayNotHasKey( Order_Sync::META_LAUNCH, $live->meta );
+
+		$live->meta[ Order_Sync::META_LAUNCH ] = Launch_Page::from_window( self::window( array( 'expires_at' => gmdate( 'Y-m-d\TH:i:s\Z', self::NOW + 1200 ) ) ), 'ppay_live', 'Shop #43', self::NOW + 601 );
+		$this->assertSame( 0, Launch_Page::sweep_expired( self::NOW + 601 ), 'a newer attempt on the same order stays' );
+		$this->assertArrayHasKey( Order_Sync::META_LAUNCH, $live->meta );
+	}
 }

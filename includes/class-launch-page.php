@@ -50,6 +50,7 @@ final class Launch_Page {
 		add_action( 'woocommerce_api_' . self::ENDPOINT, array( self::class, 'handle' ) );
 		add_action( 'woocommerce_order_status_cancelled', array( self::class, 'on_closed' ), 10, 2 );
 		add_action( 'woocommerce_order_status_failed', array( self::class, 'on_closed' ), 10, 2 );
+		add_action( 'woocommerce_privacy_remove_order_personal_data', array( self::class, 'on_erased' ) );
 	}
 
 	/**
@@ -241,6 +242,51 @@ final class Launch_Page {
 		}
 		$order->delete_meta_data( Order_Sync::META_LAUNCH );
 		return true;
+	}
+
+	/**
+	 * WooCommerce's personal data eraser ran on the order: the payment form
+	 * carries the shopper's details too, so it goes as well.
+	 *
+	 * @param \WC_Order $order Order.
+	 * @return void
+	 */
+	public static function on_erased( $order ) {
+		if ( $order instanceof \WC_Order && self::forget( $order ) ) {
+			$order->save();
+		}
+	}
+
+	/**
+	 * Drops expired payment forms from unpaid orders the shopper walked away
+	 * from, which no return, payment or cancellation ever cleans up. Runs with
+	 * the background payment check.
+	 *
+	 * @param int $now   Current Unix time.
+	 * @param int $limit Orders per run.
+	 * @return int Forms dropped.
+	 */
+	public static function sweep_expired( $now, $limit = 50 ) {
+		$orders  = wc_get_orders(
+			array(
+				'status'     => array( 'pending' ),
+				'limit'      => $limit,
+				'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- bounded to 50 orders per run, every 15 minutes.
+					array(
+						'key'     => Order_Sync::META_LAUNCH,
+						'compare' => 'EXISTS',
+					),
+				),
+			)
+		);
+		$dropped = 0;
+		foreach ( $orders as $order ) {
+			if ( null === self::normalise( $order->get_meta( Order_Sync::META_LAUNCH ), $now ) && self::forget( $order ) ) {
+				$order->save();
+				++$dropped;
+			}
+		}
+		return $dropped;
 	}
 
 	/**

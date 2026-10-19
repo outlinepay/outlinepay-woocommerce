@@ -180,7 +180,8 @@ final class Scheduler {
 		if ( ! Settings::is_connected() ) {
 			return;
 		}
-		$now    = time();
+		$now = time();
+		Launch_Page::sweep_expired( $now );
 		$cursor = self::clamp_cursor( self::read_cursor( get_option( self::OPTION_CURSOR, array() ) ), $now );
 		$orders = wc_get_orders(
 			array(
