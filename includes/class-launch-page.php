@@ -376,7 +376,7 @@ final class Launch_Page {
 :root{--bg:#f6f7f7;--card:#fff;--text:#1d2327;--muted:#50575e;--line:#dcdcde;--accent:#1d2327;--accent-text:#fff;--warn:#b32d2e;color-scheme:light dark}
 @media (prefers-color-scheme:dark){:root{--bg:#141517;--card:#1e2023;--text:#f0f0f1;--muted:#a7aaad;--line:#3c434a;--accent:#f0f0f1;--accent-text:#141517;--warn:#f86368}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;word-break:keep-all;overflow-wrap:anywhere}
 main{max-width:420px;margin:48px auto;padding:0 16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:24px}
 h1{font-size:20px;margin:0 0 16px;overflow-wrap:anywhere}
