@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: OutlinePay for WooCommerce 0.3.0\n"
+"Project-Id-Version: OutlinePay for WooCommerce 0.4.0\n"
 "Report-Msgid-Bugs-To: https://outlinepay.com\n"
 "POT-Creation-Date: 2026-10-18T07:36:52+00:00\n"
 "PO-Revision-Date: 2026-10-18 03:10-0400\n"
@@ -1344,3 +1344,35 @@ msgstr "결제"
 #: includes/class-switch-guard.php:140
 msgid "This order is already paid. You do not need to pay again."
 msgstr "이미 결제된 주문입니다. 다시 결제하지 않으셔도 됩니다."
+
+#: includes/class-launch-page.php:361
+msgid "Order"
+msgstr "주문"
+
+#: includes/class-launch-page.php:362
+msgid "Total"
+msgstr "결제 금액"
+
+#: includes/class-launch-page.php:364
+msgid "Payment method"
+msgstr "결제수단"
+
+#: includes/class-launch-page.php:399
+msgid "Pay"
+msgstr "결제하기"
+
+#: includes/class-launch-page.php:401
+msgid "A payment window opens. Finish there and this page continues."
+msgstr "결제 창이 열립니다. 결제 창에서 결제를 마치면 다음 단계로 이어집니다."
+
+#: includes/class-launch-page.php:402
+msgid "The payment window was closed. Pay again or go back."
+msgstr "결제 창이 닫혔습니다. 다시 결제하거나 이전 단계로 돌아가십시오."
+
+#: includes/class-launch-page.php:402
+msgid "Back to checkout"
+msgstr "결제 페이지로 돌아가기"
+
+#: includes/class-return-handler.php:131
+msgid "Continue to the store"
+msgstr "상점으로 이동"

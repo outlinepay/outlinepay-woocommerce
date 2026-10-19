@@ -27,6 +27,7 @@ final class Order_Sync {
 	const META_VA         = '_outlinepay_virtual_account';
 	const META_MODE       = '_outlinepay_mode';
 	const META_RECEIPT    = '_outlinepay_receipt_url';
+	const META_LAUNCH     = '_outlinepay_launch';
 
 	const COMPLETE       = 'complete';
 	const HOLD_MISMATCH  = 'hold_mismatch';
@@ -219,6 +220,11 @@ final class Order_Sync {
 				$order->update_meta_data( self::META_APPLIED, array_slice( $applied, -20 ) );
 				$order->save();
 				Logger::info( 'Payment applied', $context );
+			}
+
+			// A paid or held order needs no payment form any more.
+			if ( ( $order->is_paid() || $order->has_status( 'on-hold' ) ) && Launch_Page::forget( $order ) ) {
+				$order->save();
 			}
 
 			self::after_status( $order, $payment, $decision, is_array( $refunds ) ? $refunds : array() );

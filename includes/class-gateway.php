@@ -15,6 +15,18 @@ defined( 'ABSPATH' ) || exit;
 class Gateway extends \WC_Payment_Gateway {
 
 	/**
+	 * Most characters in the product name sent to the provider.
+	 */
+	const PRODUCT_NAME_MAX = 40;
+
+	/**
+	 * Test seam for the API client.
+	 *
+	 * @var callable|null
+	 */
+	private static $client_factory = null;
+
+	/**
 	 * Method key, e.g. card.
 	 *
 	 * @var string
@@ -144,27 +156,55 @@ class Gateway extends \WC_Payment_Gateway {
 			return $this->refuse( __( 'The order total must be a whole number of won. Contact the store.', 'outlinepay-for-woocommerce' ) );
 		}
 
-		$client = new Api_Client();
+		$product_name = self::product_name( Launch_Page::store_name(), (string) $order->get_order_number() );
+		$fields       = array(
+			'order_id'       => $order->get_id(),
+			'order_number'   => (string) $order->get_order_number(),
+			'amount'         => $amount,
+			'currency'       => 'KRW',
+			'payment_method' => $this->outlinepay_method,
+			'return_url'     => self::return_url( $order ),
+			'buyer'          => self::buyer( $order ),
+		);
+		if ( '' !== $product_name ) {
+			$fields['product_name'] = $product_name;
+		}
+
 		try {
-			$payment = $client->create_payment(
-				array(
-					'order_id'       => $order->get_id(),
-					'order_number'   => (string) $order->get_order_number(),
-					'amount'         => $amount,
-					'currency'       => 'KRW',
-					'payment_method' => $this->outlinepay_method,
-					'return_url'     => self::return_url( $order ),
-					'buyer'          => self::buyer( $order ),
-				)
-			);
+			$payment = self::client()->create_payment( $fields );
 		} catch ( Api_Error $error ) {
 			return $this->handle_refusal( $order, $error );
 		}
 
-		$redirect = isset( $payment['redirect_url'] ) && is_string( $payment['redirect_url'] ) ? $payment['redirect_url'] : '';
-		if ( ! isset( $payment['id'] ) || ! Api_Client::valid_payment_id( $payment['id'] ) || ! preg_match( '#^https?://#i', $redirect ) ) {
+		if ( ! isset( $payment['id'] ) || ! Api_Client::valid_payment_id( $payment['id'] ) ) {
 			Logger::error( 'Payment answer missing id or redirect', array( 'order_id' => $order->get_id() ) );
 			return $this->refuse( __( 'The payment could not be started. Try again in a moment.', 'outlinepay-for-woocommerce' ) );
+		}
+
+		$window = isset( $payment['window'] ) && is_array( $payment['window'] ) ? $payment['window'] : array();
+		if ( isset( $window['type'] ) && 'form' === $window['type'] ) {
+			// The provider's window opens with a form: the store's launch page posts it.
+			$launch = Launch_Page::from_window( $window, $payment['id'], $product_name, time() );
+			if ( null === $launch ) {
+				Logger::error(
+					'Payment answer has a payment form this store cannot post',
+					array(
+						'order_id'   => $order->get_id(),
+						'payment_id' => $payment['id'],
+					)
+				);
+				return $this->refuse( __( 'The payment could not be started. Try again in a moment.', 'outlinepay-for-woocommerce' ) );
+			}
+			$order->update_meta_data( Order_Sync::META_LAUNCH, $launch );
+			$redirect = Launch_Page::url( $order, $payment['id'] );
+		} else {
+			$redirect = isset( $payment['redirect_url'] ) && is_string( $payment['redirect_url'] ) ? $payment['redirect_url'] : '';
+			if ( ! preg_match( '#^https?://#i', $redirect ) ) {
+				Logger::error( 'Payment answer missing id or redirect', array( 'order_id' => $order->get_id() ) );
+				return $this->refuse( __( 'The payment could not be started. Try again in a moment.', 'outlinepay-for-woocommerce' ) );
+			}
+			// One launch slot per order: an earlier attempt's form is not posted again.
+			Launch_Page::forget( $order );
 		}
 
 		$order->update_meta_data( Order_Sync::META_PAYMENT_ID, $payment['id'] );
@@ -183,6 +223,47 @@ class Gateway extends \WC_Payment_Gateway {
 			'result'   => 'success',
 			'redirect' => $redirect,
 		);
+	}
+
+	/**
+	 * Replaces the API client, for tests. Null restores the default.
+	 *
+	 * @param callable|null $factory Returns an Api_Client.
+	 * @return void
+	 */
+	public static function set_client_factory( $factory ) {
+		self::$client_factory = $factory;
+	}
+
+	/**
+	 * The API client.
+	 *
+	 * @return Api_Client
+	 */
+	private static function client() {
+		return self::$client_factory ? call_user_func( self::$client_factory ) : new Api_Client();
+	}
+
+	/**
+	 * What the provider shows the shopper as the item: the store name and the
+	 * order number, at most PRODUCT_NAME_MAX characters, no control or format characters.
+	 * '' when nothing is left, and then none is sent.
+	 *
+	 * @param string $store_name   Store name, plain text.
+	 * @param string $order_number Order number.
+	 * @return string
+	 */
+	public static function product_name( $store_name, $order_number ) {
+		// \p{C} is every control, format, private-use and unassigned character: the
+		// server refuses all of them, as Ruby's [[:cntrl:]] does.
+		$name = preg_replace( '/[\p{C}\s]+/u', ' ', trim( $store_name . ' #' . $order_number ) );
+		if ( ! is_string( $name ) ) {
+			// Not valid UTF-8: send none rather than a broken name.
+			return '';
+		}
+		$name = trim( $name );
+		$name = function_exists( 'mb_substr' ) ? mb_substr( $name, 0, self::PRODUCT_NAME_MAX, 'UTF-8' ) : substr( $name, 0, self::PRODUCT_NAME_MAX );
+		return trim( $name );
 	}
 
 	/**

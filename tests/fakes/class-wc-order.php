@@ -16,6 +16,8 @@ class WC_Order {
 	public $saves           = 0;
 	public $date_paid       = null;
 	public $customer_id     = 0;
+	public $order_key       = 'wc_order_abc123';
+	public $billing         = array();
 	/** @var WC_Order_Refund[] */
 	public $refunds         = array();
 
@@ -94,6 +96,19 @@ class WC_Order {
 	}
 	public function get_order_number() {
 		return (string) $this->id;
+	}
+	public function get_order_key() {
+		return $this->order_key;
+	}
+	public function get_checkout_payment_url() {
+		return 'https://shop.example/checkout/order-pay/' . $this->id . '/?pay_for_order=true&key=' . $this->order_key;
+	}
+	public function __call( $name, $args ) {
+		if ( 0 === strpos( $name, 'get_billing_' ) ) {
+			$field = substr( $name, strlen( 'get_billing_' ) );
+			return isset( $this->billing[ $field ] ) ? $this->billing[ $field ] : '';
+		}
+		throw new \BadMethodCallException( 'WC_Order fake has no ' . $name );
 	}
 	public function get_view_order_url() {
 		return 'https://shop.example/my-account/view-order/' . $this->id . '/';

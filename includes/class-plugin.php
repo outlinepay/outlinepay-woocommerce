@@ -33,6 +33,7 @@ final class Plugin {
 
 		Admin_Page::register();
 		Return_Handler::register();
+		Launch_Page::register();
 		Callback_Controller::register();
 		Scheduler::register();
 		Unpaid_Guard::register();

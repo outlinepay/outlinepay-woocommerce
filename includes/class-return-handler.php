@@ -65,8 +65,7 @@ final class Return_Handler {
 		if ( Site_Identity::is_copy() ) {
 			// A copy of the store does not call OutlinePay. The live store settles the order.
 			Logger::warning( 'Shopper return on a copy of the store, not applied', array( 'order_id' => $order->get_id() ) );
-			wp_safe_redirect( $order->get_checkout_order_received_url() );
-			exit;
+			self::finish( $order->get_checkout_order_received_url() );
 		}
 		try {
 			$payment  = ( new Api_Client() )->get_payment( $pid );
@@ -83,8 +82,70 @@ final class Return_Handler {
 		}
 
 		$order = wc_get_order( $order->get_id() );
-		wp_safe_redirect( self::destination( $order, $decision ) );
+		if ( Launch_Page::forget( $order ) ) {
+			// The shopper is back: this attempt's payment form is not posted again.
+			$order->save();
+		}
+		self::finish( self::destination( $order, $decision ) );
+	}
+
+	/**
+	 * Sends the shopper on. The return may load inside the payment window the
+	 * launch page opened: then the store's tab goes to the destination and the
+	 * window closes. Otherwise this tab goes there.
+	 *
+	 * @param string $url Destination on this site.
+	 * @return void
+	 */
+	private static function finish( $url ) {
+		$url = wp_validate_redirect( $url, home_url( '/' ) );
+		nocache_headers();
+		header( 'Content-Type: text/html; charset=UTF-8' );
+		header( 'X-Robots-Tag: noindex, nofollow' );
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- finish_page() escapes every value it prints.
+		echo self::finish_page( $url );
 		exit;
+	}
+
+	/**
+	 * The page that sends the shopper on: to the store's tab when it opened this
+	 * window (same site only), else in place. A meta refresh and a link cover
+	 * browsers without JavaScript.
+	 *
+	 * @param string $url Destination.
+	 * @return string
+	 */
+	public static function finish_page( $url ) {
+		$json = wp_json_encode( (string) $url, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES );
+		return '<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="refresh" content="2;url=' . esc_url( $url ) . '">
+<title>' . esc_html__( 'Payment', 'outlinepay-for-woocommerce' ) . '</title>
+<style>:root{color-scheme:light dark}body{margin:0;padding:48px 16px;font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;text-align:center}a{color:inherit}</style>
+</head>
+<body>
+<p><a href="' . esc_url( $url ) . '">' . esc_html__( 'Continue to the store', 'outlinepay-for-woocommerce' ) . '</a></p>
+<script>
+(function () {
+	var destination = ' . $json . ';
+	try {
+		var opener = window.opener;
+		if (opener && opener !== window && !opener.closed && opener.location.host === window.location.host) {
+			opener.location.href = destination;
+			window.close();
+			return;
+		}
+	} catch (e) {}
+	window.location.replace(destination);
+})();
+</script>
+</body>
+</html>
+';
 	}
 
 	/**
