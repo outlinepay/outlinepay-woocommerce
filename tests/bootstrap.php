@@ -5,7 +5,7 @@
  */
 
 define( 'ABSPATH', __DIR__ . '/' );
-define( 'OUTLINEPAY_VERSION', '0.3.0' );
+define( 'OUTLINEPAY_VERSION', '0.4.0' );
 
 require dirname( __DIR__ ) . '/vendor/autoload.php';
 require dirname( __DIR__ ) . '/includes/autoload.php';

@@ -4,7 +4,7 @@ Tags: payments, korea, krw, virtual account, woocommerce
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.3.0
+Stable tag: 0.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -112,7 +112,8 @@ What is sent, and when:
 
 * When you click Connect: the connect code, your store address, the address OutlinePay uses to notify your store, and the versions of PHP, WordPress, WooCommerce and this plugin.
 * Once after each plugin update: the same version numbers.
-* When a shopper clicks to pay: the order id, order number, total, currency, chosen method and the address to return the shopper to. Also the shopper's billing name, email, phone and address. OutlinePay passes these to your payment provider to open the payment window and does not store them.
+* When a shopper clicks to pay: the order id, order number, total, currency, chosen method, the address to return the shopper to, and an item name made of your store name and the order number. Also the shopper's billing name, email, phone and address. OutlinePay passes these to your payment provider to open the payment window and does not store them.
+* When the payment provider opens its window with a form, OutlinePay sends that form back to your store. The form can hold the shopper's billing details. Your store keeps it on the order until the shopper returns, or the order is paid, on hold, cancelled or failed, and the shopper's browser posts it to the provider. It is never logged.
 * To check a payment: the order id and payment id. This happens when the shopper returns, when OutlinePay notifies your store, every 15 minutes for recent unpaid orders, and before WooCommerce cancels an unpaid order.
 * When you refund an order from the order screen: the payment id, the amount and WooCommerce's refund id. The refund reason stays in WooCommerce.
 * When a shopper cancels their own order (only if you turned this on): the payment id, the order total and a refund id made from the order id. No shopper details.
@@ -132,11 +133,17 @@ OutlinePay privacy policy: https://outlinepay.com/privacy
 
 = CookiePay =
 
-CookiePay is the payment provider that takes the payment. The shopper is sent to CookiePay's payment window and enters payment details there. The shopper's billing name, email, phone and address reach CookiePay through OutlinePay, as described above.
+CookiePay is the payment provider that takes the payment. The shopper clicks Pay on a page of your store, which opens CookiePay's payment window, and enters payment details there. The shopper's billing name, email, phone and address reach CookiePay through OutlinePay, as described above.
 
 CookiePay privacy policy: https://www.cookiepayments.com/terms/private
 
 == Changelog ==
+
+= 0.4.0 =
+* Payment windows that open with a form now work. The shopper sees a page of your store with the order, the total and a Pay button. The button opens the provider's payment window.
+* When the shopper finishes in that window, it closes and your store's tab moves to the thank-you page.
+* If the browser blocks the window, the payment continues in the same tab. If the shopper closes the window, the page offers Pay again and Back to checkout.
+* The provider shows your store name and the order number as the item name.
 
 = 0.3.0 =
 * Refund from the order screen with WooCommerce's Refund button, when your payment provider turns refunds on.

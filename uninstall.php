@@ -10,7 +10,7 @@
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
 if ( ! defined( 'OUTLINEPAY_VERSION' ) ) {
-	define( 'OUTLINEPAY_VERSION', '0.3.0' );
+	define( 'OUTLINEPAY_VERSION', '0.4.0' );
 }
 require_once __DIR__ . '/includes/autoload.php';
 
