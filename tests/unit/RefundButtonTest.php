@@ -33,12 +33,20 @@ class RefundButtonTest extends TestCase {
 		$this->assertTrue( $this->gateway->can_refund_order( $this->order ) );
 	}
 
-	public function test_a_hold_with_money_behind_it_gets_the_button() {
+	public function test_a_hold_settled_outside_the_store_gets_no_button() {
 		$this->order->status = 'on-hold';
 		foreach ( array( 'mismatch', 'review', 'foreign' ) as $hold ) {
-			$this->order->meta[ Order_Sync::META_HOLD ] = $hold;
-			$this->assertTrue( $this->gateway->can_refund_order( $this->order ), $hold );
+			$this->order->meta[ Order_Sync::META_HOLD ]    = $hold;
+			$this->order->meta[ Order_Sync::META_SETTLED ] = $hold;
+			$this->assertFalse( $this->gateway->can_refund_order( $this->order ), $hold );
 		}
+	}
+
+	public function test_a_paid_order_settled_as_a_double_payment_gets_no_button() {
+		$this->order->status                          = 'processing';
+		$this->order->date_paid                       = '2026-10-18 07:28:00';
+		$this->order->meta[ Order_Sync::META_SETTLED ] = 'double';
+		$this->assertFalse( $this->gateway->can_refund_order( $this->order ) );
 	}
 
 	public function test_a_virtual_account_waiting_for_its_deposit_gets_no_button() {

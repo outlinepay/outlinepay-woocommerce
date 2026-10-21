@@ -85,26 +85,22 @@ class Gateway extends \WC_Payment_Gateway {
 	}
 
 	/**
-	 * Whether the order screen offers "Refund via OutlinePay". Only when money
-	 * was taken: the order is paid, or it is on hold with a payment behind it
-	 * (amount mismatch, review, foreign card). A pending order the shopper
-	 * never paid, or a virtual account still waiting for its deposit, has
-	 * nothing to refund, and WooCommerce then offers a manual refund only.
+	 * Whether the order screen offers "Refund via OutlinePay": the same rule
+	 * Refunds::process applies, so the button never leads to a refusal. The
+	 * order is paid, through an OutlinePay payment, and not settled outside
+	 * the store (a hold for mismatch, review or foreign card, or a double
+	 * payment, is refunded in the provider's dashboard). A pending order the
+	 * shopper never paid gets WooCommerce's manual refund only.
 	 *
 	 * @param \WC_Order $order Order.
 	 * @return bool
 	 */
 	public function can_refund_order( $order ) {
-		if ( ! $order || ! $this->supports( 'refunds' ) ) {
+		if ( ! $order || ! $this->supports( 'refunds' ) || ! $order->get_date_paid() ) {
 			return false;
 		}
-		if ( ! Api_Client::valid_payment_id( $order->get_meta( Order_Sync::META_PAYMENT_ID ) ) ) {
-			return false;
-		}
-		if ( $order->get_date_paid() ) {
-			return true;
-		}
-		return $order->has_status( 'on-hold' ) && in_array( (string) $order->get_meta( Order_Sync::META_HOLD ), array( 'mismatch', 'review', 'foreign' ), true );
+		return Api_Client::valid_payment_id( $order->get_meta( Order_Sync::META_PAYMENT_ID ) )
+			&& '' === (string) $order->get_meta( Order_Sync::META_SETTLED );
 	}
 
 	/**
