@@ -277,7 +277,7 @@ final class Settings {
 	 */
 	public static function provider_name( $provider ) {
 		$provider = (string) $provider;
-		return 'cookiepay' === $provider ? 'CookiePay' : ucfirst( $provider );
+		return 'cookiepay' === $provider ? __( 'CookiePay', 'outlinepay-for-woocommerce' ) : ucfirst( $provider );
 	}
 
 	/**

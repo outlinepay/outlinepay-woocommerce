@@ -1410,3 +1410,7 @@ msgstr "휴대폰 결제"
 #, php-format
 msgid "Paid securely through %s."
 msgstr "%s로 안전하게 결제됩니다."
+
+#: includes/class-settings.php:281
+msgid "CookiePay"
+msgstr "쿠키페이"

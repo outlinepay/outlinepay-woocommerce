@@ -1111,3 +1111,7 @@ msgstr ""
 #, php-format
 msgid "Paid securely through %s."
 msgstr ""
+
+#: includes/class-settings.php:281
+msgid "CookiePay"
+msgstr ""
