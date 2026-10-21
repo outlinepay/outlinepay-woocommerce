@@ -206,7 +206,7 @@ final class Order_Display {
 		if ( ! self::is_test_payment( $order ) ) {
 			return;
 		}
-		echo '<p class="form-field form-field-wide outlinepay-test-payment"><strong>' . esc_html__( 'Test payment', 'outlinepay-for-woocommerce' ) . '</strong><br>' . esc_html__( 'OutlinePay took this payment in test mode. No real money moved.', 'outlinepay-for-woocommerce' ) . '</p>';
+		echo '<p class="form-field form-field-wide outlinepay-test-payment"><strong>' . esc_html__( 'Test payment', 'outlinepay-for-woocommerce' ) . '</strong><br>' . esc_html__( 'OutlinePay took this payment in test mode. Your payment provider reverses it. Do not ship goods.', 'outlinepay-for-woocommerce' ) . '</p>';
 	}
 
 	/**

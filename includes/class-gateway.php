@@ -85,6 +85,29 @@ class Gateway extends \WC_Payment_Gateway {
 	}
 
 	/**
+	 * Whether the order screen offers "Refund via OutlinePay". Only when money
+	 * was taken: the order is paid, or it is on hold with a payment behind it
+	 * (amount mismatch, review, foreign card). A pending order the shopper
+	 * never paid, or a virtual account still waiting for its deposit, has
+	 * nothing to refund, and WooCommerce then offers a manual refund only.
+	 *
+	 * @param \WC_Order $order Order.
+	 * @return bool
+	 */
+	public function can_refund_order( $order ) {
+		if ( ! $order || ! $this->supports( 'refunds' ) ) {
+			return false;
+		}
+		if ( ! Api_Client::valid_payment_id( $order->get_meta( Order_Sync::META_PAYMENT_ID ) ) ) {
+			return false;
+		}
+		if ( $order->get_date_paid() ) {
+			return true;
+		}
+		return $order->has_status( 'on-hold' ) && in_array( (string) $order->get_meta( Order_Sync::META_HOLD ), array( 'mismatch', 'review', 'foreign' ), true );
+	}
+
+	/**
 	 * Only the show switch lives here. Everything else is on the OutlinePay page.
 	 *
 	 * @return void

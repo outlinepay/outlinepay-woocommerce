@@ -202,4 +202,7 @@ class WC_Payment_Gateway {
 	public $form_fields = array();
 	public function init_settings() {
 	}
+	public function supports( $feature ) {
+		return in_array( $feature, (array) $this->supports, true );
+	}
 }

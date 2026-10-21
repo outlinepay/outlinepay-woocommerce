@@ -4,7 +4,7 @@ Tags: payments, korea, krw, virtual account, woocommerce
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.4.1
+Stable tag: 0.4.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -68,7 +68,7 @@ Each method shows only when all of these are true. The store is connected. The s
 
 = What is test mode? =
 
-Your payment provider decides whether a connection is in test mode or live mode. The OutlinePay page shows a Test mode badge when no real money moves. To go live, ask your payment provider for a live connect code.
+Your payment provider decides whether a connection is in test mode or live mode. The OutlinePay page shows a Test mode badge while the connection is in test mode. Test payments are reversed by your payment provider, so do not ship goods for them. To go live, ask your payment provider for a live connect code.
 
 = Does deactivating the plugin disconnect my store? =
 
@@ -138,6 +138,10 @@ CookiePay is the payment provider that takes the payment. The shopper clicks Pay
 CookiePay privacy policy: https://www.cookiepayments.com/terms/private
 
 == Changelog ==
+
+= 0.4.2 =
+* The order screen offers Refund via OutlinePay only on orders that were paid. An order the shopper never paid shows a manual refund only.
+* Test mode no longer says that no real money moves. Some providers charge a real card in test mode and reverse it later, so the plugin now says to ship nothing for test payments.
 
 = 0.4.1 =
 * Payment method names and the line under them now follow the store's language. English stores see English, Korean stores see Korean.

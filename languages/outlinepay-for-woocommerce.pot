@@ -187,7 +187,7 @@ msgid "Mode"
 msgstr ""
 
 #: includes/class-admin-page.php:464
-msgid "Test. No real money moves."
+msgid "Test. Your payment provider reverses test payments. Do not ship goods."
 msgstr ""
 
 #: includes/class-admin-page.php:464
@@ -503,7 +503,7 @@ msgid "Test payment"
 msgstr ""
 
 #: includes/class-order-display.php:209
-msgid "OutlinePay took this payment in test mode. No real money moved."
+msgid "OutlinePay took this payment in test mode. Your payment provider reverses it. Do not ship goods."
 msgstr ""
 
 #: includes/class-order-display.php:235

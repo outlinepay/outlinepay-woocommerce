@@ -461,7 +461,7 @@ final class Admin_Page {
 		echo '</h2>';
 		echo '<table class="widefat striped" style="max-width:640px"><tbody>';
 		self::row( __( 'Status', 'outlinepay-for-woocommerce' ), isset( $labels[ $status ] ) ? $labels[ $status ] : $status );
-		self::row( __( 'Mode', 'outlinepay-for-woocommerce' ), Settings::is_test_mode() ? __( 'Test. No real money moves.', 'outlinepay-for-woocommerce' ) : __( 'Live', 'outlinepay-for-woocommerce' ) );
+		self::row( __( 'Mode', 'outlinepay-for-woocommerce' ), Settings::is_test_mode() ? __( 'Test. Your payment provider reverses test payments. Do not ship goods.', 'outlinepay-for-woocommerce' ) : __( 'Live', 'outlinepay-for-woocommerce' ) );
 		self::row( __( 'Payment provider', 'outlinepay-for-woocommerce' ), Settings::provider_name( isset( $installation['provider'] ) ? (string) $installation['provider'] : '' ) );
 		self::row( __( 'Installation', 'outlinepay-for-woocommerce' ), isset( $installation['id'] ) ? (string) $installation['id'] : '' );
 		self::row( __( 'Refunds', 'outlinepay-for-woocommerce' ), self::refunds_on( $installation ) ? __( 'On', 'outlinepay-for-woocommerce' ) : __( 'Off', 'outlinepay-for-woocommerce' ) );

@@ -227,8 +227,8 @@ msgid "Mode"
 msgstr "모드"
 
 #: includes/class-admin-page.php:464
-msgid "Test. No real money moves."
-msgstr "테스트. 실제 돈은 오가지 않습니다."
+msgid "Test. Your payment provider reverses test payments. Do not ship goods."
+msgstr "테스트. 테스트 결제는 결제대행사가 취소합니다. 상품을 발송하지 마십시오."
 
 #: includes/class-admin-page.php:464
 msgid "Live"
@@ -597,9 +597,9 @@ msgid "Test payment"
 msgstr "테스트 결제"
 
 #: includes/class-order-display.php:209
-msgid "OutlinePay took this payment in test mode. No real money moved."
+msgid "OutlinePay took this payment in test mode. Your payment provider reverses it. Do not ship goods."
 msgstr ""
-"OutlinePay가 테스트 모드로 받은 결제입니다. 실제 돈은 오가지 않았습니다."
+"OutlinePay가 테스트 모드로 받은 결제입니다. 결제대행사가 이 결제를 취소합니다. 상품을 발송하지 마십시오."
 
 #: includes/class-order-display.php:235 includes/class-order-display.php:267
 #: includes/class-order-display.php:274
