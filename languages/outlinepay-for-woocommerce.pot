@@ -443,7 +443,7 @@ msgstr ""
 msgid "You do not have permission to change OutlinePay settings."
 msgstr ""
 
-#. translators: %s: payment method name, such as 신용카드 (credit card).
+#. translators: %s: payment method name, such as Credit or debit card.
 #: includes/class-gateway.php:36
 #, php-format
 msgid "OutlinePay: %s"
@@ -1076,4 +1076,38 @@ msgstr ""
 
 #: includes/class-return-handler.php:131
 msgid "Continue to the store"
+msgstr ""
+
+#: includes/class-settings.php:254
+msgid "Credit or debit card"
+msgstr ""
+
+#: includes/class-settings.php:256
+msgid "International card (KRW)"
+msgstr ""
+
+#: includes/class-settings.php:258
+msgid "Bank transfer"
+msgstr ""
+
+#: includes/class-settings.php:260
+msgid "Virtual account"
+msgstr ""
+
+#: includes/class-settings.php:262
+msgid "KakaoPay"
+msgstr ""
+
+#: includes/class-settings.php:264
+msgid "Naver Pay"
+msgstr ""
+
+#: includes/class-settings.php:266
+msgid "Mobile carrier billing"
+msgstr ""
+
+#. translators: %s: payment provider name, such as CookiePay.
+#: includes/class-settings.php:296
+#, php-format
+msgid "Paid securely through %s."
 msgstr ""

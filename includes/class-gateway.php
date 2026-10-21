@@ -44,17 +44,17 @@ class Gateway extends \WC_Payment_Gateway {
 		$this->has_fields        = false;
 		$this->supports          = self::features( $method );
 		$this->method_title      = sprintf(
-			/* translators: %s: payment method name, such as 신용카드 (credit card). */
+			/* translators: %s: payment method name, such as Credit or debit card. */
 			__( 'OutlinePay: %s', 'outlinepay-for-woocommerce' ),
-			Settings::label( $method )
+			Settings::method_name( $method )
 		);
 		$this->method_description = __( 'Takes payment through your payment provider, connected by OutlinePay. Connect the store and choose which methods to show on the OutlinePay page.', 'outlinepay-for-woocommerce' );
 
 		$this->init_form_fields();
 		$this->init_settings();
 
-		$this->title       = Settings::label( $method );
-		$this->description = Settings::DRAFT_DESCRIPTION_KO;
+		$this->title       = Settings::method_name( $method );
+		$this->description = Settings::method_description();
 		$this->enabled     = Settings::shown( $method ) ? 'yes' : 'no';
 	}
 

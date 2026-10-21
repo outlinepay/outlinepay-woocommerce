@@ -25,12 +25,6 @@ final class Settings {
 	const METHODS = array( 'card', 'foreign_card_krw', 'bank_transfer', 'virtual_account', 'kakaopay', 'naverpay', 'carrier_billing' );
 
 	/**
-	 * DRAFT shopper-facing description shown under each method at checkout.
-	 * Korean source on purpose: the shoppers are in Korea. Wording awaits review.
-	 */
-	const DRAFT_DESCRIPTION_KO = '쿠키페이로 안전하게 결제됩니다';
-
-	/**
 	 * Installation fields kept locally. Never credentials.
 	 */
 	const INSTALLATION_FIELDS = array( 'id', 'mode', 'status', 'provider', 'permissions', 'refunds_enabled', 'refund_daily_cap', 'connected_at', 'token_last4' );
@@ -248,18 +242,58 @@ final class Settings {
 	}
 
 	/**
-	 * Korean label from the server, or the method key when unknown.
+	 * Method name in the site language, or the method key when unknown.
+	 * Called at runtime so the translation is loaded by then.
 	 *
 	 * @param string $method Method key.
 	 * @return string
 	 */
-	public static function label( $method ) {
-		foreach ( self::methods() as $row ) {
-			if ( $row['method'] === $method && '' !== $row['label_ko'] ) {
-				return $row['label_ko'];
-			}
+	public static function method_name( $method ) {
+		switch ( $method ) {
+			case 'card':
+				return __( 'Credit or debit card', 'outlinepay-for-woocommerce' );
+			case 'foreign_card_krw':
+				return __( 'International card (KRW)', 'outlinepay-for-woocommerce' );
+			case 'bank_transfer':
+				return __( 'Bank transfer', 'outlinepay-for-woocommerce' );
+			case 'virtual_account':
+				return __( 'Virtual account', 'outlinepay-for-woocommerce' );
+			case 'kakaopay':
+				return __( 'KakaoPay', 'outlinepay-for-woocommerce' );
+			case 'naverpay':
+				return __( 'Naver Pay', 'outlinepay-for-woocommerce' );
+			case 'carrier_billing':
+				return __( 'Mobile carrier billing', 'outlinepay-for-woocommerce' );
+			default:
+				return (string) $method;
 		}
-		return $method;
+	}
+
+	/**
+	 * Display name of a provider key, e.g. CookiePay.
+	 *
+	 * @param string $provider Provider key.
+	 * @return string
+	 */
+	public static function provider_name( $provider ) {
+		$provider = (string) $provider;
+		return 'cookiepay' === $provider ? 'CookiePay' : ucfirst( $provider );
+	}
+
+	/**
+	 * The line shown under each method at checkout, in the site language.
+	 * Empty when the store has no provider yet.
+	 *
+	 * @return string
+	 */
+	public static function method_description() {
+		$installation = self::installation();
+		$provider     = isset( $installation['provider'] ) ? self::provider_name( $installation['provider'] ) : '';
+		if ( '' === $provider ) {
+			return '';
+		}
+		/* translators: %s: payment provider name, such as CookiePay. */
+		return sprintf( __( 'Paid securely through %s.', 'outlinepay-for-woocommerce' ), $provider );
 	}
 
 	/**

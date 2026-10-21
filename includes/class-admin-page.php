@@ -462,7 +462,7 @@ final class Admin_Page {
 		echo '<table class="widefat striped" style="max-width:640px"><tbody>';
 		self::row( __( 'Status', 'outlinepay-for-woocommerce' ), isset( $labels[ $status ] ) ? $labels[ $status ] : $status );
 		self::row( __( 'Mode', 'outlinepay-for-woocommerce' ), Settings::is_test_mode() ? __( 'Test. No real money moves.', 'outlinepay-for-woocommerce' ) : __( 'Live', 'outlinepay-for-woocommerce' ) );
-		self::row( __( 'Payment provider', 'outlinepay-for-woocommerce' ), self::provider_name( isset( $installation['provider'] ) ? (string) $installation['provider'] : '' ) );
+		self::row( __( 'Payment provider', 'outlinepay-for-woocommerce' ), Settings::provider_name( isset( $installation['provider'] ) ? (string) $installation['provider'] : '' ) );
 		self::row( __( 'Installation', 'outlinepay-for-woocommerce' ), isset( $installation['id'] ) ? (string) $installation['id'] : '' );
 		self::row( __( 'Refunds', 'outlinepay-for-woocommerce' ), self::refunds_on( $installation ) ? __( 'On', 'outlinepay-for-woocommerce' ) : __( 'Off', 'outlinepay-for-woocommerce' ) );
 		if ( ! empty( $installation['connected_at'] ) ) {
@@ -612,7 +612,7 @@ final class Admin_Page {
 		echo '<table class="widefat striped" style="max-width:640px"><thead><tr><th>' . esc_html__( 'Method', 'outlinepay-for-woocommerce' ) . '</th><th>' . esc_html__( 'Show at checkout', 'outlinepay-for-woocommerce' ) . '</th></tr></thead><tbody>';
 		foreach ( $methods as $row ) {
 			$id = 'outlinepay_shown_' . $row['method'];
-			echo '<tr><td><label for="' . esc_attr( $id ) . '">' . esc_html( '' !== $row['label_ko'] ? $row['label_ko'] : $row['method'] ) . '</label> <code>' . esc_html( $row['method'] ) . '</code></td>';
+			echo '<tr><td><label for="' . esc_attr( $id ) . '">' . esc_html( Settings::method_name( $row['method'] ) ) . '</label> <code>' . esc_html( $row['method'] ) . '</code></td>';
 			echo '<td><input type="checkbox" id="' . esc_attr( $id ) . '" name="outlinepay_shown[]" value="' . esc_attr( $row['method'] ) . '"' . checked( Settings::shown( $row['method'] ), true, false ) . '></td></tr>';
 		}
 		echo '</tbody></table>';
@@ -648,16 +648,6 @@ final class Admin_Page {
 	 */
 	private static function row( $label, $value ) {
 		echo '<tr><th scope="row" style="width:200px">' . esc_html( $label ) . '</th><td>' . esc_html( $value ) . '</td></tr>';
-	}
-
-	/**
-	 * Display name of a provider key.
-	 *
-	 * @param string $provider Provider key.
-	 * @return string
-	 */
-	private static function provider_name( $provider ) {
-		return 'cookiepay' === $provider ? 'CookiePay' : $provider;
 	}
 
 	/**

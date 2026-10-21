@@ -354,7 +354,7 @@ final class Launch_Page {
 			'store'        => self::store_name(),
 			'order_number' => (string) $order->get_order_number(),
 			'amount_html'  => wc_price( $order->get_total(), array( 'currency' => $order->get_currency() ) ),
-			'method_label' => null === $gateway_method ? '' : Settings::label( $gateway_method ),
+			'method_label' => null === $gateway_method ? '' : Settings::method_name( $gateway_method ),
 			'back_url'     => $order->get_checkout_payment_url(),
 			'lang'         => get_bloginfo( 'language' ),
 		);

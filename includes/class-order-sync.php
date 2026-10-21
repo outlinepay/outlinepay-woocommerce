@@ -471,7 +471,7 @@ final class Order_Sync {
 		}
 		$method = isset( $payment['payment_method'] ) && in_array( $payment['payment_method'], Settings::METHODS, true ) ? $payment['payment_method'] : 'card';
 		$order->set_payment_method( Settings::gateway_id( $method ) );
-		$order->set_payment_method_title( Settings::label( $method ) );
+		$order->set_payment_method_title( Settings::method_name( $method ) );
 		$order->add_order_note(
 			self::note(
 				/* translators: %s: OutlinePay payment id. */

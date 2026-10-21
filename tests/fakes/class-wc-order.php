@@ -194,4 +194,12 @@ class WP_Error {
 class WC_Payment_Gateway {
 	public $id;
 	public $supports = array();
+	public $title;
+	public $description;
+	public $method_title;
+	public $method_description;
+	public $enabled;
+	public $form_fields = array();
+	public function init_settings() {
+	}
 }

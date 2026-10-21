@@ -105,7 +105,7 @@ class OrderSyncApplyTest extends TestCase {
 		$this->assertSame( Order_Sync::COMPLETE, Order_Sync::apply( $this->order, $this->payment() ) );
 		$this->assertSame( 'processing', $this->order->status );
 		$this->assertSame( 'outlinepay_card', $this->order->payment_method );
-		$this->assertSame( '신용카드', $this->order->method_title );
+		$this->assertSame( 'Credit or debit card', $this->order->method_title );
 		$this->assertStringContainsString( 'set back to OutlinePay', implode( "\n", $this->order->notes ) );
 	}
 
