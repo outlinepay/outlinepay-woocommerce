@@ -4,7 +4,7 @@ Tags: payments, korea, krw, virtual account, woocommerce
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.4.0
+Stable tag: 0.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -138,6 +138,9 @@ CookiePay is the payment provider that takes the payment. The shopper clicks Pay
 CookiePay privacy policy: https://www.cookiepayments.com/terms/private
 
 == Changelog ==
+
+= 0.4.1 =
+* Payment method names and the line under them now follow the store's language. English stores see English, Korean stores see Korean.
 
 = 0.4.0 =
 * Payment windows that open with a form now work. The shopper sees a page of your store with the order, the total and a Pay button. The button opens the provider's payment window.
