@@ -37,6 +37,14 @@ final class Admin_Page {
 	private static $currency_fix_shown = false;
 
 	/**
+	 * Test seam: receives the redirect URL instead of redirecting. It must
+	 * not return (a test throws from it). Null redirects and exits.
+	 *
+	 * @var callable|null
+	 */
+	private static $redirect = null;
+
+	/**
 	 * Hooks the page and its form handlers.
 	 *
 	 * @return void
@@ -946,7 +954,21 @@ final class Admin_Page {
 	 * @return void
 	 */
 	private static function back( $result, array $args = array() ) {
-		wp_safe_redirect( self::url( array_merge( array( 'outlinepay_result' => $result ), $args ) ) );
+		$url = self::url( array_merge( array( 'outlinepay_result' => $result ), $args ) );
+		if ( self::$redirect ) {
+			call_user_func( self::$redirect, $url );
+		}
+		wp_safe_redirect( $url );
 		exit;
+	}
+
+	/**
+	 * Replaces the redirect, for tests. Null restores it.
+	 *
+	 * @param callable|null $handler Receives the URL and throws.
+	 * @return void
+	 */
+	public static function set_redirect( $handler ) {
+		self::$redirect = $handler;
 	}
 }

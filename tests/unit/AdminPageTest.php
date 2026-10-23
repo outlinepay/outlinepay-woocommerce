@@ -140,6 +140,7 @@ class AdminPageTest extends TestCase {
 	}
 
 	protected function tearDown(): void {
+		Admin_Page::set_redirect( null );
 		Credentials::reset_cache();
 		Settings::forget_price_decimals();
 		parent::tearDown();
@@ -479,5 +480,83 @@ class AdminPageTest extends TestCase {
 		$this->assertStringContainsString( 'Set store currency to KRW', $notice );
 		$this->assertSame( '', $this->render_private( 'render_currency_warning' ) );
 		$this->forget_shown_fix();
+	}
+
+	/**
+	 * Runs Admin_Page::set_currency() as admin-post.php would: the result key
+	 * it redirects with, or the wp_die / nonce refusal.
+	 */
+	private function post_set_currency( $can = true, $nonce_ok = true ) {
+		Functions\when( 'current_user_can' )->justReturn( $can );
+		Functions\when( 'wp_die' )->alias(
+			static function () {
+				throw new \RuntimeException( 'wp_die' );
+			}
+		);
+		Functions\when( 'check_admin_referer' )->alias(
+			static function ( $action ) use ( $nonce_ok ) {
+				if ( 'outlinepay_set_currency' !== $action || ! $nonce_ok ) {
+					throw new \RuntimeException( 'bad nonce' );
+				}
+				return 1;
+			}
+		);
+		Admin_Page::set_redirect(
+			static function ( $url ) {
+				throw new \RuntimeException( 'redirect ' . $url );
+			}
+		);
+		try {
+			Admin_Page::set_currency();
+		} catch ( \RuntimeException $stop ) {
+			return $stop->getMessage();
+		}
+		$this->fail( 'the handler must stop' );
+	}
+
+	public function test_set_currency_needs_the_capability() {
+		Admin_Page::finish_connect( array_merge( self::answer(), array( 'currencies' => array( 'KRW' ) ) ) );
+		Functions\when( 'esc_html__' )->returnArg();
+		$this->assertSame( 'wp_die', $this->post_set_currency( false ) );
+		$this->assertArrayNotHasKey( 'woocommerce_currency', $this->options );
+	}
+
+	public function test_set_currency_needs_a_good_nonce() {
+		Admin_Page::finish_connect( array_merge( self::answer(), array( 'currencies' => array( 'KRW' ) ) ) );
+		$this->assertSame( 'bad nonce', $this->post_set_currency( true, false ) );
+		$this->assertArrayNotHasKey( 'woocommerce_currency', $this->options );
+	}
+
+	public function test_set_currency_on_a_store_that_is_not_connected_changes_nothing() {
+		$this->options['woocommerce_currency'] = 'USD';
+		$result = $this->post_set_currency();
+
+		$this->assertStringContainsString( 'outlinepay_result=currency_not_connected', $result );
+		$this->assertSame( 'USD', $this->options['woocommerce_currency'] );
+		$this->assertArrayNotHasKey( 'woocommerce_price_num_decimals', $this->options );
+		$this->assertSame( 'The store is not connected. Nothing changed.', $this->notice_for( 'currency_not_connected' ) );
+	}
+
+	public function test_set_currency_on_a_connected_store_writes_both_options() {
+		Admin_Page::finish_connect( array_merge( self::answer(), array( 'currencies' => array( 'KRW' ) ) ) );
+		$this->options['woocommerce_currency']           = 'USD';
+		$this->options['woocommerce_price_num_decimals'] = 2;
+		$result = $this->post_set_currency();
+
+		$this->assertStringContainsString( 'outlinepay_result=currency_set', $result );
+		$this->assertSame( 'KRW', $this->options['woocommerce_currency'] );
+		$this->assertSame( 0, $this->options['woocommerce_price_num_decimals'] );
+		$this->currency = 'KRW';
+		$this->assertSame( 'Store currency set to KRW. Prices kept their numbers. Check your product prices.', $this->notice_for( 'currency_set' ) );
+	}
+
+	/** The text of the notice the page shows for a result key. */
+	private function notice_for( $key ) {
+		Functions\when( 'sanitize_key' )->returnArg();
+		Functions\when( 'wp_unslash' )->returnArg();
+		$_GET['outlinepay_result'] = $key;
+		$html                      = $this->render_private( 'render_notice' );
+		unset( $_GET['outlinepay_result'] );
+		return trim( strip_tags( $html ) );
 	}
 }
