@@ -63,6 +63,7 @@ abstract class RefundTestCase extends TestCase {
 				'enabled'  => 'yes',
 				'statuses' => array( 'processing' ),
 			),
+			'outlinepay_setup_done'     => 1790000000,
 		);
 
 		$order   = $this->order;

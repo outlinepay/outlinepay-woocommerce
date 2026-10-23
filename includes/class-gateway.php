@@ -163,8 +163,9 @@ class Gateway extends \WC_Payment_Gateway {
 	}
 
 	/**
-	 * Shown only when connected, the store sells in a currency the provider
-	 * takes, the provider has the method enabled and the merchant has not hidden it.
+	 * Shown only when connected, setup is done (see Setup), the store sells in
+	 * a currency the provider takes, the provider has the method enabled and
+	 * the merchant has not hidden it.
 	 *
 	 * @return bool
 	 */
@@ -172,7 +173,7 @@ class Gateway extends \WC_Payment_Gateway {
 		if ( ! parent::is_available() ) {
 			return false;
 		}
-		if ( ! Settings::is_connected() ) {
+		if ( ! Settings::is_connected() || ! Setup::is_done() ) {
 			return false;
 		}
 		if ( ! Settings::provider_takes( get_woocommerce_currency() ) ) {
@@ -192,8 +193,8 @@ class Gateway extends \WC_Payment_Gateway {
 		if ( ! $order instanceof \WC_Order ) {
 			return $this->refuse( __( 'This order could not be found.', 'outlinepay-for-woocommerce' ) );
 		}
-		if ( ! Settings::is_connected() ) {
-			// Disconnected, revoked, or a copy of the store (see Site_Identity).
+		if ( ! Settings::is_connected() || ! Setup::is_done() ) {
+			// Disconnected, revoked, a copy of the store (see Site_Identity), or setup not finished.
 			return $this->refuse( __( 'This payment method is not available right now. Choose another method.', 'outlinepay-for-woocommerce' ) );
 		}
 		if ( ! Settings::provider_takes( $order->get_currency() ) ) {

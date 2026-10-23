@@ -522,15 +522,20 @@ class SelfCheckTest extends TestCase {
 		$this->assertSame( 'OP-OFFLINE-C', $outcome['result']['code'] );
 	}
 
-	public function test_rate_limited_returns_the_stored_result_and_keeps_it() {
-		$stored                                  = array(
+	public function test_rate_limited_keeps_the_server_rows_and_refreshes_the_local_ones() {
+		$stored                                   = array(
 			'code'         => 'chk_Earlier',
 			'online'       => true,
 			'trigger'      => 'page',
 			'ran_at'       => self::NOW - 30,
-			'failed_count' => 0,
-			'worst_side'   => '',
-			'checks'       => array( Self_Check::check( 'versions', true, 'store', array() ) ),
+			'failed_count' => 2,
+			'worst_side'   => 'store',
+			'checks'       => array(
+				Self_Check::check( 'connection_saved', true, 'store', array() ),
+				Self_Check::check( 'api_reachable', false, 'outlinepay', array( 'outcome' => 'server_error' ) ),
+				Self_Check::check( 'store_currency', false, 'store', array( 'currency' => 'USD' ) ),
+				Self_Check::check( 'callback_reachable', false, 'store', array( 'outcome' => 'rejected' ) ),
+			),
 		);
 		$this->options[ Self_Check::OPTION_LAST ] = $stored;
 
@@ -543,8 +548,49 @@ class SelfCheckTest extends TestCase {
 		)->run( 'page' );
 
 		$this->assertTrue( $outcome['rate_limited'] );
-		$this->assertSame( $stored, $outcome['result'] );
-		$this->assertSame( $stored, $this->options[ Self_Check::OPTION_LAST ] );
+		$result = $outcome['result'];
+		$this->assertSame( 'chk_Earlier', $result['code'], 'the server run it came from' );
+		$this->assertTrue( $result['online'] );
+		$this->assertSame( self::NOW, $result['ran_at'] );
+		$checks = self::by_code( $result['checks'] );
+		$this->assertTrue( $checks['store_currency']['ok'], 'fixed a moment ago: fresh' );
+		$this->assertTrue( $checks['api_reachable']['ok'], 'the probe just answered' );
+		$this->assertFalse( $checks['callback_reachable']['ok'], 'a server row stays as stored' );
+		$this->assertSame( array( 'connection_saved', 'api_reachable', 'store_currency', 'callback_reachable' ), array_slice( array_column( $result['checks'], 'code' ), 0, 4 ), 'stored order kept' );
+		$this->assertCount( 10, $result['checks'], 'missing local rows added at the end' );
+		$this->assertSame( 1, $result['failed_count'] );
+		$this->assertSame( $result, $this->options[ Self_Check::OPTION_LAST ] );
+	}
+
+	public function test_run_local_refreshes_local_rows_without_the_network() {
+		$this->options[ Self_Check::OPTION_LAST ] = array(
+			'code'         => 'OP-OFFLINE-CG',
+			'online'       => false,
+			'trigger'      => 'page',
+			'ran_at'       => self::NOW - 600,
+			'failed_count' => 2,
+			'worst_side'   => 'store',
+			'checks'       => array(
+				Self_Check::check( 'api_reachable', false, 'store', array( 'outcome' => 'network_error' ) ),
+				Self_Check::check( 'store_currency', false, 'store', array( 'currency' => 'USD' ) ),
+			),
+		);
+
+		$result = $this->engine( self::facts() )->run_local();
+
+		$this->assertSame( array(), $this->requests, 'no network' );
+		$checks = self::by_code( $result['checks'] );
+		$this->assertTrue( $checks['store_currency']['ok'] );
+		$this->assertFalse( $checks['api_reachable']['ok'], 'only a real run can answer this one' );
+		$this->assertSame( 'OP-OFFLINE-C', $result['code'], 'offline letters follow the merged rows' );
+		$this->assertSame( $result, $this->options[ Self_Check::OPTION_LAST ] );
+	}
+
+	public function test_run_local_with_nothing_stored_makes_an_offline_result() {
+		$result = $this->engine( self::facts() )->run_local();
+		$this->assertFalse( $result['online'] );
+		$this->assertSame( 'OP-OFFLINE-C', $result['code'] );
+		$this->assertFalse( Self_Check::has_row( $result, 'api_reachable' ) );
 	}
 
 	public function test_rate_limited_with_nothing_stored_falls_back_to_an_offline_result() {

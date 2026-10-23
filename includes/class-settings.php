@@ -140,6 +140,7 @@ final class Settings {
 		delete_option( Self_Check::OPTION_LAST );
 		delete_option( Self_Check::OPTION_DAILY );
 		delete_option( Self_Check::OPTION_EMAILED_AT );
+		delete_option( Setup::OPTION_DONE );
 		self::forget_price_decimals();
 	}
 

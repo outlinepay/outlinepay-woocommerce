@@ -151,8 +151,12 @@ final class Self_Check {
 			if ( 429 === $error->get_http_status() ) {
 				$last = self::last();
 				if ( $last ) {
+					// The server rows stay as OutlinePay last answered them. The rows
+					// this store checks are fresh, so a fix made a moment ago shows.
+					$result = self::merge( $last, $checks, $trigger, $now );
+					self::store( $result );
 					return array(
-						'result'       => $last,
+						'result'       => $result,
 						'rate_limited' => true,
 					);
 				}
@@ -169,6 +173,78 @@ final class Self_Check {
 			$result = self::offline( $checks, $trigger, $now );
 		}
 		return $this->finish( $result, false );
+	}
+
+	/**
+	 * Runs the local checks only, no network, and merges them into the stored
+	 * result: api_reachable and the server's rows stay as stored. Cheap
+	 * enough for every page load during setup. With nothing stored, the
+	 * result is made on this site.
+	 *
+	 * @return array The stored result.
+	 */
+	public function run_local() {
+		$facts  = call_user_func( $this->facts_provider );
+		$now    = (int) call_user_func( $this->clock );
+		$checks = self::local_checks( $facts, $now );
+		$last   = self::last();
+		$result = $last ? self::merge( $last, $checks, self::TRIGGER_PAGE, $now ) : self::offline( $checks, self::TRIGGER_PAGE, $now );
+		self::store( $result );
+		return $result;
+	}
+
+	/**
+	 * The local checks for the current facts, without storing anything.
+	 *
+	 * @return array List of checks.
+	 */
+	public function local() {
+		return self::local_checks( call_user_func( $this->facts_provider ), (int) call_user_func( $this->clock ) );
+	}
+
+	/**
+	 * A stored result with some rows replaced by fresh ones. Rows with the
+	 * same code are replaced in place, new codes go at the end. An online
+	 * result keeps its chk_ code. An offline one gets the letters of the
+	 * merged rows.
+	 *
+	 * @param array  $last    Stored result.
+	 * @param array  $fresh   Fresh checks.
+	 * @param string $trigger Trigger.
+	 * @param int    $now     Unix time.
+	 * @return array
+	 */
+	public static function merge( array $last, array $fresh, $trigger, $now ) {
+		$by_code = array();
+		foreach ( $fresh as $check ) {
+			$by_code[ $check['code'] ] = $check;
+		}
+		$checks = array();
+		foreach ( $last['checks'] as $row ) {
+			$code = isset( $row['code'] ) ? $row['code'] : '';
+			if ( isset( $by_code[ $code ] ) ) {
+				$checks[] = $by_code[ $code ];
+				unset( $by_code[ $code ] );
+			} else {
+				$checks[] = $row;
+			}
+		}
+		foreach ( $by_code as $check ) {
+			$checks[] = $check;
+		}
+		$online = ! empty( $last['online'] );
+		return self::result( $online ? (string) $last['code'] : self::offline_code( $checks ), $online, $trigger, $now, $checks );
+	}
+
+	/**
+	 * Whether the result has a row with this code.
+	 *
+	 * @param array  $result Result.
+	 * @param string $code   Check code.
+	 * @return bool
+	 */
+	public static function has_row( array $result, $code ) {
+		return in_array( $code, array_column( $result['checks'], 'code' ), true );
 	}
 
 	/**
@@ -806,14 +882,16 @@ final class Self_Check {
 	}
 
 	/**
-	 * Saves the result. Not autoloaded: only the OutlinePay page, Site Health
-	 * and the abilities read it.
+	 * Saves the result, and the setup-done flag when the result completes
+	 * setup (see Setup). Not autoloaded: only the OutlinePay page, Site
+	 * Health, the abilities and the setup rule read it.
 	 *
 	 * @param array $result Result.
 	 * @return void
 	 */
 	public static function store( array $result ) {
 		update_option( self::OPTION_LAST, $result, false );
+		Setup::note( $result );
 	}
 
 	/**
