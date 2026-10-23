@@ -1231,6 +1231,10 @@ msgstr ""
 msgid "Setup is complete. Your payment methods now show at checkout."
 msgstr ""
 
-#: includes/class-admin-page.php:1066
-msgid "The fixes ran and the checks ran again. The results are below."
-msgstr ""
+#. translators: %d: number of setup checks that have not passed.
+#: includes/class-admin-page.php:660
+#, php-format
+msgid "%d check still needs you. Follow the step in its row."
+msgid_plural "%d checks still need you. Follow the step in each row."
+msgstr[0] ""
+msgstr[1] ""

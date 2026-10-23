@@ -1525,6 +1525,9 @@ msgstr "모두 해결을 누르면 스토어 통화를 %s로 설정합니다."
 msgid "Setup is complete. Your payment methods now show at checkout."
 msgstr "설정을 마쳤습니다. 이제 결제 화면에 결제수단이 표시됩니다."
 
-#: includes/class-admin-page.php:1066
-msgid "The fixes ran and the checks ran again. The results are below."
-msgstr "해결 작업을 실행하고 다시 점검했습니다. 결과는 아래에 있습니다."
+#. translators: %d: number of setup checks that have not passed.
+#: includes/class-admin-page.php:660
+#, php-format
+msgid "%d check still needs you. Follow the step in its row."
+msgid_plural "%d checks still need you. Follow the step in each row."
+msgstr[0] "확인이 필요한 점검이 %d개 남았습니다. 각 행의 안내를 따르십시오."

@@ -340,8 +340,8 @@ final class Admin_Page {
 		check_admin_referer( 'outlinepay_self_check' );
 		$was_done = Setup::is_done();
 		$outcome  = self::engine()->run( Self_Check::TRIGGER_PAGE );
-		if ( ! $was_done && Setup::is_done() ) {
-			self::back( 'setup_done' );
+		if ( ! $was_done ) {
+			self::back( Setup::is_done() ? 'setup_done' : 'setup_pending' );
 		}
 		self::back( $outcome['rate_limited'] ? 'self_check_rate_limited' : 'self_check_done' );
 	}
@@ -379,7 +379,10 @@ final class Admin_Page {
 		}
 		$was_done = Setup::is_done();
 		$engine->run( Self_Check::TRIGGER_PAGE );
-		self::back( ! $was_done && Setup::is_done() ? 'setup_done' : 'fixes_applied' );
+		if ( ! $was_done ) {
+			self::back( Setup::is_done() ? 'setup_done' : 'setup_pending' );
+		}
+		self::back( 'self_check_done' );
 	}
 
 	/**
@@ -645,6 +648,21 @@ final class Admin_Page {
 	}
 
 	/**
+	 * The notice when setup is still not done after Fix all or Check again.
+	 *
+	 * @return string
+	 */
+	private static function setup_pending_message() {
+		$last  = Self_Check::last();
+		$count = $last ? Setup::remaining( $last ) : count( Self_Check::LETTERS );
+		return sprintf(
+			/* translators: %d: number of setup checks that have not passed. */
+			_n( '%d check still needs you. Follow the step in its row.', '%d checks still need you. Follow the step in each row.', $count, 'outlinepay-for-woocommerce' ),
+			$count
+		);
+	}
+
+	/**
 	 * The notice when setup finishes.
 	 *
 	 * @return string
@@ -818,7 +836,8 @@ final class Admin_Page {
 	 * The one-click fix under a failed check, when the plugin has one. Each
 	 * button posts a nonce-protected action, or opens an existing confirm step.
 	 * On the setup screen, Fix all covers the currency and the background
-	 * jobs, so those rows say what Fix all does instead of showing a button.
+	 * jobs. The currency row says what Fix all does. The job rows show their
+	 * sentence only, without a button.
 	 *
 	 * @param array $check Failed check.
 	 * @param bool  $setup True on the setup screen.
@@ -1063,7 +1082,7 @@ final class Admin_Page {
 			'currency_set'            => array( 'success', sprintf( __( 'Store currency set to %s. Prices kept their numbers. Check your product prices.', 'outlinepay-for-woocommerce' ), get_woocommerce_currency() ) ),
 			'currency_not_connected'  => array( 'error', __( 'The store is not connected. Nothing changed.', 'outlinepay-for-woocommerce' ) ),
 			'fix_not_connected'       => array( 'error', __( 'The store is not connected. Nothing changed.', 'outlinepay-for-woocommerce' ) ),
-			'fixes_applied'           => array( 'success', __( 'The fixes ran and the checks ran again. The results are below.', 'outlinepay-for-woocommerce' ) ),
+			'setup_pending'           => array( 'warning', self::setup_pending_message() ),
 			'setup_done'              => array( 'success', self::setup_done_message() ),
 		);
 		if ( ! isset( $messages[ $result ] ) ) {

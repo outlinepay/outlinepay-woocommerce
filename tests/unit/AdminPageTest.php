@@ -455,6 +455,16 @@ class AdminPageTest extends TestCase {
 		$this->assertSame( 'Store currency set to KRW. Prices kept their numbers. Check your product prices.', $this->notice_for( 'currency_set' ) );
 	}
 
+	/** The HTML of the notice the page shows for a result key. */
+	private function notice_html( $key ) {
+		Functions\when( 'sanitize_key' )->returnArg();
+		Functions\when( 'wp_unslash' )->returnArg();
+		$_GET['outlinepay_result'] = $key;
+		$html                      = $this->render_private( 'render_notice' );
+		unset( $_GET['outlinepay_result'] );
+		return $html;
+	}
+
 	/** The text of the notice the page shows for a result key. */
 	private function notice_for( $key ) {
 		Functions\when( 'sanitize_key' )->returnArg();
@@ -707,7 +717,9 @@ class AdminPageTest extends TestCase {
 		$this->assertSame( 0, $this->options['woocommerce_price_num_decimals'] );
 		$this->assertArrayHasKey( Scheduler::OPTION_CURSOR, $this->options, 'reconcile ran' );
 		$this->assertSame( 1, count( preg_grep( '#GET https://api\.outlinepay\.com/plugin/v1/methods$#', $this->requests ) ), 'methods refreshed' );
-		$this->assertStringContainsString( 'outlinepay_result=fixes_applied', $result, 'the facts still say the jobs are missing' );
+		$this->assertStringContainsString( 'outlinepay_result=setup_pending', $result, 'the facts still say the jobs are missing' );
+		$this->assertSame( '2 checks still need you. Follow the step in each row.', $this->notice_for( 'setup_pending' ), 'jobs and methods' );
+		$this->assertStringContainsString( 'notice-warning', $this->notice_html( 'setup_pending' ), 'not green while a check fails' );
 	}
 
 	public function test_fix_all_that_completes_setup_says_so() {
@@ -854,6 +866,22 @@ class AdminPageTest extends TestCase {
 		$this->assertStringContainsString( 'Payment methods</h2>', $html );
 		$this->assertStringContainsString( 'Refunds and cancellations', $html );
 		$this->assertSame( array(), preg_grep( '#/self_checks$#', $this->requests ), 'no run on a plain visit' );
+	}
+
+	public function test_check_again_with_checks_still_failing_warns_with_the_count() {
+		$this->connected_store();
+		$this->server_echoes();
+		$this->facts = array(
+			'cron_disabled'   => true,
+			'as_ran_recently' => false,
+		);
+		$result = $this->post( 'self_check', 'outlinepay_self_check' );
+
+		$this->assertStringContainsString( 'outlinepay_result=setup_pending', $result );
+		$html = $this->notice_html( 'setup_pending' );
+		$this->assertStringContainsString( 'notice-warning', $html );
+		$this->assertStringNotContainsString( 'notice-success', $html );
+		$this->assertSame( '1 check still needs you. Follow the step in its row.', trim( strip_tags( $html ) ), 'WP-Cron only' );
 	}
 
 	public function test_check_again_that_completes_setup_says_so() {
