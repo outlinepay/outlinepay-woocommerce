@@ -78,7 +78,7 @@ final class Order_Sync {
 		switch ( $payment['status'] ) {
 			case 'paid':
 				$amount_ok   = isset( $payment['amount'] ) && is_int( $payment['amount'] ) && null !== $order_krw && $payment['amount'] === $order_krw;
-				$currency_ok = isset( $payment['currency'] ) && 'KRW' === $payment['currency'] && 'KRW' === $order_currency;
+				$currency_ok = isset( $payment['currency'] ) && is_string( $payment['currency'] ) && '' !== $payment['currency'] && strtoupper( (string) $order_currency ) === $payment['currency'];
 				return $amount_ok && $currency_ok ? self::COMPLETE : self::HOLD_MISMATCH;
 			case 'awaiting_deposit':
 				return self::HOLD_DEPOSIT;

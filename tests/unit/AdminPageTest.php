@@ -253,12 +253,14 @@ class AdminPageTest extends TestCase {
 			'worst_side'   => 'store',
 			'checks'       => array(
 				array( 'code' => 'scheduler_jobs', 'ok' => false, 'side' => 'store', 'detail' => array() ),
+				array( 'code' => 'store_currency', 'ok' => false, 'side' => 'store', 'detail' => array( 'currency' => 'USD', 'accepted' => 'KRW', 'provider' => 'CookiePay' ) ),
 				array( 'code' => 'not_a_copy', 'ok' => true, 'side' => 'store', 'detail' => array() ),
 				array( 'code' => 'open_problems_7d', 'ok' => false, 'side' => 'unknown', 'detail' => array() ),
 				array( 'code' => 'wp_cron', 'ok' => false, 'side' => 'store', 'detail' => array() ),
 			),
 		);
-		$render = new \ReflectionMethod( Admin_Page::class, 'render_self_check' );
+		$this->currency = 'USD';
+		$render         = new \ReflectionMethod( Admin_Page::class, 'render_self_check' );
 		$render->setAccessible( true );
 		ob_start();
 		$render->invoke( null );
@@ -270,6 +272,8 @@ class AdminPageTest extends TestCase {
 		$this->assertStringContainsString( 'Copy code', $html );
 		$this->assertSame( 2, substr_count( $html, 'data-outlinepay-copy' ), 'the code box and the problems row' );
 		$this->assertStringNotContainsString( 'Use this address', $html, 'not a copy: no move button' );
+		$this->assertStringContainsString( 'The store currency is USD. CookiePay takes payments in KRW only.', $html );
+		$this->assertStringContainsString( 'value="Set store currency to KRW"', $html );
 		$this->assertStringContainsString( 'Email me when a daily check fails (to the site admin address, owner@shop.example)', $html );
 	}
 
@@ -300,5 +304,63 @@ class AdminPageTest extends TestCase {
 			$this->assertStringContainsString( 'class="notice', ob_get_clean(), $key );
 		}
 		unset( $_GET['outlinepay_result'] );
+	}
+
+	public function test_provider_currencies_default_to_krw_for_a_record_saved_before_the_list() {
+		$this->options['outlinepay_installation'] = array( 'id' => 'inst_1', 'status' => 'connected' );
+		$this->assertSame( array( 'KRW' ), Settings::provider_currencies() );
+
+		$this->options['outlinepay_installation']['currencies'] = array( 'JPY', 'KRW', 'bad', 7, 'JPY' );
+		$this->assertSame( array( 'JPY', 'KRW' ), Settings::provider_currencies() );
+	}
+
+	public function test_connect_keeps_the_provider_currencies() {
+		Admin_Page::finish_connect( array_merge( self::answer(), array( 'currencies' => array( 'KRW' ) ) ) );
+		$this->assertSame( array( 'KRW' ), $this->options['outlinepay_installation']['currencies'] );
+		$this->assertTrue( Settings::provider_takes( 'KRW' ) );
+		$this->assertFalse( Settings::provider_takes( 'USD' ) );
+	}
+
+	public function test_set_store_currency_writes_the_currency_and_its_decimals() {
+		Admin_Page::finish_connect( array_merge( self::answer(), array( 'currencies' => array( 'KRW' ) ) ) );
+		$this->options['woocommerce_currency']           = 'USD';
+		$this->options['woocommerce_price_num_decimals'] = 2;
+
+		$this->assertSame( 'KRW', Settings::set_store_currency() );
+		$this->assertSame( 'KRW', $this->options['woocommerce_currency'] );
+		$this->assertSame( 0, $this->options['woocommerce_price_num_decimals'] );
+	}
+
+	public function test_the_connected_notice_offers_the_currency_switch_for_a_usd_store() {
+		Admin_Page::finish_connect( array_merge( self::answer(), array( 'currencies' => array( 'KRW' ) ) ) );
+		$this->currency = 'USD';
+		Functions\when( 'sanitize_key' )->returnArg();
+		Functions\when( 'wp_unslash' )->returnArg();
+		Functions\when( 'wc_get_checkout_url' )->justReturn( 'https://shop.example/checkout/' );
+		Functions\when( 'wc_get_page_permalink' )->justReturn( 'https://shop.example/shop/' );
+		Functions\when( 'wp_nonce_field' )->alias(
+			static function ( $action ) {
+				echo '<input type="hidden" name="_wpnonce" value="nonce-' . $action . '">';
+			}
+		);
+		Functions\when( 'submit_button' )->alias(
+			static function ( $text ) {
+				echo '<input type="submit" value="' . $text . '">';
+			}
+		);
+		$_GET['outlinepay_result'] = 'connected';
+		$render                    = new \ReflectionMethod( Admin_Page::class, 'render_notice' );
+		$render->setAccessible( true );
+		ob_start();
+		$render->invoke( null );
+		$html = ob_get_clean();
+		unset( $_GET['outlinepay_result'] );
+
+		$this->assertStringContainsString( 'Your store currency is USD. CookiePay takes payments in KRW only.', $html );
+		$this->assertStringContainsString( 'value="outlinepay_set_currency"', $html );
+		$this->assertStringContainsString( 'nonce-outlinepay_set_currency', $html );
+		$this->assertStringContainsString( 'value="Set store currency to KRW"', $html );
+		$this->assertStringContainsString( 'What&#039;s next', $html );
+		$this->assertStringNotContainsString( 'now show at checkout', $html, 'not true until the currency is switched' );
 	}
 }

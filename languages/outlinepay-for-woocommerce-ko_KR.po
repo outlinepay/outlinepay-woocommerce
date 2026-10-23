@@ -151,16 +151,6 @@ msgstr ""
 "저장된 연결 정보를 더 이상 읽을 수 없습니다. 사이트 보안 키가 바뀌면 이런 일"
 "이 생깁니다. 연결을 해제한 뒤 새 코드로 다시 연결하십시오."
 
-#. translators: %s: currency code such as USD.
-#: includes/class-admin-page.php:380
-#, php-format
-msgid ""
-"Your store currency is %s. OutlinePay methods show at checkout only when the "
-"store currency is KRW."
-msgstr ""
-"스토어 통화가 %s입니다. OutlinePay 결제수단은 스토어 통화가 KRW일 때만 결제 "
-"화면에 표시됩니다."
-
 #: includes/class-admin-page.php:388
 msgid ""
 "OutlinePay no longer accepts this store's connection. Payments are off. Ask "
@@ -551,10 +541,6 @@ msgstr "주문을 찾을 수 없습니다."
 #: includes/class-gateway.php:137 includes/class-gateway.php:281
 msgid "This payment method is not available right now. Choose another method."
 msgstr "지금은 이 결제수단을 사용할 수 없습니다. 다른 결제수단을 선택하십시오."
-
-#: includes/class-gateway.php:140
-msgid "This payment method takes Korean won (KRW) only."
-msgstr "이 결제수단은 원화(KRW)만 받습니다."
 
 #: includes/class-gateway.php:144
 msgid "The order total must be a whole number of won. Contact the store."
@@ -1127,17 +1113,6 @@ msgstr ""
 msgid "The payment method list was not refreshed in the last 2 hours."
 msgstr "지난 2시간 동안 결제수단 목록이 갱신되지 않았습니다."
 
-#: includes/class-self-check.php:904
-msgid "The store currency is KRW."
-msgstr "스토어 통화가 KRW입니다."
-
-#. translators: %s: currency code such as USD.
-#: includes/class-self-check.php:908
-#, php-format
-msgid "The store currency is %s. OutlinePay methods show only when it is KRW."
-msgstr ""
-"스토어 통화가 %s입니다. OutlinePay 결제수단은 통화가 KRW일 때만 표시됩니다."
-
 #: includes/class-self-check.php:913
 msgid "This site is at the address the store was connected at."
 msgstr "이 사이트는 스토어를 연결한 주소에 있습니다."
@@ -1499,3 +1474,43 @@ msgstr "결제 확인을 지금 실행했습니다. 결제수단 목록은 갱�
 #: includes/class-admin-page.php:817
 msgid "The store is not connected. Nothing ran."
 msgstr "스토어가 연결되어 있지 않습니다. 아무것도 실행하지 않았습니다."
+
+#. translators: %s: currency code such as KRW.
+#: includes/class-admin-page.php:688
+#, php-format
+msgid "Set store currency to %s"
+msgstr "스토어 통화를 %s로 설정"
+
+#. translators: %s: currency code such as KRW.
+#: includes/class-admin-page.php:839
+#, php-format
+msgid "Store currency set to %s."
+msgstr "스토어 통화를 %s로 설정했습니다."
+
+#. translators: 1: store currency code such as USD, 2: payment provider name, 3: currency codes the provider takes, such as KRW.
+#: includes/class-self-check.php:923
+#, php-format
+msgid "The store currency is %1$s. %2$s takes payments in %3$s only."
+msgstr "스토어 통화가 %1$s입니다. %2$s에서는 %3$s 결제만 받습니다."
+
+#. translators: %s: currency code such as KRW.
+#: includes/class-self-check.php:919
+#, php-format
+msgid "The store currency is %s."
+msgstr "스토어 통화가 %s입니다."
+
+#: includes/class-admin-page.php:840
+msgid "The store is not connected. Nothing changed."
+msgstr "스토어가 연결되어 있지 않습니다. 바뀐 것은 없습니다."
+
+#. translators: %s: currency codes, such as KRW.
+#: includes/class-gateway.php:201
+#, php-format
+msgid "This payment method takes %s only."
+msgstr "이 결제수단은 %s 결제만 받습니다."
+
+#. translators: 1: store currency code such as USD, 2: payment provider name, 3: currency codes the provider takes, such as KRW.
+#: includes/class-admin-page.php:669
+#, php-format
+msgid "Your store currency is %1$s. %2$s takes payments in %3$s only."
+msgstr "스토어 통화가 %1$s입니다. %2$s에서는 %3$s 결제만 받습니다."

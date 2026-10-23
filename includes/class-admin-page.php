@@ -43,6 +43,7 @@ final class Admin_Page {
 		add_action( 'admin_post_outlinepay_self_check', array( self::class, 'self_check' ) );
 		add_action( 'admin_post_outlinepay_self_check_email', array( self::class, 'save_self_check_email' ) );
 		add_action( 'admin_post_outlinepay_run_jobs', array( self::class, 'run_jobs' ) );
+		add_action( 'admin_post_outlinepay_set_currency', array( self::class, 'set_currency' ) );
 		add_action( 'admin_post_outlinepay_shopper_cancel', array( self::class, 'save_shopper_cancel' ) );
 		add_action( 'admin_enqueue_scripts', array( self::class, 'enqueue' ) );
 		add_action( 'admin_notices', array( self::class, 'copy_notice' ) );
@@ -337,6 +338,22 @@ final class Admin_Page {
 	}
 
 	/**
+	 * "Set store currency to KRW": the provider's first currency, with its
+	 * number of decimals. Only while the store is connected.
+	 *
+	 * @return void
+	 */
+	public static function set_currency() {
+		self::require_capability();
+		check_admin_referer( 'outlinepay_set_currency' );
+		if ( ! Settings::is_connected() ) {
+			self::back( 'currency_not_connected' );
+		}
+		Settings::set_store_currency();
+		self::back( 'currency_set' );
+	}
+
+	/**
 	 * Saves "Email me when a daily check fails".
 	 *
 	 * @return void
@@ -423,14 +440,10 @@ final class Admin_Page {
 		self::render_self_check();
 
 		if ( 'connected' === $status ) {
-			if ( 'KRW' !== get_woocommerce_currency() ) {
-				echo '<div class="notice notice-warning inline"><p>' . esc_html(
-					sprintf(
-						/* translators: %s: currency code such as USD. */
-						__( 'Your store currency is %s. OutlinePay methods show at checkout only when the store currency is KRW.', 'outlinepay-for-woocommerce' ),
-						get_woocommerce_currency()
-					)
-				) . '</p></div>';
+			if ( ! Settings::provider_takes( get_woocommerce_currency() ) ) {
+				echo '<div class="notice notice-warning inline">';
+				self::render_currency_fix();
+				echo '</div>';
 			}
 			self::render_methods();
 			self::render_shopper_cancel();
@@ -623,6 +636,11 @@ final class Admin_Page {
 				echo '<br><button type="button" class="button button-small" data-outlinepay-copy data-target="outlinepay-check-code" data-status="outlinepay-copy-status-problems" data-copied="' . esc_attr__( 'Copied', 'outlinepay-for-woocommerce' ) . '" data-manual="' . esc_attr__( 'Selected. Press Ctrl+C to copy.', 'outlinepay-for-woocommerce' ) . '">' . esc_html__( 'Copy code', 'outlinepay-for-woocommerce' ) . '</button>';
 				echo ' <span id="outlinepay-copy-status-problems" aria-live="polite"></span>';
 				return;
+			case 'store_currency':
+				if ( Settings::is_connected() && ! Settings::provider_takes( get_woocommerce_currency() ) ) {
+					self::render_currency_button();
+				}
+				return;
 			case 'not_a_copy':
 				if ( Site_Identity::is_copy() ) {
 					// The confirm step of "I moved my store to this address" (see copy_moved).
@@ -636,6 +654,41 @@ final class Admin_Page {
 				}
 				return;
 		}
+	}
+
+	/**
+	 * The store currency is one the provider does not take: one sentence and
+	 * the button that switches the store.
+	 *
+	 * @return void
+	 */
+	private static function render_currency_fix() {
+		echo '<p>' . esc_html(
+			sprintf(
+				/* translators: 1: store currency code such as USD, 2: payment provider name, 3: currency codes the provider takes, such as KRW. */
+				__( 'Your store currency is %1$s. %2$s takes payments in %3$s only.', 'outlinepay-for-woocommerce' ),
+				get_woocommerce_currency(),
+				Settings::provider_display_name(),
+				implode( ', ', Settings::provider_currencies() )
+			)
+		) . '</p>';
+		self::render_currency_button();
+	}
+
+	/**
+	 * "Set store currency to KRW".
+	 *
+	 * @return void
+	 */
+	private static function render_currency_button() {
+		self::render_action_form(
+			'outlinepay_set_currency',
+			sprintf(
+				/* translators: %s: currency code such as KRW. */
+				__( 'Set store currency to %s', 'outlinepay-for-woocommerce' ),
+				Settings::provider_currencies()[0]
+			)
+		);
 	}
 
 	/**
@@ -782,6 +835,9 @@ final class Admin_Page {
 			'jobs_ran'                => array( 'success', __( 'The payment check and the method refresh ran now.', 'outlinepay-for-woocommerce' ) ),
 			'jobs_ran_methods_failed' => array( 'warning', __( 'The payment check ran now. The method list could not be refreshed. Try again in a few minutes.', 'outlinepay-for-woocommerce' ) ),
 			'jobs_not_connected'      => array( 'error', __( 'The store is not connected. Nothing ran.', 'outlinepay-for-woocommerce' ) ),
+			/* translators: %s: currency code such as KRW. */
+			'currency_set'            => array( 'success', sprintf( __( 'Store currency set to %s.', 'outlinepay-for-woocommerce' ), get_woocommerce_currency() ) ),
+			'currency_not_connected'  => array( 'error', __( 'The store is not connected. Nothing changed.', 'outlinepay-for-woocommerce' ) ),
 		);
 		if ( ! isset( $messages[ $result ] ) ) {
 			return;
@@ -794,15 +850,21 @@ final class Admin_Page {
 	}
 
 	/**
-	 * The notice after a connect, then three next steps.
+	 * The notice after a connect, the currency fix when the provider does not
+	 * take the store currency, then three next steps.
 	 *
 	 * @param string $message The connected sentence.
 	 * @return void
 	 */
 	private static function render_connected_notice( $message ) {
 		echo '<div class="notice notice-success is-dismissible outlinepay-connected"><p>' . esc_html( $message ) . '</p>';
+		if ( ! Settings::provider_takes( get_woocommerce_currency() ) ) {
+			self::render_currency_fix();
+		}
 		echo '<p><strong>' . esc_html__( 'What\'s next', 'outlinepay-for-woocommerce' ) . '</strong></p><ul>';
-		echo '<li>' . esc_html__( 'Your payment methods now show at checkout.', 'outlinepay-for-woocommerce' ) . ' <a href="' . esc_url( wc_get_checkout_url() ) . '">' . esc_html__( 'View checkout', 'outlinepay-for-woocommerce' ) . '</a></li>';
+		if ( Settings::provider_takes( get_woocommerce_currency() ) ) {
+			echo '<li>' . esc_html__( 'Your payment methods now show at checkout.', 'outlinepay-for-woocommerce' ) . ' <a href="' . esc_url( wc_get_checkout_url() ) . '">' . esc_html__( 'View checkout', 'outlinepay-for-woocommerce' ) . '</a></li>';
+		}
 		echo '<li><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( 'outlinepay_self_check' );
 		echo '<input type="hidden" name="action" value="outlinepay_self_check">';

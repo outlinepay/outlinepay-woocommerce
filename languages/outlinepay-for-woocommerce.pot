@@ -128,12 +128,6 @@ msgstr ""
 msgid "The saved connection can no longer be read. This happens when the site security keys change. Disconnect, then connect again with a new code."
 msgstr ""
 
-#. translators: %s: currency code such as USD.
-#: includes/class-admin-page.php:380
-#, php-format
-msgid "Your store currency is %s. OutlinePay methods show at checkout only when the store currency is KRW."
-msgstr ""
-
 #: includes/class-admin-page.php:388
 msgid "OutlinePay no longer accepts this store's connection. Payments are off. Ask your payment provider for a new connect code, then disconnect and connect again."
 msgstr ""
@@ -459,10 +453,6 @@ msgstr ""
 #: includes/class-gateway.php:137
 #: includes/class-gateway.php:281
 msgid "This payment method is not available right now. Choose another method."
-msgstr ""
-
-#: includes/class-gateway.php:140
-msgid "This payment method takes Korean won (KRW) only."
 msgstr ""
 
 #: includes/class-gateway.php:144
@@ -866,16 +856,6 @@ msgstr ""
 msgid "The payment method list was not refreshed in the last 2 hours."
 msgstr ""
 
-#: includes/class-self-check.php:904
-msgid "The store currency is KRW."
-msgstr ""
-
-#. translators: %s: currency code such as USD.
-#: includes/class-self-check.php:908
-#, php-format
-msgid "The store currency is %s. OutlinePay methods show only when it is KRW."
-msgstr ""
-
 #: includes/class-self-check.php:913
 msgid "This site is at the address the store was connected at."
 msgstr ""
@@ -1199,4 +1179,44 @@ msgstr ""
 
 #: includes/class-admin-page.php:817
 msgid "The store is not connected. Nothing ran."
+msgstr ""
+
+#. translators: %s: currency code such as KRW.
+#: includes/class-admin-page.php:688
+#, php-format
+msgid "Set store currency to %s"
+msgstr ""
+
+#. translators: %s: currency code such as KRW.
+#: includes/class-admin-page.php:839
+#, php-format
+msgid "Store currency set to %s."
+msgstr ""
+
+#. translators: 1: store currency code such as USD, 2: payment provider name, 3: currency codes the provider takes, such as KRW.
+#: includes/class-self-check.php:923
+#, php-format
+msgid "The store currency is %1$s. %2$s takes payments in %3$s only."
+msgstr ""
+
+#. translators: %s: currency code such as KRW.
+#: includes/class-self-check.php:919
+#, php-format
+msgid "The store currency is %s."
+msgstr ""
+
+#: includes/class-admin-page.php:840
+msgid "The store is not connected. Nothing changed."
+msgstr ""
+
+#. translators: %s: currency codes, such as KRW.
+#: includes/class-gateway.php:201
+#, php-format
+msgid "This payment method takes %s only."
+msgstr ""
+
+#. translators: 1: store currency code such as USD, 2: payment provider name, 3: currency codes the provider takes, such as KRW.
+#: includes/class-admin-page.php:669
+#, php-format
+msgid "Your store currency is %1$s. %2$s takes payments in %3$s only."
 msgstr ""

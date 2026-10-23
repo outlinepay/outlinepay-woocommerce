@@ -163,8 +163,8 @@ class Gateway extends \WC_Payment_Gateway {
 	}
 
 	/**
-	 * Shown only when connected, the store sells in KRW, the provider has the
-	 * method enabled and the merchant has not hidden it.
+	 * Shown only when connected, the store sells in a currency the provider
+	 * takes, the provider has the method enabled and the merchant has not hidden it.
 	 *
 	 * @return bool
 	 */
@@ -175,7 +175,7 @@ class Gateway extends \WC_Payment_Gateway {
 		if ( ! Settings::is_connected() ) {
 			return false;
 		}
-		if ( 'KRW' !== get_woocommerce_currency() ) {
+		if ( ! Settings::provider_takes( get_woocommerce_currency() ) ) {
 			return false;
 		}
 		return Settings::method_enabled_by_server( $this->outlinepay_method );
@@ -196,8 +196,9 @@ class Gateway extends \WC_Payment_Gateway {
 			// Disconnected, revoked, or a copy of the store (see Site_Identity).
 			return $this->refuse( __( 'This payment method is not available right now. Choose another method.', 'outlinepay-for-woocommerce' ) );
 		}
-		if ( 'KRW' !== $order->get_currency() ) {
-			return $this->refuse( __( 'This payment method takes Korean won (KRW) only.', 'outlinepay-for-woocommerce' ) );
+		if ( ! Settings::provider_takes( $order->get_currency() ) ) {
+			/* translators: %s: currency codes, such as KRW. */
+			return $this->refuse( sprintf( __( 'This payment method takes %s only.', 'outlinepay-for-woocommerce' ), implode( ', ', Settings::provider_currencies() ) ) );
 		}
 		$amount = Amount::to_krw( $order->get_total() );
 		if ( null === $amount ) {
@@ -209,7 +210,7 @@ class Gateway extends \WC_Payment_Gateway {
 			'order_id'       => $order->get_id(),
 			'order_number'   => (string) $order->get_order_number(),
 			'amount'         => $amount,
-			'currency'       => 'KRW',
+			'currency'       => strtoupper( (string) $order->get_currency() ),
 			'payment_method' => $this->outlinepay_method,
 			'return_url'     => self::return_url( $order ),
 			'buyer'          => self::buyer( $order ),

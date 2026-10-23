@@ -27,7 +27,7 @@ final class Settings {
 	/**
 	 * Installation fields kept locally. Never credentials.
 	 */
-	const INSTALLATION_FIELDS = array( 'id', 'mode', 'status', 'provider', 'permissions', 'refunds_enabled', 'refund_daily_cap', 'connected_at', 'token_last4' );
+	const INSTALLATION_FIELDS = array( 'id', 'mode', 'status', 'provider', 'permissions', 'refunds_enabled', 'refund_daily_cap', 'connected_at', 'token_last4', 'currencies' );
 
 	/**
 	 * The permission a store token needs to refund.
@@ -58,6 +58,21 @@ final class Settings {
 	 * gateway with them.
 	 */
 	const WC_HIDES_SHELL_GATEWAYS = '9.9';
+
+	/**
+	 * Digits after the decimal point, by ISO currency code, for the currencies
+	 * a provider may settle in. Any other currency has 2.
+	 */
+	const MINOR_UNITS = array(
+		'KRW' => 0,
+		'JPY' => 0,
+		'VND' => 0,
+		'CLP' => 0,
+		'PYG' => 0,
+		'USD' => 2,
+		'EUR' => 2,
+		'GBP' => 2,
+	);
 
 	/**
 	 * The installation summary, or an empty array.
@@ -291,6 +306,71 @@ final class Settings {
 	public static function provider_name( $provider ) {
 		$provider = (string) $provider;
 		return 'cookiepay' === $provider ? __( 'CookiePay', 'outlinepay-for-woocommerce' ) : ucfirst( $provider );
+	}
+
+	/**
+	 * The currencies the payment provider takes payments in, from the saved
+	 * installation. KRW when the record has none: a store connected before
+	 * OutlinePay sent the list behaves as it always did.
+	 *
+	 * @return string[] ISO codes, the provider's first choice first.
+	 */
+	public static function provider_currencies() {
+		$installation = self::installation();
+		$currencies   = array();
+		if ( isset( $installation['currencies'] ) && is_array( $installation['currencies'] ) ) {
+			foreach ( $installation['currencies'] as $currency ) {
+				if ( is_string( $currency ) && preg_match( '/^[A-Z]{3}$/', $currency ) && ! in_array( $currency, $currencies, true ) ) {
+					$currencies[] = $currency;
+				}
+			}
+		}
+		return $currencies ? $currencies : array( 'KRW' );
+	}
+
+	/**
+	 * True when the payment provider takes payments in this currency.
+	 *
+	 * @param string $currency ISO code.
+	 * @return bool
+	 */
+	public static function provider_takes( $currency ) {
+		return in_array( strtoupper( (string) $currency ), self::provider_currencies(), true );
+	}
+
+	/**
+	 * Digits after the decimal point for a currency.
+	 *
+	 * @param string $currency ISO code.
+	 * @return int
+	 */
+	public static function minor_units( $currency ) {
+		$currency = strtoupper( (string) $currency );
+		return isset( self::MINOR_UNITS[ $currency ] ) ? self::MINOR_UNITS[ $currency ] : 2;
+	}
+
+	/**
+	 * The provider's name for the merchant, or "Your payment provider".
+	 *
+	 * @return string
+	 */
+	public static function provider_display_name() {
+		$installation = self::installation();
+		$name         = isset( $installation['provider'] ) ? self::provider_name( (string) $installation['provider'] ) : '';
+		return '' !== $name ? $name : __( 'Your payment provider', 'outlinepay-for-woocommerce' );
+	}
+
+	/**
+	 * Sets the store currency to the provider's first currency, with that
+	 * currency's number of decimals. Only on the merchant's click.
+	 *
+	 * @return string The currency set.
+	 */
+	public static function set_store_currency() {
+		$currency = self::provider_currencies()[0];
+		update_option( 'woocommerce_currency', $currency );
+		update_option( 'woocommerce_price_num_decimals', self::minor_units( $currency ) );
+		return $currency;
 	}
 
 	/**

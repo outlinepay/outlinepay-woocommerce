@@ -260,7 +260,7 @@ class SelfCheckTest extends TestCase {
 		$this->assertStringContainsString( 'No OutlinePay method shows', Self_Check::sentence( $hidden ) );
 	}
 
-	public function test_store_currency_must_be_krw() {
+	public function test_with_no_provider_list_the_store_currency_must_be_krw() {
 		$this->assertTrue( Self_Check::store_currency( self::facts() )['ok'] );
 		$usd = Self_Check::store_currency( self::facts( array( 'currency' => 'USD' ) ) );
 		$this->assertFalse( $usd['ok'] );
@@ -590,6 +590,38 @@ class SelfCheckTest extends TestCase {
 		$this->assertSame( 'OutlinePay', Self_Check::who( 'outlinepay' ) );
 		$this->assertSame( 'Shopper', Self_Check::who( 'shopper' ) );
 		$this->assertSame( 'Your payment provider', Self_Check::who( 'unknown' ), 'nobody named: the provider is the first stop' );
+	}
+
+	public function test_store_currency_fails_with_the_provider_sentence_for_a_usd_store() {
+		$usd = Self_Check::store_currency(
+			self::facts(
+				array(
+					'currency'            => 'USD',
+					'provider_currencies' => array( 'KRW' ),
+					'provider'            => 'CookiePay',
+				)
+			)
+		);
+		$this->assertFalse( $usd['ok'] );
+		$this->assertSame( 'store', $usd['side'] );
+		$this->assertSame( 'The store currency is USD. CookiePay takes payments in KRW only.', Self_Check::sentence( $usd ) );
+
+		$krw = Self_Check::store_currency( self::facts( array( 'provider_currencies' => array( 'KRW' ), 'provider' => 'CookiePay' ) ) );
+		$this->assertTrue( $krw['ok'] );
+		$this->assertSame( 'The store currency is KRW.', Self_Check::sentence( $krw ) );
+	}
+
+	public function test_store_currency_follows_the_provider_list() {
+		$facts = self::facts(
+			array(
+				'currency'            => 'JPY',
+				'provider_currencies' => array( 'KRW', 'JPY' ),
+				'provider'            => 'Bepsa',
+			)
+		);
+		$this->assertTrue( Self_Check::store_currency( $facts )['ok'] );
+		$facts['currency'] = 'EUR';
+		$this->assertSame( 'The store currency is EUR. Bepsa takes payments in KRW, JPY only.', Self_Check::sentence( Self_Check::store_currency( $facts ) ) );
 	}
 
 	public function test_open_problems_nobody_named_tells_the_merchant_to_send_the_code() {

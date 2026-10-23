@@ -19,7 +19,7 @@
  *   D  scheduler_jobs     reconcile and method refresh are scheduled, none over an hour late
  *   E  wp_cron            WP-Cron is on, or some scheduled action ran in the last 2 hours
  *   F  methods_fresh      methods fetched in the last 2 hours, at least one shown at checkout
- *   G  store_currency     the store currency is KRW
+ *   G  store_currency     the store currency is one the payment provider takes
  *   H  not_a_copy         this site is the address the store was connected at
  *   I  versions           PHP, WordPress, WooCommerce at or above the plugin's minimums, HPOS declared
  *
@@ -423,14 +423,24 @@ final class Self_Check {
 	}
 
 	/**
-	 * Store currency KRW.
+	 * The store currency is one the payment provider takes.
 	 *
 	 * @param array $facts Facts.
 	 * @return array
 	 */
 	public static function store_currency( array $facts ) {
 		$currency = substr( preg_replace( '/[^A-Z]/', '', strtoupper( (string) $facts['currency'] ) ), 0, 10 );
-		return self::check( 'store_currency', 'KRW' === $currency, 'store', array( 'currency' => $currency ) );
+		$accepted = isset( $facts['provider_currencies'] ) && is_array( $facts['provider_currencies'] ) && $facts['provider_currencies'] ? $facts['provider_currencies'] : array( 'KRW' );
+		return self::check(
+			'store_currency',
+			in_array( $currency, $accepted, true ),
+			'store',
+			array(
+				'currency' => $currency,
+				'accepted' => implode( ',', $accepted ),
+				'provider' => isset( $facts['provider'] ) ? (string) $facts['provider'] : '',
+			)
+		);
 	}
 
 	/**
@@ -552,6 +562,8 @@ final class Self_Check {
 			'methods_enabled'      => $enabled,
 			'methods_shown'        => $shown,
 			'currency'             => function_exists( 'get_woocommerce_currency' ) ? get_woocommerce_currency() : '',
+			'provider_currencies'  => Settings::provider_currencies(),
+			'provider'             => Settings::provider_display_name(),
 			'php'                  => PHP_VERSION,
 			'wp'                   => (string) get_bloginfo( 'version' ),
 			'wc'                   => defined( 'WC_VERSION' ) ? WC_VERSION : '',
@@ -901,13 +913,17 @@ final class Self_Check {
 					? __( 'No OutlinePay method shows at checkout. Turn one on under Payment methods on the OutlinePay page, or ask your payment provider to enable one.', 'outlinepay-for-woocommerce' )
 					: __( 'The payment method list was not refreshed in the last 2 hours.', 'outlinepay-for-woocommerce' );
 			case 'store_currency':
+				$currency = isset( $detail['currency'] ) && '' !== $detail['currency'] ? $detail['currency'] : '?';
 				if ( $ok ) {
-					return __( 'The store currency is KRW.', 'outlinepay-for-woocommerce' );
+					/* translators: %s: currency code such as KRW. */
+					return sprintf( __( 'The store currency is %s.', 'outlinepay-for-woocommerce' ), $currency );
 				}
 				return sprintf(
-					/* translators: %s: currency code such as USD. */
-					__( 'The store currency is %s. OutlinePay methods show only when it is KRW.', 'outlinepay-for-woocommerce' ),
-					isset( $detail['currency'] ) && '' !== $detail['currency'] ? $detail['currency'] : '?'
+					/* translators: 1: store currency code such as USD, 2: payment provider name, 3: currency codes the provider takes, such as KRW. */
+					__( 'The store currency is %1$s. %2$s takes payments in %3$s only.', 'outlinepay-for-woocommerce' ),
+					$currency,
+					isset( $detail['provider'] ) && '' !== $detail['provider'] ? $detail['provider'] : __( 'Your payment provider', 'outlinepay-for-woocommerce' ),
+					isset( $detail['accepted'] ) && '' !== $detail['accepted'] ? str_replace( ',', ', ', $detail['accepted'] ) : 'KRW'
 				);
 			case 'not_a_copy':
 				return $ok
