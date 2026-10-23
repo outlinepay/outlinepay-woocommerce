@@ -75,6 +75,14 @@ final class Settings {
 	);
 
 	/**
+	 * price_decimals() answers for this request, by store currency: the
+	 * currency's digits, or null to leave WooCommerce's value.
+	 *
+	 * @var array
+	 */
+	private static $price_decimals = array();
+
+	/**
 	 * The installation summary, or an empty array.
 	 *
 	 * @return array
@@ -98,6 +106,7 @@ final class Settings {
 			}
 		}
 		update_option( self::OPTION_INSTALLATION, $keep, true );
+		self::forget_price_decimals();
 	}
 
 	/**
@@ -112,6 +121,7 @@ final class Settings {
 		}
 		$installation['status'] = 'revoked';
 		update_option( self::OPTION_INSTALLATION, $installation, true );
+		self::forget_price_decimals();
 	}
 
 	/**
@@ -130,6 +140,7 @@ final class Settings {
 		delete_option( Self_Check::OPTION_LAST );
 		delete_option( Self_Check::OPTION_DAILY );
 		delete_option( Self_Check::OPTION_EMAILED_AT );
+		self::forget_price_decimals();
 	}
 
 	/**
@@ -358,11 +369,21 @@ final class Settings {
 	 * @return int
 	 */
 	public static function price_decimals( $decimals ) {
-		$currency = get_woocommerce_currency();
-		if ( ! self::provider_takes( $currency ) || ! self::is_connected() ) {
-			return $decimals;
+		$currency = (string) get_woocommerce_currency();
+		if ( ! array_key_exists( $currency, self::$price_decimals ) ) {
+			// WooCommerce asks for every price shown: work it out once per request and currency.
+			self::$price_decimals[ $currency ] = self::provider_takes( $currency ) && self::is_connected() ? self::minor_units( $currency ) : null;
 		}
-		return self::minor_units( $currency );
+		return null === self::$price_decimals[ $currency ] ? $decimals : self::$price_decimals[ $currency ];
+	}
+
+	/**
+	 * Drops price_decimals() answers, after the connection or the currency changed.
+	 *
+	 * @return void
+	 */
+	public static function forget_price_decimals() {
+		self::$price_decimals = array();
 	}
 
 	/**
@@ -386,6 +407,7 @@ final class Settings {
 		$currency = self::provider_currencies()[0];
 		update_option( 'woocommerce_currency', $currency );
 		update_option( 'woocommerce_price_num_decimals', self::minor_units( $currency ) );
+		self::forget_price_decimals();
 		return $currency;
 	}
 

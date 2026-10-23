@@ -36,6 +36,7 @@ class AdminPageTest extends TestCase {
 		Functions\stubTranslationFunctions();
 		Functions\stubEscapeFunctions();
 		Credentials::reset_cache();
+		Settings::forget_price_decimals();
 		$this->answer = array(
 			'response' => array( 'code' => 200 ),
 			'body'     => json_encode( array( 'data' => array( array( 'method' => 'card', 'label_ko' => '신용카드' ) ) ) ),
@@ -139,6 +140,7 @@ class AdminPageTest extends TestCase {
 
 	protected function tearDown(): void {
 		Credentials::reset_cache();
+		Settings::forget_price_decimals();
 		parent::tearDown();
 	}
 
@@ -390,5 +392,48 @@ class AdminPageTest extends TestCase {
 		$this->assertSame( 2, Settings::minor_units( 'XYZ' ), 'unknown: 2' );
 		$source = file_get_contents( dirname( __DIR__, 2 ) . '/includes/class-plugin.php' );
 		$this->assertStringContainsString( "add_filter( 'wc_get_price_decimals', array( Settings::class, 'price_decimals' ) );", $source );
+	}
+
+	public function test_price_decimals_works_its_answer_out_once_per_currency() {
+		Admin_Page::finish_connect( array_merge( self::answer(), array( 'currencies' => array( 'KRW' ) ) ) );
+		$reads   = 0;
+		$options = &$this->options;
+		Functions\when( 'get_option' )->alias(
+			static function ( $name, $fallback = false ) use ( &$options, &$reads ) {
+				if ( 'outlinepay_installation' === $name ) {
+					++$reads;
+				}
+				return array_key_exists( $name, $options ) ? $options[ $name ] : $fallback;
+			}
+		);
+
+		$this->assertSame( 0, Settings::price_decimals( 2 ) );
+		$first = $reads;
+		$this->assertGreaterThan( 0, $first );
+		for ( $i = 0; $i < 20; $i++ ) {
+			$this->assertSame( 0, Settings::price_decimals( 2 ) );
+		}
+		$this->assertSame( $first, $reads, 'no more reads for the same currency' );
+
+		$this->currency = 'USD';
+		$this->assertSame( 2, Settings::price_decimals( 2 ) );
+		$this->assertGreaterThan( $first, $reads, 'a new currency is worked out again' );
+
+		$this->currency = 'KRW';
+		$this->options['outlinepay_installation']['status'] = 'revoked';
+		$this->assertSame( 0, Settings::price_decimals( 2 ), 'still the cached answer' );
+		Settings::mark_revoked();
+		$this->assertSame( 2, Settings::price_decimals( 2 ), 'a revoked connection is seen in the same request' );
+	}
+
+	public function test_set_store_currency_drops_the_cached_decimals() {
+		Admin_Page::finish_connect( array_merge( self::answer(), array( 'currencies' => array( 'KRW' ) ) ) );
+		$this->assertSame( 0, Settings::price_decimals( 2 ), 'cached for KRW' );
+
+		// The provider list changes under the cache, then the merchant switches currency.
+		$this->options['outlinepay_installation']['currencies'] = array( 'USD' );
+		$this->assertSame( 0, Settings::price_decimals( 2 ), 'still the cached answer' );
+		Settings::set_store_currency();
+		$this->assertSame( 2, Settings::price_decimals( 2 ), 'worked out again after the switch' );
 	}
 }
