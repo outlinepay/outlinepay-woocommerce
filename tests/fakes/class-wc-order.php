@@ -20,6 +20,8 @@ class WC_Order {
 	public $billing         = array();
 	/** @var WC_Order_Refund[] */
 	public $refunds         = array();
+	/** @var callable|null Builds WooCommerce's "status changed" prefix, as update_status does. */
+	public $status_prefix   = null;
 
 	public function __construct( $id = 42 ) {
 		$this->id = $id;
@@ -50,9 +52,10 @@ class WC_Order {
 		return $this->status;
 	}
 	public function update_status( $status, $note = '' ) {
+		$from         = $this->status;
 		$this->status = $status;
 		if ( '' !== $note ) {
-			$this->notes[] = $note;
+			$this->notes[] = $this->status_prefix ? trim( call_user_func( $this->status_prefix, $from, $status ) . ' ' . $note ) : $note;
 		}
 	}
 	public function add_order_note( $note ) {

@@ -5,6 +5,7 @@
  * A callback or a REST request can run in another language than the store's,
  * the request user's for one. Every merchant-facing note is built and written
  * here, inside the site locale, so the merchant reads notes in one language.
+ * A status change with a note runs whole inside it (see in_site_locale).
  *
  * @package OutlinePay\WooCommerce
  */
@@ -30,17 +31,28 @@ final class Notes {
 	}
 
 	/**
-	 * Builds a text in the site language, for a note WooCommerce adds itself
-	 * (a status change with a note).
+	 * Builds a text in the site language.
 	 *
 	 * @param callable $build Returns the text.
 	 * @return string
 	 */
 	public static function text( callable $build ) {
+		return (string) self::in_site_locale( $build );
+	}
+
+	/**
+	 * Runs $work in the site locale and returns what it returns. For a status
+	 * change with a note: WooCommerce writes its "Order status changed" prefix
+	 * while this runs, so the prefix and the note share the site language.
+	 *
+	 * @param callable $work Work to run.
+	 * @return mixed
+	 */
+	public static function in_site_locale( callable $work ) {
 		// False when the request already runs in the site locale: nothing to restore then.
 		$switched = switch_to_locale( get_locale() );
 		try {
-			return (string) call_user_func( $build );
+			return call_user_func( $work );
 		} finally {
 			if ( $switched ) {
 				restore_previous_locale();

@@ -132,6 +132,44 @@ class OrderSyncApplyTest extends TestCase {
 		$this->assertStringContainsString( 'another copy of this store', implode( "\n", $this->log_lines ) );
 	}
 
+	public function test_a_status_change_note_and_its_woocommerce_prefix_share_the_site_language() {
+		// The site is Korean, this request runs in English.
+		$locales = array( 'en_US' );
+		Functions\when( 'get_locale' )->justReturn( 'ko_KR' );
+		Functions\when( 'switch_to_locale' )->alias(
+			static function ( $locale ) use ( &$locales ) {
+				if ( end( $locales ) === $locale ) {
+					return false;
+				}
+				$locales[] = $locale;
+				return true;
+			}
+		);
+		Functions\when( 'restore_previous_locale' )->alias(
+			static function () use ( &$locales ) {
+				array_pop( $locales );
+				return end( $locales );
+			}
+		);
+		$korean = array(
+			'Order status changed from %1$s to %2$s.' => '주문 상태가 %1$s에서 %2$s(으)로 변경되었습니다.',
+			'OutlinePay payment %s reports paid, but the amount or currency does not match this order. Check it before shipping.' => 'KO %s',
+		);
+		Functions\when( '__' )->alias(
+			static function ( $text ) use ( &$locales, $korean ) {
+				return 'ko_KR' === end( $locales ) && isset( $korean[ $text ] ) ? $korean[ $text ] : $text;
+			}
+		);
+		$this->order->status_prefix = static function ( $from, $to ) {
+			return sprintf( __( 'Order status changed from %1$s to %2$s.', 'woocommerce' ), $from, $to ); // phpcs:ignore
+		};
+
+		$this->assertSame( Order_Sync::HOLD_MISMATCH, Order_Sync::apply( $this->order, $this->payment( array( 'amount' => 1 ) ) ) );
+
+		$this->assertSame( array( '주문 상태가 pending에서 on-hold(으)로 변경되었습니다. KO ppay_mine' ), $this->order->notes );
+		$this->assertSame( array( 'en_US' ), $locales, 'the request runs in English again' );
+	}
+
 	public function test_a_foreign_payment_on_a_paid_order_only_adds_a_note() {
 		$this->order->status = 'processing';
 		Order_Sync::apply( $this->order, $this->payment( array( 'id' => 'ppay_fromclone' ) ) );

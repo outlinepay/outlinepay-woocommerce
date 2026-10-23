@@ -515,7 +515,7 @@ final class Refunds {
 		);
 		if ( $by_shopper && ! $order->has_status( 'cancelled' ) ) {
 			// WooCommerce sets the status only on a full refund, and other plugins may filter it.
-			$order->update_status( 'cancelled', Notes::text( array( Shopper_Cancel::class, 'core_cancel_note' ) ) );
+			Notes::in_site_locale( fn () => $order->update_status( 'cancelled', Shopper_Cancel::core_cancel_note() ) );
 		}
 		$order->save();
 		Logger::info(

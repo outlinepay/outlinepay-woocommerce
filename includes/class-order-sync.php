@@ -398,7 +398,7 @@ final class Order_Sync {
 				}
 				$order->update_meta_data( self::META_HOLD, 'foreign' );
 				$order->update_meta_data( self::META_SETTLED, 'foreign' );
-				$order->update_status( 'on-hold', $note );
+				Notes::in_site_locale( fn () => $order->update_status( 'on-hold', $note ) );
 				return;
 
 			case self::HOLD_MISMATCH:
@@ -407,10 +407,10 @@ final class Order_Sync {
 				}
 				$order->update_meta_data( self::META_HOLD, 'mismatch' );
 				$order->update_meta_data( self::META_SETTLED, 'mismatch' );
-				$order->update_status(
-					'on-hold',
-					Notes::text(
-						fn () => self::note(
+				Notes::in_site_locale(
+					fn () => $order->update_status(
+						'on-hold',
+						self::note(
 							/* translators: %s: OutlinePay payment id. */
 							sprintf( __( 'OutlinePay payment %s reports paid, but the amount or currency does not match this order. Check it before shipping.', 'outlinepay-for-woocommerce' ), $payment_id ),
 							$payment
@@ -435,7 +435,7 @@ final class Order_Sync {
 				);
 				$order->update_meta_data( self::META_HOLD, 'deposit' );
 				if ( $order->has_status( array( 'pending', 'failed' ) ) ) {
-					$order->update_status( 'on-hold', Notes::text( fn () => self::note( __( 'OutlinePay issued a virtual account. Waiting for the deposit.', 'outlinepay-for-woocommerce' ), $payment ) ) );
+					Notes::in_site_locale( fn () => $order->update_status( 'on-hold', self::note( __( 'OutlinePay issued a virtual account. Waiting for the deposit.', 'outlinepay-for-woocommerce' ), $payment ) ) );
 				}
 				return;
 
@@ -446,10 +446,10 @@ final class Order_Sync {
 				if ( $order->has_status( 'on-hold' ) && 'deposit' === $order->get_meta( self::META_HOLD ) && $payment_id === $order->get_meta( self::META_PAYMENT_ID ) ) {
 					$order->delete_meta_data( self::META_HOLD );
 					$order->delete_meta_data( self::META_VA );
-					$order->update_status(
-						'pending',
-						Notes::text(
-							fn () => self::note(
+					Notes::in_site_locale(
+						fn () => $order->update_status(
+							'pending',
+							self::note(
 								/* translators: %s: OutlinePay payment id. */
 								sprintf( __( 'OutlinePay payment %s expired before the deposit arrived.', 'outlinepay-for-woocommerce' ), $payment_id ),
 								$payment
@@ -474,10 +474,10 @@ final class Order_Sync {
 				}
 				$order->update_meta_data( self::META_HOLD, 'review' );
 				$order->update_meta_data( self::META_SETTLED, 'review' );
-				$order->update_status(
-					'on-hold',
-					Notes::text(
-						fn () => self::note(
+				Notes::in_site_locale(
+					fn () => $order->update_status(
+						'on-hold',
+						self::note(
 							/* translators: %s: OutlinePay payment id. */
 							sprintf( __( 'OutlinePay payment %s needs review: it was paid for a different amount than ordered. OutlinePay has been alerted. Do not ship until it is settled.', 'outlinepay-for-woocommerce' ), $payment_id ),
 							$payment
