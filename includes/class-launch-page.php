@@ -448,10 +448,11 @@ a{color:inherit}
 <h1>' . esc_html( $page['store'] ) . '</h1>
 ' . $details . '
 <form id="outlinepay-launch" method="post" action="' . esc_url( $launch['action'], array( 'https' ) ) . '"' . $charset . ' target="' . esc_attr( self::WINDOW_NAME ) . '" data-width="' . esc_attr( (string) (int) $launch['width'] ) . '" data-height="' . esc_attr( (string) (int) $launch['height'] ) . '">
-' . $inputs . '<button type="submit" id="outlinepay-pay">' . esc_html__( 'Pay', 'outlinepay-for-woocommerce' ) . '</button>
+' . $inputs . '<button type="submit" id="outlinepay-pay" data-busy="' . esc_attr__( 'Finish the payment in the window', 'outlinepay-for-woocommerce' ) . '">' . esc_html__( 'Pay', 'outlinepay-for-woocommerce' ) . '</button>
 </form>
+<p><a href="' . esc_url( $page['back_url'] ) . '">' . esc_html__( 'Back to the store', 'outlinepay-for-woocommerce' ) . '</a></p>
 <p>' . esc_html__( 'A payment window opens. Finish there and this page continues.', 'outlinepay-for-woocommerce' ) . '</p>
-<p id="outlinepay-closed" hidden>' . esc_html__( 'The payment window was closed. Pay again or go back.', 'outlinepay-for-woocommerce' ) . ' <a href="' . esc_url( $page['back_url'] ) . '">' . esc_html__( 'Back to checkout', 'outlinepay-for-woocommerce' ) . '</a></p>
+<p id="outlinepay-closed" hidden>' . esc_html__( 'The payment window was closed. Pay again or go back.', 'outlinepay-for-woocommerce' ) . ' <a href="' . esc_url( $page['back_url'] ) . '">' . esc_html__( 'Back to the order', 'outlinepay-for-woocommerce' ) . '</a></p>
 </div>
 </main>
 <script>
@@ -459,6 +460,7 @@ a{color:inherit}
 	var form = document.getElementById("outlinepay-launch");
 	var button = document.getElementById("outlinepay-pay");
 	var closed = document.getElementById("outlinepay-closed");
+	var label = button.textContent;
 	var timer = null;
 	form.addEventListener("submit", function () {
 		var features = "width=" + form.getAttribute("data-width") + ",height=" + form.getAttribute("data-height");
@@ -472,14 +474,17 @@ a{color:inherit}
 		if (timer) {
 			clearInterval(timer);
 		}
+		// After the submit: a button disabled during it would not post the form.
 		setTimeout(function () {
 			button.disabled = true;
+			button.textContent = button.getAttribute("data-busy");
 		}, 0);
 		timer = setInterval(function () {
 			if (popup.closed) {
 				clearInterval(timer);
 				timer = null;
 				button.disabled = false;
+				button.textContent = label;
 				closed.hidden = false;
 			}
 		}, 1000);

@@ -242,6 +242,19 @@ class LaunchPageTest extends TestCase {
 		$this->assertStringNotContainsString( '<img src=x>', $html );
 	}
 
+	public function test_the_page_links_back_to_the_order_and_names_the_open_window() {
+		$html = Launch_Page::render( $this->store_launch(), self::page() );
+		$back = 'https://shop.example/checkout/order-pay/42/?pay_for_order=true&key=wc_order_abc123';
+
+		$this->assertStringContainsString( '</form>' . "\n" . '<p><a href="' . $back . '">Back to the store</a></p>', $html, 'under the Pay button' );
+		$this->assertStringContainsString( 'Pay again or go back. <a href="' . $back . '">Back to the order</a>', $html );
+		$this->assertStringNotContainsString( 'Back to checkout', $html );
+		$this->assertStringContainsString( 'data-busy="Finish the payment in the window"', $html );
+		$this->assertStringContainsString( 'button.textContent = button.getAttribute("data-busy");', $html );
+		$this->assertStringContainsString( 'button.textContent = label;', $html, 'the label comes back when the window closes' );
+		$this->assertStringContainsString( 'button:disabled{opacity:.5;cursor:default}', $html );
+	}
+
 	public function test_store_details_are_escaped() {
 		$html = Launch_Page::render(
 			$this->store_launch(),
