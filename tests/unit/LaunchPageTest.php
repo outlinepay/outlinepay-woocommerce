@@ -246,7 +246,9 @@ class LaunchPageTest extends TestCase {
 		$html = Launch_Page::render( $this->store_launch(), self::page() );
 		$back = 'https://shop.example/checkout/order-pay/42/?pay_for_order=true&key=wc_order_abc123';
 
-		$this->assertStringContainsString( '</form>' . "\n" . '<p><a href="' . $back . '">Back to the store</a></p>', $html, 'under the Pay button' );
+		$this->assertStringContainsString( '</form>' . "\n" . '<p><a href="' . $back . '">Back to the order</a></p>', $html, 'under the Pay button' );
+		$this->assertSame( 2, substr_count( $html, '>Back to the order</a>' ), 'one label for the one destination' );
+		$this->assertStringNotContainsString( 'Back to the store', $html );
 		$this->assertStringContainsString( 'Pay again or go back. <a href="' . $back . '">Back to the order</a>', $html );
 		$this->assertStringNotContainsString( 'Back to checkout', $html );
 		$this->assertStringContainsString( 'data-busy="Finish the payment in the window"', $html );

@@ -1395,13 +1395,10 @@ msgstr "휴대폰 결제"
 msgid "CookiePay"
 msgstr "쿠키페이"
 
+#: includes/class-launch-page.php:453
 #: includes/class-launch-page.php:455
 msgid "Back to the order"
 msgstr "주문으로 돌아가기"
-
-#: includes/class-launch-page.php:453
-msgid "Back to the store"
-msgstr "스토어로 돌아가기"
 
 #: includes/class-shopper-cancel.php:190
 msgid "Cancellation is not available for this order. Contact the store."

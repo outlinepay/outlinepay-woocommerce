@@ -450,7 +450,7 @@ a{color:inherit}
 <form id="outlinepay-launch" method="post" action="' . esc_url( $launch['action'], array( 'https' ) ) . '"' . $charset . ' target="' . esc_attr( self::WINDOW_NAME ) . '" data-width="' . esc_attr( (string) (int) $launch['width'] ) . '" data-height="' . esc_attr( (string) (int) $launch['height'] ) . '">
 ' . $inputs . '<button type="submit" id="outlinepay-pay" data-busy="' . esc_attr__( 'Finish the payment in the window', 'outlinepay-for-woocommerce' ) . '">' . esc_html__( 'Pay', 'outlinepay-for-woocommerce' ) . '</button>
 </form>
-<p><a href="' . esc_url( $page['back_url'] ) . '">' . esc_html__( 'Back to the store', 'outlinepay-for-woocommerce' ) . '</a></p>
+<p><a href="' . esc_url( $page['back_url'] ) . '">' . esc_html__( 'Back to the order', 'outlinepay-for-woocommerce' ) . '</a></p>
 <p>' . esc_html__( 'A payment window opens. Finish there and this page continues.', 'outlinepay-for-woocommerce' ) . '</p>
 <p id="outlinepay-closed" hidden>' . esc_html__( 'The payment window was closed. Pay again or go back.', 'outlinepay-for-woocommerce' ) . ' <a href="' . esc_url( $page['back_url'] ) . '">' . esc_html__( 'Back to the order', 'outlinepay-for-woocommerce' ) . '</a></p>
 </div>

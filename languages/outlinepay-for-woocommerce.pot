@@ -1096,12 +1096,9 @@ msgstr ""
 msgid "CookiePay"
 msgstr ""
 
+#: includes/class-launch-page.php:453
 #: includes/class-launch-page.php:455
 msgid "Back to the order"
-msgstr ""
-
-#: includes/class-launch-page.php:453
-msgid "Back to the store"
 msgstr ""
 
 #: includes/class-shopper-cancel.php:190
