@@ -28,6 +28,7 @@ final class Order_Sync {
 	const META_MODE       = '_outlinepay_mode';
 	const META_RECEIPT    = '_outlinepay_receipt_url';
 	const META_LAUNCH     = '_outlinepay_launch';
+	const META_NOTED      = '_outlinepay_attempt_notes';
 
 	const COMPLETE       = 'complete';
 	const HOLD_MISMATCH  = 'hold_mismatch';
@@ -144,6 +145,36 @@ final class Order_Sync {
 			$attempts[] = $payment_id;
 		}
 		$order->update_meta_data( self::META_ATTEMPTS, array_slice( $attempts, -self::MAX_ATTEMPTS ) );
+	}
+
+	/**
+	 * The private note for an attempt that started or expired, at most once
+	 * per attempt and event. The caller saves the order.
+	 *
+	 * @param \WC_Order $order      Order.
+	 * @param string    $payment_id OutlinePay payment id.
+	 * @param string    $event      started or expired.
+	 * @return bool True when the note was added.
+	 */
+	public static function note_attempt( $order, $payment_id, $event ) {
+		$key   = $payment_id . ':' . $event;
+		$noted = $order->get_meta( self::META_NOTED );
+		$noted = is_array( $noted ) ? $noted : array();
+		if ( in_array( $key, $noted, true ) ) {
+			return false;
+		}
+		if ( 'started' === $event ) {
+			/* translators: %s: OutlinePay payment id. */
+			Notes::write( $order, fn () => sprintf( __( 'OutlinePay payment %s started. Waiting for the shopper.', 'outlinepay-for-woocommerce' ), $payment_id ) );
+		} elseif ( 'expired' === $event ) {
+			/* translators: %s: OutlinePay payment id. */
+			Notes::write( $order, fn () => sprintf( __( 'OutlinePay payment %s expired. The shopper did not finish.', 'outlinepay-for-woocommerce' ), $payment_id ) );
+		} else {
+			return false;
+		}
+		$noted[] = $key;
+		$order->update_meta_data( self::META_NOTED, array_slice( $noted, -2 * self::MAX_ATTEMPTS ) );
+		return true;
 	}
 
 	/**
@@ -322,8 +353,9 @@ final class Order_Sync {
 					if ( $other_gateway ) {
 						// Paid through another gateway, and our window was paid too.
 						$order->update_meta_data( self::META_SETTLED, 'double' );
-						$order->add_order_note(
-							self::note(
+						Notes::write(
+							$order,
+							fn () => self::note(
 								/* translators: %s: OutlinePay payment id. */
 								sprintf( __( 'OutlinePay payment %s was paid, but this order was already paid with another payment method. The shopper paid twice. To refund the OutlinePay payment, use your payment provider dashboard.', 'outlinepay-for-woocommerce' ), $payment_id ),
 								$payment
@@ -340,22 +372,28 @@ final class Order_Sync {
 				$order->update_meta_data( self::META_MODE, isset( $payment['mode'] ) && 'test' === $payment['mode'] ? 'test' : 'live' );
 				$order->delete_meta_data( self::META_HOLD );
 				$transaction = isset( $payment['transaction_id'] ) && is_string( $payment['transaction_id'] ) ? $payment['transaction_id'] : '';
-				$order->add_order_note(
-					/* translators: %s: OutlinePay payment id. */
-					self::note( sprintf( __( 'OutlinePay payment %s is paid.', 'outlinepay-for-woocommerce' ), $payment_id ), $payment )
+				Notes::write(
+					$order,
+					fn () => self::note(
+						/* translators: %s: OutlinePay payment id. */
+						sprintf( __( 'OutlinePay payment %s is paid.', 'outlinepay-for-woocommerce' ), $payment_id ),
+						$payment
+					)
 				);
 				$order->payment_complete( $transaction );
 				return;
 
 			case self::HOLD_FOREIGN:
 				Logger::warning( 'Payment from another copy of this store', $context );
-				$note = self::note(
-					/* translators: %s: OutlinePay payment id. */
-					sprintf( __( 'OutlinePay payment %s was made for this order number from another copy of this store, such as a staging site. It does not pay this order. Check it before shipping.', 'outlinepay-for-woocommerce' ), $payment_id ),
-					$payment
+				$note = Notes::text(
+					fn () => self::note(
+						/* translators: %s: OutlinePay payment id. */
+						sprintf( __( 'OutlinePay payment %s was made for this order number from another copy of this store, such as a staging site. It does not pay this order. Check it before shipping.', 'outlinepay-for-woocommerce' ), $payment_id ),
+						$payment
+					)
 				);
 				if ( $paid ) {
-					$order->add_order_note( $note );
+					Notes::write( $order, fn () => $note );
 					return;
 				}
 				$order->update_meta_data( self::META_HOLD, 'foreign' );
@@ -371,8 +409,13 @@ final class Order_Sync {
 				$order->update_meta_data( self::META_SETTLED, 'mismatch' );
 				$order->update_status(
 					'on-hold',
-					/* translators: %s: OutlinePay payment id. */
-					self::note( sprintf( __( 'OutlinePay payment %s reports paid, but the amount or currency does not match this order. Check it before shipping.', 'outlinepay-for-woocommerce' ), $payment_id ), $payment )
+					Notes::text(
+						fn () => self::note(
+							/* translators: %s: OutlinePay payment id. */
+							sprintf( __( 'OutlinePay payment %s reports paid, but the amount or currency does not match this order. Check it before shipping.', 'outlinepay-for-woocommerce' ), $payment_id ),
+							$payment
+						)
+					)
 				);
 				return;
 
@@ -392,7 +435,7 @@ final class Order_Sync {
 				);
 				$order->update_meta_data( self::META_HOLD, 'deposit' );
 				if ( $order->has_status( array( 'pending', 'failed' ) ) ) {
-					$order->update_status( 'on-hold', self::note( __( 'OutlinePay issued a virtual account. Waiting for the deposit.', 'outlinepay-for-woocommerce' ), $payment ) );
+					$order->update_status( 'on-hold', Notes::text( fn () => self::note( __( 'OutlinePay issued a virtual account. Waiting for the deposit.', 'outlinepay-for-woocommerce' ), $payment ) ) );
 				}
 				return;
 
@@ -405,13 +448,19 @@ final class Order_Sync {
 					$order->delete_meta_data( self::META_VA );
 					$order->update_status(
 						'pending',
-						/* translators: %s: OutlinePay payment id. */
-						self::note( sprintf( __( 'OutlinePay payment %s expired before the deposit arrived.', 'outlinepay-for-woocommerce' ), $payment_id ), $payment )
+						Notes::text(
+							fn () => self::note(
+								/* translators: %s: OutlinePay payment id. */
+								sprintf( __( 'OutlinePay payment %s expired before the deposit arrived.', 'outlinepay-for-woocommerce' ), $payment_id ),
+								$payment
+							)
+						)
 					);
 					return;
 				}
-				$order->add_order_note(
-					self::note(
+				Notes::write(
+					$order,
+					fn () => self::note(
 						/* translators: 1: OutlinePay payment id, 2: status such as failed or expired. */
 						sprintf( __( 'OutlinePay payment %1$s is %2$s. The order is waiting for payment.', 'outlinepay-for-woocommerce' ), $payment_id, $payment['status'] ),
 						$payment
@@ -427,8 +476,13 @@ final class Order_Sync {
 				$order->update_meta_data( self::META_SETTLED, 'review' );
 				$order->update_status(
 					'on-hold',
-					/* translators: %s: OutlinePay payment id. */
-					self::note( sprintf( __( 'OutlinePay payment %s needs review: it was paid for a different amount than ordered. OutlinePay has been alerted. Do not ship until it is settled.', 'outlinepay-for-woocommerce' ), $payment_id ), $payment )
+					Notes::text(
+						fn () => self::note(
+							/* translators: %s: OutlinePay payment id. */
+							sprintf( __( 'OutlinePay payment %s needs review: it was paid for a different amount than ordered. OutlinePay has been alerted. Do not ship until it is settled.', 'outlinepay-for-woocommerce' ), $payment_id ),
+							$payment
+						)
+					)
 				);
 				return;
 
@@ -436,8 +490,9 @@ final class Order_Sync {
 				if ( 'foreign' === $order->get_meta( self::META_HOLD ) ) {
 					// The order is on hold because a copy of the store got paid first.
 					// This later payment is most likely the shopper's real one.
-					$order->add_order_note(
-						self::note(
+					Notes::write(
+						$order,
+						fn () => self::note(
 							/* translators: %s: OutlinePay payment id. */
 							sprintf( __( 'OutlinePay payment %s is probably the shopper\'s real payment for this order. The earlier payment came from another copy of this store. Check both payments before you refund anything. The order stays on hold.', 'outlinepay-for-woocommerce' ), $payment_id ),
 							$payment
@@ -446,8 +501,9 @@ final class Order_Sync {
 					Logger::warning( 'Duplicate payment on an order held for a foreign payment', $context );
 					return;
 				}
-				$order->add_order_note(
-					self::note(
+				Notes::write(
+					$order,
+					fn () => self::note(
 						/* translators: %s: OutlinePay payment id. */
 						sprintf( __( 'OutlinePay payment %s was paid after this order was already paid. The shopper paid twice. OutlinePay has been alerted. Refund the second payment in your payment provider dashboard.', 'outlinepay-for-woocommerce' ), $payment_id ),
 						$payment
@@ -472,8 +528,9 @@ final class Order_Sync {
 		$method = isset( $payment['payment_method'] ) && in_array( $payment['payment_method'], Settings::METHODS, true ) ? $payment['payment_method'] : 'card';
 		$order->set_payment_method( Settings::gateway_id( $method ) );
 		$order->set_payment_method_title( Settings::method_name( $method ) );
-		$order->add_order_note(
-			self::note(
+		Notes::write(
+			$order,
+			fn () => self::note(
 				/* translators: %s: OutlinePay payment id. */
 				sprintf( __( 'The shopper chose another payment method for this order, but then paid OutlinePay payment %s. The payment method is set back to OutlinePay.', 'outlinepay-for-woocommerce' ), (string) $payment['id'] ),
 				$payment

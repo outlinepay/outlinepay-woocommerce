@@ -89,6 +89,11 @@ abstract class RefundTestCase extends TestCase {
 		Functions\when( 'sanitize_text_field' )->returnArg();
 		Functions\when( 'wp_parse_url' )->alias( 'parse_url' );
 		Functions\when( 'wc_create_refund' )->alias( array( $this, 'fake_wc_create_refund' ) );
+		Functions\when( 'wc_price' )->alias(
+			static function ( $amount, $args = array() ) {
+				return ( isset( $args['currency'] ) && 'KRW' === $args['currency'] ? '₩' : '' ) . number_format( (float) $amount, isset( $args['decimals'] ) ? $args['decimals'] : 2 );
+			}
+		);
 
 		// Connected: sealed credentials that open, and no saved address, so not a copy.
 		Functions\when( 'wp_salt' )->justReturn( 'salt' );

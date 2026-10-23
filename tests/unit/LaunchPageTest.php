@@ -309,4 +309,17 @@ class LaunchPageTest extends TestCase {
 		$this->assertSame( 0, Launch_Page::sweep_expired( self::NOW + 601 ), 'a newer attempt on the same order stays' );
 		$this->assertArrayHasKey( Order_Sync::META_LAUNCH, $live->meta );
 	}
+
+	public function test_the_sweep_notes_an_expired_attempt_once() {
+		$this->store_launch();
+		Functions\when( 'wc_get_orders' )->justReturn( array( $this->order ) );
+
+		Launch_Page::sweep_expired( self::NOW + 601 );
+		$this->assertSame( array( 'OutlinePay payment ppay_abc expired. The shopper did not finish.' ), $this->order->notes );
+
+		// The same attempt seen again (a stale copy of the form) is not noted twice.
+		$this->store_launch();
+		Launch_Page::sweep_expired( self::NOW + 1200 );
+		$this->assertCount( 1, $this->order->notes );
+	}
 }

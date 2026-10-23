@@ -257,6 +257,7 @@ class Gateway extends \WC_Payment_Gateway {
 
 		$order->update_meta_data( Order_Sync::META_PAYMENT_ID, $payment['id'] );
 		Order_Sync::add_attempt( $order, $payment['id'] );
+		Order_Sync::note_attempt( $order, $payment['id'], 'started' );
 		$order->save();
 		Logger::info(
 			'Payment opened',

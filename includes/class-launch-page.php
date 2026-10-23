@@ -259,8 +259,8 @@ final class Launch_Page {
 
 	/**
 	 * Drops expired payment forms from unpaid orders the shopper walked away
-	 * from, which no return, payment or cancellation ever cleans up. Runs with
-	 * the background payment check.
+	 * from, which no return, payment or cancellation ever cleans up, and notes
+	 * the expired attempt once. Runs with the background payment check.
 	 *
 	 * @param int $now   Current Unix time.
 	 * @param int $limit Orders per run.
@@ -283,7 +283,11 @@ final class Launch_Page {
 		);
 		$dropped = 0;
 		foreach ( $orders as $order ) {
-			if ( null === self::normalise( $order->get_meta( Order_Sync::META_LAUNCH ), $now ) && self::forget( $order ) ) {
+			$stored = $order->get_meta( Order_Sync::META_LAUNCH );
+			if ( null === self::normalise( $stored, $now ) && self::forget( $order ) ) {
+				if ( is_array( $stored ) && isset( $stored['payment_id'] ) && Api_Client::valid_payment_id( $stored['payment_id'] ) ) {
+					Order_Sync::note_attempt( $order, $stored['payment_id'], 'expired' );
+				}
 				$order->save();
 				++$dropped;
 			}

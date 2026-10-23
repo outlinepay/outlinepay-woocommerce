@@ -256,9 +256,9 @@ final class Shopper_Cancel {
 					Refunds::add_wc_refund(
 						$order,
 						$refund,
-						__( 'Cancelled by the shopper', 'outlinepay-for-woocommerce' ),
+						Notes::text( fn () => __( 'Cancelled by the shopper', 'outlinepay-for-woocommerce' ) ),
 						true,
-						self::core_cancel_note() . ' ' . sprintf(
+						fn () => self::core_cancel_note() . ' ' . sprintf(
 							/* translators: 1: amount such as 5,000 won, 2: OutlinePay refund id. */
 							__( '%1$s refunded through OutlinePay (refund %2$s).', 'outlinepay-for-woocommerce' ),
 							Refunds::won( $refund['amount'] ),
@@ -269,8 +269,9 @@ final class Shopper_Cancel {
 
 				case 'failed':
 					Refunds::mark_done( $order, $refund['id'] );
-					$order->add_order_note(
-						Order_Sync::note(
+					Notes::write(
+						$order,
+						fn () => Order_Sync::note(
 							/* translators: %s: OutlinePay refund id. */
 							sprintf( __( 'The shopper tried to cancel this order, but the payment provider refused the refund (refund %s). Nothing was refunded. The order is unchanged.', 'outlinepay-for-woocommerce' ), $refund['id'] ),
 							$refund
@@ -281,8 +282,9 @@ final class Shopper_Cancel {
 
 				default:
 					Refunds::remember_pending( $order, $refund['id'], $refund['amount'], 'shopper' );
-					$order->add_order_note(
-						Order_Sync::note(
+					Notes::write(
+						$order,
+						fn () => Order_Sync::note(
 							self::core_cancel_note() . ' ' . sprintf(
 								/* translators: %s: OutlinePay refund id. */
 								__( 'The refund is being confirmed with the payment provider (refund %s).', 'outlinepay-for-woocommerce' ),
@@ -310,7 +312,7 @@ final class Shopper_Cancel {
 	 */
 	private static function unanswered( $order, $amount ) {
 		Refunds::remember_unanswered( $order, Refunds::SHOPPER_PREFIX . $order->get_id(), $amount );
-		$order->add_order_note( __( 'The shopper asked to cancel, but OutlinePay\'s answer was lost. If the refund went through, this order will be cancelled automatically. Do not ship it until then.', 'outlinepay-for-woocommerce' ) );
+		Notes::write( $order, fn () => __( 'The shopper asked to cancel, but OutlinePay\'s answer was lost. If the refund went through, this order will be cancelled automatically. Do not ship it until then.', 'outlinepay-for-woocommerce' ) );
 		$order->save();
 		return self::result( 'notice', __( 'We could not confirm your cancellation yet. We will email you.', 'outlinepay-for-woocommerce' ) );
 	}

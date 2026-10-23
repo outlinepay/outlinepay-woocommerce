@@ -12,6 +12,11 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		Monkey\setUp();
+		// Notes::text runs every note in the site locale. By default the
+		// request already is in it, so nothing switches.
+		Monkey\Functions\when( 'get_locale' )->justReturn( 'en_US' );
+		Monkey\Functions\when( 'switch_to_locale' )->justReturn( false );
+		Monkey\Functions\when( 'restore_previous_locale' )->justReturn( false );
 		$this->log_lines = array();
 		$lines           = &$this->log_lines;
 		Logger::set_sink(

@@ -173,8 +173,9 @@ final class Refunds {
 					$wc_refund->update_meta_data( self::META_REFUND_STATUS, 'succeeded' );
 					$wc_refund->save();
 					self::mark_done( $order, $refund['id'] );
-					$order->add_order_note(
-						self::note(
+					Notes::write(
+						$order,
+						fn () => self::note(
 							/* translators: 1: amount such as 5,000 won, 2: OutlinePay refund id. */
 							sprintf( __( 'Refunded %1$s through OutlinePay (refund %2$s).', 'outlinepay-for-woocommerce' ), self::won( $krw ), $refund['id'] ),
 							$refund
@@ -185,8 +186,9 @@ final class Refunds {
 
 				case 'failed':
 					self::mark_done( $order, $refund['id'] );
-					$order->add_order_note(
-						self::note(
+					Notes::write(
+						$order,
+						fn () => self::note(
 							/* translators: 1: amount such as 5,000 won, 2: OutlinePay refund id. */
 							sprintf( __( 'The payment provider refused a refund of %1$s (refund %2$s). Nothing was refunded.', 'outlinepay-for-woocommerce' ), self::won( $krw ), $refund['id'] ),
 							$refund
@@ -199,8 +201,9 @@ final class Refunds {
 					// pending or unknown: the provider has not confirmed it. WooCommerce
 					// drops its refund row; the confirmation adds the refund later.
 					self::remember_pending( $order, $refund['id'], $krw, 'store' );
-					$order->add_order_note(
-						self::note(
+					Notes::write(
+						$order,
+						fn () => self::note(
 							/* translators: 1: amount such as 5,000 won, 2: OutlinePay refund id. */
 							sprintf( __( 'OutlinePay is confirming a refund of %1$s with the payment provider (refund %2$s). It will be added to this order once confirmed.', 'outlinepay-for-woocommerce' ), self::won( $krw ), $refund['id'] ),
 							$refund
@@ -239,8 +242,9 @@ final class Refunds {
 	}
 
 	/**
-	 * Maps a refusal to the error WooCommerce shows. Nothing is recorded,
-	 * except that a request with no answer is remembered so a retry reuses its id.
+	 * Maps a refusal to the error WooCommerce shows. A refusal also gets a
+	 * private order note. A request with no answer is remembered instead, so a
+	 * retry reuses its id.
 	 *
 	 * @param \WC_Order $order     Order.
 	 * @param Api_Error $error     Refusal.
@@ -262,6 +266,21 @@ final class Refunds {
 			$order->save();
 		} else {
 			self::forget_unanswered( $order, $refund_id );
+			Notes::write(
+				$order,
+				fn () => sprintf(
+					/* translators: 1: amount such as ₩5,000, 2: why OutlinePay refused, one sentence. */
+					__( 'Refund of %1$s was refused: %2$s', 'outlinepay-for-woocommerce' ),
+					wc_price(
+						$krw,
+						array(
+							'currency' => 'KRW',
+							'decimals' => 0,
+						)
+					),
+					self::refusal_sentence( $error )
+				)
+			);
 			$order->save();
 		}
 		return self::error( self::refusal_sentence( $error ) );
@@ -278,8 +297,9 @@ final class Refunds {
 	 */
 	private static function note_unanswered( $order, $refund_id, $krw ) {
 		self::remember_unanswered( $order, $refund_id, $krw );
-		$order->add_order_note(
-			sprintf(
+		Notes::write(
+			$order,
+			fn () => sprintf(
 				/* translators: %s: amount such as 5,000 won. */
 				__( 'OutlinePay did not answer a refund of %s. It may or may not have gone through. Do not refund this amount in your payment provider\'s dashboard. If it went through, it will appear on this order automatically, usually within a few minutes. Reload this order to check. Refunding the same amount again is safe: OutlinePay will not refund twice.', 'outlinepay-for-woocommerce' ),
 				self::won( $krw )
@@ -373,8 +393,9 @@ final class Refunds {
 
 			if ( 'failed' === $refund['status'] ) {
 				if ( isset( $pending[ $id ] ) || self::is_unanswered( $order, self::field( $refund, 'refund_id' ) ) ) {
-					$order->add_order_note(
-						self::note(
+					Notes::write(
+						$order,
+						fn () => self::note(
 							/* translators: 1: amount such as 5,000 won, 2: OutlinePay refund id. */
 							sprintf( __( 'The payment provider did not complete the refund of %1$s (refund %2$s). Nothing was refunded.', 'outlinepay-for-woocommerce' ), self::won( $amount ), $id ),
 							$refund
@@ -393,8 +414,9 @@ final class Refunds {
 			}
 
 			if ( ! $is_order_payment ) {
-				$order->add_order_note(
-					self::note(
+				Notes::write(
+					$order,
+					fn () => self::note(
 						'duplicate' === self::field( $refund, 'source' )
 							/* translators: 1: amount such as 5,000 won, 2: OutlinePay payment id. */
 							? sprintf( __( 'OutlinePay cancelled the duplicate payment %2$s automatically. %1$s went back to the shopper. This order\'s own payment is unchanged.', 'outlinepay-for-woocommerce' ), self::won( $amount ), $payment['id'] )
@@ -411,7 +433,7 @@ final class Refunds {
 			}
 
 			$by_shopper = self::by_shopper( $refund, $pending );
-			if ( self::add_wc_refund( $order, $refund, self::reason( $refund, $by_shopper ), $by_shopper ) ) {
+			if ( self::add_wc_refund( $order, $refund, Notes::text( fn () => self::reason( $refund, $by_shopper ) ), $by_shopper ) ) {
 				++$changed;
 			}
 			$order = self::reread( $order );
@@ -423,14 +445,14 @@ final class Refunds {
 	 * Records a succeeded refund as a WooCommerce refund without sending money,
 	 * then marks it handled. For a shopper cancel the order ends Cancelled.
 	 *
-	 * @param \WC_Order $order      Order.
-	 * @param array     $refund     Refund object, status succeeded.
-	 * @param string    $reason     Reason shown on the refund.
-	 * @param bool      $by_shopper Whether the shopper cancelled.
-	 * @param string    $note       Order note to add instead of the confirmation note.
+	 * @param \WC_Order     $order      Order.
+	 * @param array         $refund     Refund object, status succeeded.
+	 * @param string        $reason     Reason shown on the refund, in the site language.
+	 * @param bool          $by_shopper Whether the shopper cancelled.
+	 * @param callable|null $note       Builds the order note to add instead of the confirmation note.
 	 * @return bool True when a WooCommerce refund was added.
 	 */
-	public static function add_wc_refund( $order, array $refund, $reason, $by_shopper, $note = '' ) {
+	public static function add_wc_refund( $order, array $refund, $reason, $by_shopper, $note = null ) {
 		$order_id = $order->get_id();
 		$id       = $refund['id'];
 		$amount   = $refund['amount'];
@@ -460,8 +482,9 @@ final class Refunds {
 					'refund_id' => $id,
 				)
 			);
-			$order->add_order_note(
-				self::note(
+			Notes::write(
+				$order,
+				fn () => self::note(
 					/* translators: 1: amount such as 5,000 won, 2: OutlinePay refund id. */
 					sprintf( __( 'OutlinePay confirmed a refund of %1$s (refund %2$s), but WooCommerce could not add it to this order. The order may already show this refund. Check the order\'s refunds.', 'outlinepay-for-woocommerce' ), self::won( $amount ), $id ),
 					$refund
@@ -486,10 +509,11 @@ final class Refunds {
 		self::mark_done( $order, $id );
 		self::forget_pending( $order, $id );
 		self::forget_unanswered( $order, self::field( $refund, 'refund_id' ) );
-		$order->add_order_note(
-			self::note(
-				'' !== $note
-					? $note
+		Notes::write(
+			$order,
+			fn () => self::note(
+				null !== $note
+					? call_user_func( $note )
 					/* translators: 1: amount such as 5,000 won, 2: OutlinePay refund id, 3: reason. */
 					: sprintf( __( 'OutlinePay confirmed a refund of %1$s (refund %2$s): %3$s.', 'outlinepay-for-woocommerce' ), self::won( $amount ), $id, $reason ),
 				$refund
@@ -497,7 +521,7 @@ final class Refunds {
 		);
 		if ( $by_shopper && ! $order->has_status( 'cancelled' ) ) {
 			// WooCommerce sets the status only on a full refund, and other plugins may filter it.
-			$order->update_status( 'cancelled', Shopper_Cancel::core_cancel_note() );
+			$order->update_status( 'cancelled', Notes::text( array( Shopper_Cancel::class, 'core_cancel_note' ) ) );
 		}
 		$order->save();
 		Logger::info(

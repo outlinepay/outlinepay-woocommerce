@@ -240,4 +240,15 @@ class GatewayLaunchTest extends RefundTestCase {
 			Launch_Page::url( $this->order, 'ppay_new' )
 		);
 	}
+
+	public function test_a_started_attempt_gets_one_private_note() {
+		$this->answers[] = self::opened( array( 'window' => self::form_window() ) );
+		$this->gateway->process_payment( 42 );
+		$this->assertSame( array( 'OutlinePay payment ppay_new started. Waiting for the shopper.' ), $this->order->notes );
+
+		// The server answers the same attempt again: no second note.
+		$this->answers[] = self::opened( array( 'window' => self::form_window() ) );
+		$this->gateway->process_payment( 42 );
+		$this->assertCount( 1, $this->order->notes );
+	}
 }

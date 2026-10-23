@@ -111,7 +111,7 @@ class ProcessRefundTest extends RefundTestCase {
 	/**
 	 * @dataProvider refusals
 	 */
-	public function test_each_refusal_is_one_plain_sentence_and_records_nothing( $status, $code, $needle ) {
+	public function test_each_refusal_is_one_plain_sentence_and_one_private_note( $status, $code, $needle ) {
 		$this->wc_refund_row( 5000 );
 		$this->answers[] = self::refusal( $status, $code );
 
@@ -119,7 +119,7 @@ class ProcessRefundTest extends RefundTestCase {
 		$this->assertInstanceOf( \WP_Error::class, $result );
 		$this->assertStringContainsString( $needle, $result->get_error_message() );
 		$this->assertStringNotContainsString( $code, $result->get_error_message(), 'no technical codes' );
-		$this->assertSame( array(), $this->order->notes );
+		$this->assertSame( array( 'Refund of ₩5,000 was refused: ' . $result->get_error_message() ), $this->order->notes );
 		$this->assertSame( array(), Refunds::pending( $this->order ) );
 		$this->assertArrayNotHasKey( Refunds::META_UNANSWERED, $this->order->meta );
 	}
