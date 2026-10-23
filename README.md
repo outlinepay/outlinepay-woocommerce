@@ -8,7 +8,7 @@ OutlinePay is operated by Arandu Payments LLC.
 
 - PHP 7.4 or later
 - WordPress 6.2 or later
-- WooCommerce 8.0 or later
+- WooCommerce 9.9 or later
 - Store currency KRW
 
 ## Layout

@@ -13,7 +13,7 @@
  * License URI:          https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:          outlinepay-for-woocommerce
  * Domain Path:          /languages
- * WC requires at least: 8.0
+ * WC requires at least: 9.9
  * WC tested up to:      11.2
  *
  * Copyright (C) 2026 Arandu Payments LLC

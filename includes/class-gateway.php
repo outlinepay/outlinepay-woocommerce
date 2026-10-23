@@ -43,12 +43,7 @@ class Gateway extends \WC_Payment_Gateway {
 		$this->id                = Settings::gateway_id( $method );
 		$this->has_fields        = false;
 		$this->supports          = self::features( $method );
-		$this->method_title      = sprintf(
-			/* translators: %s: payment method name, such as Credit or debit card. */
-			__( 'OutlinePay: %s', 'outlinepay-for-woocommerce' ),
-			Settings::method_name( $method )
-		);
-		$this->method_description = __( 'Takes payment through your payment provider, connected by OutlinePay. Connect the store and choose which methods to show on the OutlinePay page.', 'outlinepay-for-woocommerce' );
+		$this->set_admin_title( $method );
 
 		$this->init_form_fields();
 		$this->init_settings();
@@ -56,6 +51,40 @@ class Gateway extends \WC_Payment_Gateway {
 		$this->title       = Settings::method_name( $method );
 		$this->description = Settings::method_description();
 		$this->enabled     = Settings::shown( $method ) ? 'yes' : 'no';
+	}
+
+	/**
+	 * The title and description WooCommerce shows on Settings > Payments.
+	 * When WooCommerce collapses the tab, the card gateway is the one
+	 * OutlinePay row and the other methods have none, so WooCommerce hides
+	 * them. Otherwise each method has its own row.
+	 *
+	 * @param string $method Method key.
+	 * @return void
+	 */
+	private function set_admin_title( $method ) {
+		$description = __( 'Takes payment through your payment provider, connected by OutlinePay. Connect the store and choose which methods to show on the OutlinePay page.', 'outlinepay-for-woocommerce' );
+		if ( ! Settings::collapse_payments_tab() ) {
+			$this->method_title = sprintf(
+				/* translators: %s: payment method name, such as Credit or debit card. */
+				__( 'OutlinePay: %s', 'outlinepay-for-woocommerce' ),
+				Settings::method_name( $method )
+			);
+			$this->method_description = $description;
+			return;
+		}
+		if ( 'card' !== $method ) {
+			$this->method_title       = '';
+			$this->method_description = '';
+			return;
+		}
+		if ( Settings::is_connected() ) {
+			$this->method_title       = __( 'OutlinePay', 'outlinepay-for-woocommerce' );
+			$this->method_description = $description;
+			return;
+		}
+		$this->method_title       = __( 'OutlinePay (not connected)', 'outlinepay-for-woocommerce' );
+		$this->method_description = __( 'Connect the store on the OutlinePay page to take payments.', 'outlinepay-for-woocommerce' );
 	}
 
 	/**

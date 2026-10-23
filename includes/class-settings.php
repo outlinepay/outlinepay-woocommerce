@@ -47,6 +47,19 @@ final class Settings {
 	const CANCEL_STATUSES = array( 'processing', 'on-hold' );
 
 	/**
+	 * The oldest WooCommerce this plugin supports. The plugin header's
+	 * "WC requires at least" says the same, and a test holds them equal.
+	 */
+	const MIN_WC = '9.9';
+
+	/**
+	 * From this WooCommerce version, Settings > Payments hides a gateway with
+	 * no admin title and no admin description when the same plugin has a
+	 * gateway with them.
+	 */
+	const WC_HIDES_SHELL_GATEWAYS = '9.9';
+
+	/**
 	 * The installation summary, or an empty array.
 	 *
 	 * @return array
@@ -294,6 +307,21 @@ final class Settings {
 		}
 		/* translators: %s: payment provider name, such as CookiePay. */
 		return sprintf( __( 'Paid securely through %s.', 'outlinepay-for-woocommerce' ), $provider );
+	}
+
+	/**
+	 * True when the running WooCommerce shows one OutlinePay row on Settings >
+	 * Payments: the card gateway carries the admin title, the others carry
+	 * none and WooCommerce hides them.
+	 *
+	 * @param string|null $wc_version WooCommerce version, null for the running one.
+	 * @return bool
+	 */
+	public static function collapse_payments_tab( $wc_version = null ) {
+		if ( null === $wc_version ) {
+			$wc_version = defined( 'WC_VERSION' ) ? WC_VERSION : '';
+		}
+		return '' !== (string) $wc_version && version_compare( (string) $wc_version, self::WC_HIDES_SHELL_GATEWAYS, '>=' );
 	}
 
 	/**

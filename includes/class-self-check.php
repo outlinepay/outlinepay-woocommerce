@@ -534,7 +534,6 @@ final class Self_Check {
 			array(
 				'php' => 'Requires PHP',
 				'wp'  => 'Requires at least',
-				'wc'  => 'WC requires at least',
 			)
 		);
 
@@ -557,7 +556,7 @@ final class Self_Check {
 			'wc'                   => defined( 'WC_VERSION' ) ? WC_VERSION : '',
 			'min_php'              => (string) $headers['php'],
 			'min_wp'               => (string) $headers['wp'],
-			'min_wc'               => (string) $headers['wc'],
+			'min_wc'               => Settings::MIN_WC,
 			'hpos'                 => self::hpos_declared(),
 		);
 	}
