@@ -42,6 +42,8 @@ final class Admin_Page {
 		add_action( 'admin_post_outlinepay_copy_moved', array( self::class, 'copy_moved' ) );
 		add_action( 'admin_post_outlinepay_self_check', array( self::class, 'self_check' ) );
 		add_action( 'admin_post_outlinepay_self_check_email', array( self::class, 'save_self_check_email' ) );
+		add_action( 'admin_post_outlinepay_set_decimals', array( self::class, 'set_decimals' ) );
+		add_action( 'admin_post_outlinepay_run_jobs', array( self::class, 'run_jobs' ) );
 		add_action( 'admin_post_outlinepay_shopper_cancel', array( self::class, 'save_shopper_cancel' ) );
 		add_action( 'admin_enqueue_scripts', array( self::class, 'enqueue' ) );
 		add_action( 'admin_notices', array( self::class, 'copy_notice' ) );
@@ -328,6 +330,37 @@ final class Admin_Page {
 	}
 
 	/**
+	 * "Set decimals to 0" on the krw_decimals check.
+	 *
+	 * @return void
+	 */
+	public static function set_decimals() {
+		self::require_capability();
+		check_admin_referer( 'outlinepay_set_decimals' );
+		if ( 'KRW' !== get_woocommerce_currency() ) {
+			self::back( 'decimals_not_krw' );
+		}
+		Settings::set_no_decimals();
+		self::back( 'decimals_set' );
+	}
+
+	/**
+	 * "Run now" on the scheduler_jobs and wp_cron checks: the background
+	 * payment check and the method refresh, in this request.
+	 *
+	 * @return void
+	 */
+	public static function run_jobs() {
+		self::require_capability();
+		check_admin_referer( 'outlinepay_run_jobs' );
+		if ( ! Settings::is_connected() ) {
+			self::back( 'jobs_not_connected' );
+		}
+		Scheduler::reconcile();
+		self::back( Scheduler::refresh_methods() ? 'jobs_ran' : 'jobs_ran_methods_failed' );
+	}
+
+	/**
 	 * Saves "Email me when a daily check fails".
 	 *
 	 * @return void
@@ -540,7 +573,7 @@ final class Admin_Page {
 			echo '<div class="outlinepay-check-code" style="margin:12px 0;padding:12px 16px;background:#fff;border:1px solid #c3c4c7;border-left:4px solid ' . ( 0 === (int) $last['failed_count'] ? '#00a32a' : '#d63638' ) . ';max-width:640px;box-sizing:border-box">';
 			echo '<p style="margin:0 0 4px">' . esc_html__( 'Diagnostic code', 'outlinepay-for-woocommerce' ) . '</p>';
 			echo '<p style="margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:8px"><code id="outlinepay-check-code" style="font-size:20px;padding:4px 8px;user-select:all">' . esc_html( $last['code'] ) . '</code>';
-			echo '<button type="button" class="button" id="outlinepay-copy-code" data-target="outlinepay-check-code" data-copied="' . esc_attr__( 'Copied', 'outlinepay-for-woocommerce' ) . '" data-manual="' . esc_attr__( 'Selected. Press Ctrl+C to copy.', 'outlinepay-for-woocommerce' ) . '">' . esc_html__( 'Copy', 'outlinepay-for-woocommerce' ) . '</button>';
+			echo '<button type="button" class="button" id="outlinepay-copy-code" data-outlinepay-copy data-target="outlinepay-check-code" data-status="outlinepay-copy-status" data-copied="' . esc_attr__( 'Copied', 'outlinepay-for-woocommerce' ) . '" data-manual="' . esc_attr__( 'Selected. Press Ctrl+C to copy.', 'outlinepay-for-woocommerce' ) . '">' . esc_html__( 'Copy', 'outlinepay-for-woocommerce' ) . '</button>';
 			echo '<span id="outlinepay-copy-status" aria-live="polite"></span></p>';
 			echo '<p style="margin:8px 0 0">' . esc_html__( 'Send this code to your payment provider if you need help.', 'outlinepay-for-woocommerce' ) . '</p>';
 			echo '<p style="margin:4px 0 0;color:#50575e">' . esc_html(
@@ -566,7 +599,11 @@ final class Admin_Page {
 				echo '<td>' . ( $ok
 					? '<span aria-hidden="true" style="color:#00a32a;font-weight:600">&#10003;</span> ' . esc_html__( 'Pass', 'outlinepay-for-woocommerce' )
 					: '<span aria-hidden="true" style="color:#d63638;font-weight:600">&#10007;</span> <strong>' . esc_html__( 'Fail', 'outlinepay-for-woocommerce' ) . '</strong>' ) . '</td>';
-				echo '<td>' . esc_html( Self_Check::sentence( $check ) ) . '</td>';
+				echo '<td>' . esc_html( Self_Check::sentence( $check ) );
+				if ( ! $ok ) {
+					self::render_check_action( $check );
+				}
+				echo '</td>';
 				echo '<td>' . ( $ok ? '' : esc_html( Self_Check::who( isset( $check['side'] ) ? $check['side'] : 'unknown' ) ) ) . '</td>';
 				echo '</tr>';
 			}
@@ -588,12 +625,63 @@ final class Admin_Page {
 		echo esc_html(
 			sprintf(
 				/* translators: %s: the site admin email address. */
-				__( 'Email me when a daily check fails (to %s)', 'outlinepay-for-woocommerce' ),
+				__( 'Email me when a daily check fails (to the site admin address, %s)', 'outlinepay-for-woocommerce' ),
 				(string) get_option( 'admin_email' )
 			)
 		) . '</label> ';
 		submit_button( __( 'Save', 'outlinepay-for-woocommerce' ), 'secondary', 'outlinepay_save_email', false );
 		echo '</p></form>';
+	}
+
+	/**
+	 * The one-click fix under a failed check, when the plugin has one. Each
+	 * button posts a nonce-protected action, or opens an existing confirm step.
+	 *
+	 * @param array $check Failed check.
+	 * @return void
+	 */
+	private static function render_check_action( array $check ) {
+		$code = isset( $check['code'] ) ? $check['code'] : '';
+		$side = isset( $check['side'] ) ? $check['side'] : 'unknown';
+		switch ( $code ) {
+			case 'open_problems_7d':
+				if ( 'unknown' !== $side ) {
+					return;
+				}
+				echo '<br><button type="button" class="button button-small" data-outlinepay-copy data-target="outlinepay-check-code" data-status="outlinepay-copy-status-problems" data-copied="' . esc_attr__( 'Copied', 'outlinepay-for-woocommerce' ) . '" data-manual="' . esc_attr__( 'Selected. Press Ctrl+C to copy.', 'outlinepay-for-woocommerce' ) . '">' . esc_html__( 'Copy code', 'outlinepay-for-woocommerce' ) . '</button>';
+				echo ' <span id="outlinepay-copy-status-problems" aria-live="polite"></span>';
+				return;
+			case 'krw_decimals':
+				self::render_action_form( 'outlinepay_set_decimals', __( 'Set decimals to 0', 'outlinepay-for-woocommerce' ) );
+				return;
+			case 'not_a_copy':
+				if ( Site_Identity::is_copy() ) {
+					// The confirm step of "I moved my store to this address" (see copy_moved).
+					echo '<br><a class="button button-small" href="' . esc_url( self::url( array( 'outlinepay_confirm_move' => '1' ) ) ) . '">' . esc_html__( 'Use this address', 'outlinepay-for-woocommerce' ) . '</a>';
+				}
+				return;
+			case 'scheduler_jobs':
+			case 'wp_cron':
+				if ( Settings::is_connected() ) {
+					self::render_action_form( 'outlinepay_run_jobs', __( 'Run now', 'outlinepay-for-woocommerce' ) );
+				}
+				return;
+		}
+	}
+
+	/**
+	 * A small form with one button that posts an admin action.
+	 *
+	 * @param string $action admin_post action, also the nonce action.
+	 * @param string $label  Button label.
+	 * @return void
+	 */
+	private static function render_action_form( $action, $label ) {
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="margin:4px 0 0">';
+		wp_nonce_field( $action );
+		echo '<input type="hidden" name="action" value="' . esc_attr( $action ) . '">';
+		submit_button( $label, 'secondary small', 'submit', false );
+		echo '</form>';
 	}
 
 	/**

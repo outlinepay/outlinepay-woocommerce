@@ -150,7 +150,7 @@ class SelfCheckTest extends TestCase {
 	public function test_a_healthy_store_passes_every_local_check_in_letter_order() {
 		$checks = Self_Check::local_checks( self::facts(), self::NOW );
 		$this->assertSame(
-			array( 'connection_saved', 'connection_status', 'scheduler_jobs', 'wp_cron', 'methods_fresh', 'store_currency', 'not_a_copy', 'versions' ),
+			array( 'connection_saved', 'connection_status', 'scheduler_jobs', 'wp_cron', 'methods_fresh', 'store_currency', 'krw_decimals', 'not_a_copy', 'versions' ),
 			array_column( $checks, 'code' )
 		);
 		foreach ( $checks as $check ) {
@@ -333,7 +333,7 @@ class SelfCheckTest extends TestCase {
 	}
 
 	public function test_every_local_check_has_its_own_letter() {
-		$this->assertSame( array( 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I' ), array_values( Self_Check::LETTERS ) );
+		$this->assertSame( array( 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'J', 'H', 'I' ), array_values( Self_Check::LETTERS ) );
 		foreach ( array_keys( Self_Check::LETTERS ) as $code ) {
 			$this->assertSame( 'OP-OFFLINE-' . Self_Check::LETTERS[ $code ], Self_Check::offline_code( array( Self_Check::check( $code, false, 'store', array() ) ) ) );
 		}
@@ -589,7 +589,41 @@ class SelfCheckTest extends TestCase {
 		$this->assertSame( 'Your payment provider', Self_Check::who( 'processor' ) );
 		$this->assertSame( 'OutlinePay', Self_Check::who( 'outlinepay' ) );
 		$this->assertSame( 'Shopper', Self_Check::who( 'shopper' ) );
-		$this->assertSame( 'Not sure', Self_Check::who( 'unknown' ) );
+		$this->assertSame( 'Your payment provider', Self_Check::who( 'unknown' ), 'nobody named: the provider is the first stop' );
+	}
+
+	public function test_krw_decimals_passes_with_no_decimals_and_fails_with_some() {
+		$ok = Self_Check::krw_decimals( self::facts( array( 'price_decimals' => 0 ) ) );
+		$this->assertTrue( $ok['ok'] );
+		$this->assertSame( 'Prices show no decimals.', Self_Check::sentence( $ok ) );
+
+		$fail = Self_Check::krw_decimals( self::facts( array( 'price_decimals' => 2 ) ) );
+		$this->assertFalse( $fail['ok'] );
+		$this->assertSame( 'store', $fail['side'] );
+		$this->assertSame( '2', $fail['detail']['decimals'] );
+		$this->assertSame( 'Prices show decimals. The won has none.', Self_Check::sentence( $fail ) );
+		$this->assertSame( 'You', Self_Check::who( $fail['side'] ) );
+	}
+
+	public function test_krw_decimals_is_skipped_when_the_store_is_not_in_krw() {
+		$this->assertNull( Self_Check::krw_decimals( self::facts( array( 'currency' => 'USD', 'price_decimals' => 2 ) ) ) );
+		$codes = array_column( Self_Check::local_checks( self::facts( array( 'currency' => 'USD', 'price_decimals' => 2 ) ), self::NOW ), 'code' );
+		$this->assertNotContains( 'krw_decimals', $codes );
+		$this->assertContains( 'store_currency', $codes );
+	}
+
+	public function test_a_failed_krw_decimals_check_has_its_offline_letter() {
+		$checks = Self_Check::local_checks( self::facts( array( 'price_decimals' => 2 ) ), self::NOW );
+		$this->assertSame( 'OP-OFFLINE-J', Self_Check::offline_code( $checks ) );
+	}
+
+	public function test_open_problems_nobody_named_tells_the_merchant_to_send_the_code() {
+		$unknown = Self_Check::check( 'open_problems_7d', false, 'unknown', array() );
+		$this->assertSame( 'OutlinePay recorded problems in the last 7 days that are not resolved yet. Send the diagnostic code to your payment provider.', Self_Check::sentence( $unknown ) );
+		$this->assertSame( 'Your payment provider', Self_Check::who( 'unknown' ) );
+
+		$named = Self_Check::check( 'open_problems_7d', false, 'processor', array() );
+		$this->assertSame( 'OutlinePay recorded problems in the last 7 days that are not resolved yet.', Self_Check::sentence( $named ) );
 	}
 
 	public function test_the_server_codes_are_never_sent_by_the_plugin() {

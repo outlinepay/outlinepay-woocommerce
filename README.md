@@ -32,12 +32,12 @@ OutlinePay is operated by Arandu Payments LLC.
 | `includes/class-abilities.php` | Abilities API (WordPress 6.9+): `outlinepay/run-self-check`, `outlinepay/get-connection-status` |
 | `includes/class-unpaid-guard.php` | Expires open attempts before WooCommerce cancels an unpaid order |
 | `includes/class-admin-page.php` | WooCommerce > OutlinePay, including the Self-check section |
-| `assets/js/admin.js` | Copy button for the diagnostic code, no build step |
+| `assets/js/admin.js` | Copy buttons for the diagnostic code, no build step |
 | `includes/class-blocks-method.php`, `assets/js/blocks.js` | Checkout block integration, no build step |
 
 ## Self-check offline codes
 
-When a self-check run reaches OutlinePay, its id (`chk_...`) is the diagnostic code. When it does not (a staging copy, no connection, OutlinePay unreachable), the plugin shows `OP-OFFLINE-` followed by one letter per failed check, in this order. A letter never changes meaning. New checks get new letters at the end.
+When a self-check run reaches OutlinePay, its id (`chk_...`) is the diagnostic code. When it does not (a staging copy, no connection, OutlinePay unreachable), the plugin shows `OP-OFFLINE-` followed by one letter per failed check, in this order. A letter never changes meaning. A new check gets the next free letter, wherever it sits in the order.
 
 | Letter | Check | Fails when |
 | --- | --- | --- |
@@ -48,6 +48,7 @@ When a self-check run reaches OutlinePay, its id (`chk_...`) is the diagnostic c
 | E | `wp_cron` | `DISABLE_WP_CRON` is set and no scheduled action ran in 2 hours |
 | F | `methods_fresh` | Methods not fetched in 2 hours, or none shown at checkout |
 | G | `store_currency` | The store currency is not KRW |
+| J | `krw_decimals` | A KRW store shows prices with decimals (no row when the currency is not KRW) |
 | H | `not_a_copy` | This site is a copy of the store (see `Site_Identity`) |
 | I | `versions` | PHP, WordPress or WooCommerce below the plugin header minimums, or HPOS compatibility not registered |
 

@@ -9,9 +9,9 @@ use OutlinePay\WooCommerce\Scheduler;
 use OutlinePay\WooCommerce\Settings;
 
 /**
- * Activation notice and what a successful connect does.
+ * The OutlinePay page: activation notice, connect, and the fixes under failed checks.
  */
-class ConnectTest extends TestCase {
+class AdminPageTest extends TestCase {
 
 	/** @var array Options in memory. */
 	private $options = array();
@@ -254,5 +254,54 @@ class ConnectTest extends TestCase {
 		$this->assertStringContainsString( 'value="outlinepay_self_check"', $html );
 		$this->assertStringContainsString( 'nonce-outlinepay_self_check', $html );
 		$this->assertStringContainsString( 'href="https://shop.example/shop/"', $html );
+	}
+
+	public function test_failed_checks_show_their_fix_and_the_email_line_names_the_address() {
+		Admin_Page::finish_connect( self::answer(), false );
+		Functions\when( 'sanitize_key' )->returnArg();
+		Functions\when( 'wp_unslash' )->returnArg();
+		Functions\when( 'wp_date' )->justReturn( '2026-10-23 10:00' );
+		Functions\when( 'checked' )->justReturn( '' );
+		Functions\when( 'wp_nonce_field' )->alias(
+			static function ( $action ) {
+				echo '<input type="hidden" name="_wpnonce" value="nonce-' . $action . '">';
+			}
+		);
+		Functions\when( 'submit_button' )->alias(
+			static function ( $text ) {
+				echo '<input type="submit" value="' . $text . '">';
+			}
+		);
+		$this->options['admin_email']                = 'owner@shop.example';
+		$this->options['outlinepay_self_check_last'] = array(
+			'code'         => 'chk_abc123',
+			'online'       => true,
+			'trigger'      => 'page',
+			'ran_at'       => 1790000000,
+			'failed_count' => 4,
+			'worst_side'   => 'store',
+			'checks'       => array(
+				array( 'code' => 'scheduler_jobs', 'ok' => false, 'side' => 'store', 'detail' => array() ),
+				array( 'code' => 'krw_decimals', 'ok' => false, 'side' => 'store', 'detail' => array() ),
+				array( 'code' => 'not_a_copy', 'ok' => true, 'side' => 'store', 'detail' => array() ),
+				array( 'code' => 'open_problems_7d', 'ok' => false, 'side' => 'unknown', 'detail' => array() ),
+				array( 'code' => 'wp_cron', 'ok' => false, 'side' => 'store', 'detail' => array() ),
+			),
+		);
+		$render = new \ReflectionMethod( Admin_Page::class, 'render_self_check' );
+		$render->setAccessible( true );
+		ob_start();
+		$render->invoke( null );
+		$html = ob_get_clean();
+
+		$this->assertSame( 2, substr_count( $html, 'value="outlinepay_run_jobs"' ), 'Run now under scheduler_jobs and wp_cron' );
+		$this->assertStringContainsString( 'nonce-outlinepay_run_jobs', $html );
+		$this->assertStringContainsString( 'value="Run now"', $html );
+		$this->assertStringContainsString( 'value="outlinepay_set_decimals"', $html );
+		$this->assertStringContainsString( 'value="Set decimals to 0"', $html );
+		$this->assertStringContainsString( 'Copy code', $html );
+		$this->assertSame( 2, substr_count( $html, 'data-outlinepay-copy' ), 'the code box and the problems row' );
+		$this->assertStringNotContainsString( 'Use this address', $html, 'not a copy: no move button' );
+		$this->assertStringContainsString( 'Email me when a daily check fails (to the site admin address, owner@shop.example)', $html );
 	}
 }

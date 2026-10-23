@@ -10,7 +10,8 @@
  * When the run reaches OutlinePay, its id (chk_...) is the diagnostic code.
  * When it does not (a copy of the store, not connected, OutlinePay
  * unreachable), the code is made here: OP-OFFLINE- followed by one letter per
- * failed check, in this fixed order. A letter never changes meaning.
+ * failed check, in this fixed order. A letter never changes meaning, and a new
+ * check gets the next free letter wherever it sits in the order.
  *
  *   A  connection_saved   the connection is saved and the credentials decrypt
  *   B  connection_status  the installation is connected (not revoked)
@@ -19,6 +20,7 @@
  *   E  wp_cron            WP-Cron is on, or some scheduled action ran in the last 2 hours
  *   F  methods_fresh      methods fetched in the last 2 hours, at least one shown at checkout
  *   G  store_currency     the store currency is KRW
+ *   J  krw_decimals       a KRW store shows prices with no decimals (skipped when not KRW)
  *   H  not_a_copy         this site is the address the store was connected at
  *   I  versions           PHP, WordPress, WooCommerce at or above the plugin's minimums, HPOS declared
  *
@@ -70,6 +72,7 @@ final class Self_Check {
 		'wp_cron'           => 'E',
 		'methods_fresh'     => 'F',
 		'store_currency'    => 'G',
+		'krw_decimals'      => 'J',
 		'not_a_copy'        => 'H',
 		'versions'          => 'I',
 	);
@@ -287,16 +290,21 @@ final class Self_Check {
 	 * @return array List of checks.
 	 */
 	public static function local_checks( array $facts, $now ) {
-		return array(
+		$checks   = array(
 			self::connection_saved( $facts ),
 			self::connection_status( $facts ),
 			self::scheduler_jobs( $facts, $now ),
 			self::wp_cron( $facts ),
 			self::methods_fresh( $facts, $now ),
 			self::store_currency( $facts ),
-			self::not_a_copy( $facts ),
-			self::versions( $facts ),
 		);
+		$decimals = self::krw_decimals( $facts );
+		if ( null !== $decimals ) {
+			$checks[] = $decimals;
+		}
+		$checks[] = self::not_a_copy( $facts );
+		$checks[] = self::versions( $facts );
+		return $checks;
 	}
 
 	/**
@@ -433,6 +441,21 @@ final class Self_Check {
 	}
 
 	/**
+	 * A KRW store shows prices with no decimals. Null (no row) when the store
+	 * currency is not KRW.
+	 *
+	 * @param array $facts Facts.
+	 * @return array|null
+	 */
+	public static function krw_decimals( array $facts ) {
+		if ( 'KRW' !== strtoupper( (string) $facts['currency'] ) ) {
+			return null;
+		}
+		$decimals = isset( $facts['price_decimals'] ) ? (int) $facts['price_decimals'] : 0;
+		return self::check( 'krw_decimals', 0 === $decimals, 'store', array( 'decimals' => (string) $decimals ) );
+	}
+
+	/**
 	 * Not a copy of the store.
 	 *
 	 * @param array $facts Facts.
@@ -551,6 +574,7 @@ final class Self_Check {
 			'methods_enabled'      => $enabled,
 			'methods_shown'        => $shown,
 			'currency'             => function_exists( 'get_woocommerce_currency' ) ? get_woocommerce_currency() : '',
+			'price_decimals'       => function_exists( 'wc_get_price_decimals' ) ? (int) wc_get_price_decimals() : 0,
 			'php'                  => PHP_VERSION,
 			'wp'                   => (string) get_bloginfo( 'version' ),
 			'wc'                   => defined( 'WC_VERSION' ) ? WC_VERSION : '',
@@ -842,7 +866,8 @@ final class Self_Check {
 			case 'shopper':
 				return __( 'Shopper', 'outlinepay-for-woocommerce' );
 			default:
-				return __( 'Not sure', 'outlinepay-for-woocommerce' );
+				// Nobody is named: the payment provider is the store's first stop for help.
+				return __( 'Your payment provider', 'outlinepay-for-woocommerce' );
 		}
 	}
 
@@ -907,6 +932,10 @@ final class Self_Check {
 					__( 'The store currency is %s. OutlinePay methods show only when it is KRW.', 'outlinepay-for-woocommerce' ),
 					isset( $detail['currency'] ) && '' !== $detail['currency'] ? $detail['currency'] : '?'
 				);
+			case 'krw_decimals':
+				return $ok
+					? __( 'Prices show no decimals.', 'outlinepay-for-woocommerce' )
+					: __( 'Prices show decimals. The won has none.', 'outlinepay-for-woocommerce' );
 			case 'not_a_copy':
 				return $ok
 					? __( 'This site is at the address the store was connected at.', 'outlinepay-for-woocommerce' )
@@ -928,8 +957,11 @@ final class Self_Check {
 					? __( 'Every payment update in the last 7 days reached the store.', 'outlinepay-for-woocommerce' )
 					: __( 'Some payment updates in the last 7 days could not be delivered to the store.', 'outlinepay-for-woocommerce' );
 			case 'open_problems_7d':
-				return $ok
-					? __( 'No open problems in the last 7 days.', 'outlinepay-for-woocommerce' )
+				if ( $ok ) {
+					return __( 'No open problems in the last 7 days.', 'outlinepay-for-woocommerce' );
+				}
+				return 'unknown' === $side
+					? __( 'OutlinePay recorded problems in the last 7 days that are not resolved yet. Send the diagnostic code to your payment provider.', 'outlinepay-for-woocommerce' )
 					: __( 'OutlinePay recorded problems in the last 7 days that are not resolved yet.', 'outlinepay-for-woocommerce' );
 			default:
 				return $ok
