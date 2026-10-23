@@ -58,7 +58,9 @@ An offline code always has at least one letter. With every local check green, it
 
 After connect, the OutlinePay page shows a setup screen until one stored self-check result has checks A to I all passing. Until then no OutlinePay method shows at checkout. Fix all applies the fixes the plugin can make (store currency, recurring jobs and a reconcile run, method refresh), then runs the checks again. When OutlinePay refuses a second run within a minute, the local rows are rerun and merged into the stored result.
 
-The first all-green result saves `outlinepay_setup_done`. The gate is one-time: later failures show on the page but do not hide checkout. Disconnect deletes the flag. A store connected before 0.5.0 has no flag. It counts as done when its stored result has no failed check.
+The first all-green result saves `outlinepay_setup_done`. The gate is one-time: later failures show on the page but do not hide checkout. Disconnect deletes the flag. Only checks A to I decide. Rows OutlinePay adds show on the page but never block setup.
+
+Upgrade rule (`Setup::upgrade()`, called from `Plugin::boot` on every request before any gateway is asked): when there is no flag, the store holds a saved installation and readable credentials, and `outlinepay_reported_version` is missing or below 0.5.0, the flag is saved outright. `finish_connect` saves the running version in the same request as the connection, so a fresh connect never matches.
 
 ## Development
 

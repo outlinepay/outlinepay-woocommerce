@@ -37,6 +37,8 @@ final class Plugin {
 		add_action( 'woocommerce_blocks_payment_method_type_registration', array( self::class, 'register_blocks' ) );
 		add_action( 'outlinepay_token_rejected', array( Settings::class, 'mark_revoked' ) );
 		add_filter( 'wc_get_price_decimals', array( Settings::class, 'price_decimals' ) );
+		// Before any gateway is asked: a store connected before 0.5.0 keeps its checkout.
+		Setup::upgrade();
 
 		Admin_Page::register();
 		Return_Handler::register();

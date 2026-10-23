@@ -8,11 +8,13 @@
  * again. Disconnect deletes the flag (Settings::clear_connection), so a
  * reconnect goes through setup again.
  *
- * Upgrade rule: a store connected before 0.5.0 has no flag. Its setup counts
- * as done when the stored self-check result has no failed row. Otherwise it
- * gets the setup screen. Stores from before 0.5.0 never ran the currency row,
- * so the rule looks at the failed count, not at the row list. The first time
- * the rule says done, the flag is saved, so a later failing run cannot undo it.
+ * Only the nine local rows decide. Rows OutlinePay adds (such as
+ * open_problems_7d) show on the page but never block setup.
+ *
+ * Upgrade rule (see upgrade()): a store that was already connected when it
+ * updated from a version before 0.5.0 gets the flag outright, on the first
+ * request after the update. Its checkout was live, so it never goes through
+ * setup. A store that connects on 0.5.0 or later always does.
  *
  * @package OutlinePay\WooCommerce
  */
@@ -29,20 +31,40 @@ final class Setup {
 	const OPTION_DONE = 'outlinepay_setup_done';
 
 	/**
-	 * Whether setup is done: the flag is saved, or the upgrade rule above says so.
+	 * Whether setup is done: the flag is saved.
 	 *
 	 * @return bool
 	 */
 	public static function is_done() {
-		if ( (int) get_option( self::OPTION_DONE, 0 ) > 0 ) {
-			return true;
+		return (int) get_option( self::OPTION_DONE, 0 ) > 0;
+	}
+
+	/**
+	 * Upgrade rule, on every request from Plugin::boot, before checkout asks
+	 * a gateway: saves the flag when the store holds a connection and the
+	 * last version it reported is before 0.5.0, or no version is saved.
+	 *
+	 * finish_connect() saves the running version (0.5.0 or later) in the same
+	 * request that saves the connection, so a fresh connect never matches.
+	 * Disconnect deletes the version with the connection. Cheap when the
+	 * flag is saved: one autoloaded option.
+	 *
+	 * @return bool True when the flag was saved now.
+	 */
+	public static function upgrade() {
+		if ( self::is_done() ) {
+			return false;
 		}
-		$last = Self_Check::last();
-		if ( $last && isset( $last['failed_count'] ) && 0 === (int) $last['failed_count'] ) {
-			self::mark_done();
-			return true;
+		$version = (string) get_option( Settings::OPTION_VERSION, '' );
+		if ( '' !== $version && version_compare( $version, '0.5.0', '>=' ) ) {
+			return false;
 		}
-		return false;
+		if ( empty( Settings::installation() ) || ! Credentials::present() ) {
+			return false;
+		}
+		self::mark_done();
+		Logger::info( 'Setup counted as done for a store connected before 0.5.0', array( 'status' => '' !== $version ? $version : 'none' ) );
+		return true;
 	}
 
 	/**
@@ -52,18 +74,30 @@ final class Setup {
 	 * @return bool
 	 */
 	public static function complete( array $result ) {
+		return 0 === self::remaining( $result );
+	}
+
+	/**
+	 * How many of the local rows have not passed in the result: failed, or
+	 * missing from it.
+	 *
+	 * @param array $result Self-check result.
+	 * @return int
+	 */
+	public static function remaining( array $result ) {
 		$passed = array();
 		foreach ( isset( $result['checks'] ) && is_array( $result['checks'] ) ? $result['checks'] : array() as $check ) {
 			if ( isset( $check['code'] ) && ! empty( $check['ok'] ) ) {
 				$passed[ $check['code'] ] = true;
 			}
 		}
+		$count = 0;
 		foreach ( array_keys( Self_Check::LETTERS ) as $code ) {
 			if ( ! isset( $passed[ $code ] ) ) {
-				return false;
+				++$count;
 			}
 		}
-		return true;
+		return $count;
 	}
 
 	/**

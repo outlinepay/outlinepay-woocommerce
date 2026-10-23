@@ -104,9 +104,67 @@ class SetupTest extends RefundTestCase {
 		$this->assertFalse( Setup::is_done() );
 	}
 
-	public function test_upgrade_rule_a_stored_all_green_result_counts_as_done() {
-		// Saved by 0.4.x: no currency row, no flag.
-		$this->options[ Self_Check::OPTION_LAST ] = array(
+	public function test_an_upgraded_connected_store_with_a_failing_stored_result_gets_the_flag() {
+		$this->options[ Settings::OPTION_VERSION ]   = '0.4.2';
+		$this->options[ Self_Check::OPTION_LAST ]    = self::result( array(), array( Self_Check::check( 'open_problems_7d', false, 'unknown', array() ) ) );
+		$this->options[ Self_Check::OPTION_LAST ]['failed_count'] = 1;
+
+		$this->assertTrue( Setup::upgrade() );
+		$this->assertGreaterThan( 0, $this->options[ Setup::OPTION_DONE ] );
+		$this->assertTrue( $this->gateway()->is_available(), 'checkout stays on' );
+	}
+
+	public function test_an_upgraded_connected_store_with_no_stored_result_gets_the_flag() {
+		$this->options[ Settings::OPTION_VERSION ] = '0.4.1';
+		$this->assertTrue( Setup::upgrade() );
+		$this->assertTrue( Setup::is_done() );
+	}
+
+	public function test_a_connected_store_with_no_saved_version_counts_as_upgraded() {
+		$this->assertArrayNotHasKey( Settings::OPTION_VERSION, $this->options );
+		$this->assertTrue( Setup::upgrade() );
+		$this->assertTrue( Setup::is_done() );
+	}
+
+	public function test_a_fresh_connect_on_this_version_goes_through_setup() {
+		Functions\when( 'home_url' )->justReturn( 'https://shop.example/' );
+		Functions\when( 'as_has_scheduled_action' )->justReturn( true );
+		Functions\when( 'wp_remote_request' )->justReturn( new \WP_Error( 'http_request_failed', 'offline' ) );
+		Functions\when( 'as_enqueue_async_action' )->justReturn( 1 );
+		$options = &$this->options;
+		Functions\when( 'add_option' )->alias(
+			static function ( $name, $value ) use ( &$options ) {
+				$options[ $name ] = $value;
+				return true;
+			}
+		);
+		\OutlinePay\WooCommerce\Admin_Page::finish_connect(
+			array(
+				'id'             => 'inst_2',
+				'status'         => 'connected',
+				'token'          => 'olp_it_test_token2',
+				'signing_secret' => 'olp_isec_test2',
+			)
+		);
+		$this->assertSame( OUTLINEPAY_VERSION, $this->options[ Settings::OPTION_VERSION ] );
+
+		$this->assertFalse( Setup::upgrade() );
+		$this->assertFalse( Setup::is_done() );
+		$this->assertFalse( $this->gateway()->is_available() );
+	}
+
+	public function test_an_upgrade_without_a_connection_sets_nothing() {
+		$this->options[ Settings::OPTION_VERSION ] = '0.4.2';
+		unset( $this->options['outlinepay_credentials'] );
+		\OutlinePay\WooCommerce\Credentials::reset_cache();
+
+		$this->assertFalse( Setup::upgrade() );
+		$this->assertArrayNotHasKey( Setup::OPTION_DONE, $this->options );
+	}
+
+	public function test_a_stored_all_green_result_alone_no_longer_counts_as_done() {
+		$this->options[ Settings::OPTION_VERSION ] = OUTLINEPAY_VERSION;
+		$this->options[ Self_Check::OPTION_LAST ]  = array(
 			'code'         => 'chk_Old',
 			'online'       => true,
 			'trigger'      => 'daily',
@@ -115,14 +173,13 @@ class SetupTest extends RefundTestCase {
 			'worst_side'   => '',
 			'checks'       => array( Self_Check::check( 'versions', true, 'store', array() ) ),
 		);
-		$this->assertTrue( Setup::is_done() );
-		$this->assertGreaterThan( 0, $this->options[ Setup::OPTION_DONE ], 'saved, so a later failure cannot undo it' );
+		$this->assertFalse( Setup::is_done() );
+		$this->assertFalse( Setup::upgrade() );
 	}
 
-	public function test_upgrade_rule_a_stored_failing_result_shows_setup() {
-		$this->options[ Self_Check::OPTION_LAST ] = self::result( array( 'methods_fresh' => false ) );
-		$this->assertFalse( Setup::is_done() );
-		$this->assertArrayNotHasKey( Setup::OPTION_DONE, $this->options );
+	public function test_the_boot_runs_the_upgrade_rule() {
+		$source = file_get_contents( dirname( __DIR__, 2 ) . '/includes/class-plugin.php' );
+		$this->assertStringContainsString( 'Setup::upgrade();', $source );
 	}
 
 	public function test_no_stored_result_and_no_flag_is_not_done() {
