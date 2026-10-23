@@ -1107,10 +1107,6 @@ msgstr ""
 msgid "Go to OutlinePay"
 msgstr ""
 
-#: includes/class-admin-page.php:849
-msgid "Go to the shop"
-msgstr ""
-
 #: includes/class-gateway.php:86
 msgid "OutlinePay (not connected)"
 msgstr ""
@@ -1135,10 +1131,6 @@ msgstr ""
 msgid "OutlinePay recorded problems in the last 7 days that are not resolved yet. Send the diagnostic code to your payment provider."
 msgstr ""
 
-#: includes/class-admin-page.php:849
-msgid "Place a test order."
-msgstr ""
-
 #. translators: 1: amount such as 5,000 won, 2: why OutlinePay refused, one sentence.
 #: includes/class-refunds.php:273
 #, php-format
@@ -1149,24 +1141,8 @@ msgstr ""
 msgid "Run now"
 msgstr ""
 
-#: includes/class-admin-page.php:846
-msgid "Run the self-check."
-msgstr ""
-
 #: includes/class-admin-page.php:660
 msgid "Use this address"
-msgstr ""
-
-#: includes/class-admin-page.php:842
-msgid "View checkout"
-msgstr ""
-
-#: includes/class-admin-page.php:841
-msgid "What's next"
-msgstr ""
-
-#: includes/class-admin-page.php:842
-msgid "Your payment methods now show at checkout."
 msgstr ""
 
 #: includes/class-admin-page.php:815
@@ -1223,4 +1199,38 @@ msgstr ""
 #: includes/class-admin-page.php:849
 #, php-format
 msgid "Store currency set to %s. Prices kept their numbers. Check your product prices."
+msgstr ""
+
+#: includes/class-admin-page.php:1043
+msgid "Your store is connected. Finish setup below."
+msgstr ""
+
+#: includes/class-admin-page.php:605
+msgid "Set up OutlinePay"
+msgstr ""
+
+#: includes/class-admin-page.php:606
+msgid "Payment methods show at checkout when every check below passes."
+msgstr ""
+
+#: includes/class-admin-page.php:615
+msgid "Fix all"
+msgstr ""
+
+#: includes/class-admin-page.php:620
+msgid "Check again"
+msgstr ""
+
+#. translators: %s: currency code such as KRW.
+#: includes/class-admin-page.php:844
+#, php-format
+msgid "Fix all sets the store currency to %s."
+msgstr ""
+
+#: includes/class-admin-page.php:653
+msgid "Setup is complete. Your payment methods now show at checkout."
+msgstr ""
+
+#: includes/class-admin-page.php:1066
+msgid "The fixes ran and the checks ran again. The results are below."
 msgstr ""
