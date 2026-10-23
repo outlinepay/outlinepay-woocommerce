@@ -304,4 +304,34 @@ class AdminPageTest extends TestCase {
 		$this->assertStringNotContainsString( 'Use this address', $html, 'not a copy: no move button' );
 		$this->assertStringContainsString( 'Email me when a daily check fails (to the site admin address, owner@shop.example)', $html );
 	}
+
+	public function test_every_result_a_form_handler_sends_back_has_a_notice() {
+		$source = file_get_contents( dirname( __DIR__, 2 ) . '/includes/class-admin-page.php' );
+		preg_match_all( '/self::back\(([^;]*)\);/', $source, $calls );
+		$keys = array();
+		foreach ( $calls[1] as $args ) {
+			preg_match_all( "/'([a-z_]+)'/", $args, $found );
+			$keys = array_merge( $keys, $found[1] );
+		}
+		// The rate-limit line sits in the Self-check section (render_self_check), not on top.
+		$keys = array_diff( array_unique( $keys ), array( 'outlinepay_decimals', 'self_check_rate_limited' ) );
+		$this->assertContains( 'decimals_set', $keys );
+		$this->assertContains( 'jobs_ran_methods_failed', $keys );
+
+		Functions\when( 'sanitize_key' )->returnArg();
+		Functions\when( 'wp_unslash' )->returnArg();
+		Functions\when( 'wc_get_checkout_url' )->justReturn( 'https://shop.example/checkout/' );
+		Functions\when( 'wc_get_page_permalink' )->justReturn( 'https://shop.example/shop/' );
+		Functions\when( 'wp_nonce_field' )->justReturn( '' );
+		Functions\when( 'submit_button' )->justReturn( '' );
+		$render = new \ReflectionMethod( Admin_Page::class, 'render_notice' );
+		$render->setAccessible( true );
+		foreach ( $keys as $key ) {
+			$_GET['outlinepay_result'] = $key;
+			ob_start();
+			$render->invoke( null );
+			$this->assertStringContainsString( 'class="notice', ob_get_clean(), $key );
+		}
+		unset( $_GET['outlinepay_result'] );
+	}
 }
