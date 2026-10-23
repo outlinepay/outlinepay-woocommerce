@@ -29,6 +29,14 @@ final class Admin_Page {
 	private static $hook_suffix = '';
 
 	/**
+	 * True once this request showed the currency fix in the connected notice,
+	 * so the page does not show it twice.
+	 *
+	 * @var bool
+	 */
+	private static $currency_fix_shown = false;
+
+	/**
 	 * Hooks the page and its form handlers.
 	 *
 	 * @return void
@@ -440,11 +448,7 @@ final class Admin_Page {
 		self::render_self_check();
 
 		if ( 'connected' === $status ) {
-			if ( ! Settings::provider_takes( get_woocommerce_currency() ) ) {
-				echo '<div class="notice notice-warning inline">';
-				self::render_currency_fix();
-				echo '</div>';
-			}
+			self::render_currency_warning();
 			self::render_methods();
 			self::render_shopper_cancel();
 		} else {
@@ -655,6 +659,21 @@ final class Admin_Page {
 				}
 				return;
 		}
+	}
+
+	/**
+	 * The currency fix as a warning on the page, unless the connected notice
+	 * above already showed it in this request.
+	 *
+	 * @return void
+	 */
+	private static function render_currency_warning() {
+		if ( self::$currency_fix_shown || Settings::provider_takes( get_woocommerce_currency() ) ) {
+			return;
+		}
+		echo '<div class="notice notice-warning inline">';
+		self::render_currency_fix();
+		echo '</div>';
 	}
 
 	/**
@@ -870,6 +889,7 @@ final class Admin_Page {
 		echo '<div class="notice notice-success is-dismissible outlinepay-connected"><p>' . esc_html( $message ) . '</p>';
 		if ( ! Settings::provider_takes( get_woocommerce_currency() ) ) {
 			self::render_currency_fix();
+			self::$currency_fix_shown = true;
 		}
 		echo '<p><strong>' . esc_html__( 'What\'s next', 'outlinepay-for-woocommerce' ) . '</strong></p><ul>';
 		if ( Settings::provider_takes( get_woocommerce_currency() ) ) {

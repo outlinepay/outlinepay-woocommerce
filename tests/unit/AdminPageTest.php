@@ -37,6 +37,7 @@ class AdminPageTest extends TestCase {
 		Functions\stubEscapeFunctions();
 		Credentials::reset_cache();
 		Settings::forget_price_decimals();
+		$this->forget_shown_fix();
 		$this->answer = array(
 			'response' => array( 'code' => 200 ),
 			'body'     => json_encode( array( 'data' => array( array( 'method' => 'card', 'label_ko' => '신용카드' ) ) ) ),
@@ -435,5 +436,48 @@ class AdminPageTest extends TestCase {
 		$this->assertSame( 0, Settings::price_decimals( 2 ), 'still the cached answer' );
 		Settings::set_store_currency();
 		$this->assertSame( 2, Settings::price_decimals( 2 ), 'worked out again after the switch' );
+	}
+
+	private function render_private( $method ) {
+		$render = new \ReflectionMethod( Admin_Page::class, $method );
+		$render->setAccessible( true );
+		ob_start();
+		$render->invoke( null );
+		return ob_get_clean();
+	}
+
+	private function forget_shown_fix() {
+		$shown = new \ReflectionProperty( Admin_Page::class, 'currency_fix_shown' );
+		$shown->setAccessible( true );
+		$shown->setValue( null, false );
+	}
+
+	public function test_the_page_warning_is_left_out_when_the_connected_notice_showed_the_fix() {
+		Admin_Page::finish_connect( array_merge( self::answer(), array( 'currencies' => array( 'KRW' ) ) ) );
+		$this->currency = 'USD';
+		Functions\when( 'sanitize_key' )->returnArg();
+		Functions\when( 'wp_unslash' )->returnArg();
+		Functions\when( 'wc_get_checkout_url' )->justReturn( 'https://shop.example/checkout/' );
+		Functions\when( 'wc_get_page_permalink' )->justReturn( 'https://shop.example/shop/' );
+		Functions\when( 'wp_nonce_field' )->justReturn( '' );
+		Functions\when( 'submit_button' )->alias(
+			static function ( $text ) {
+				echo '<input type="submit" value="' . $text . '">';
+			}
+		);
+		$this->forget_shown_fix();
+
+		// A later visit, no notice: the warning shows the fix.
+		$warning = $this->render_private( 'render_currency_warning' );
+		$this->assertStringContainsString( 'Your store currency is USD.', $warning );
+		$this->assertStringContainsString( 'Set store currency to KRW', $warning );
+
+		// Right after connect: the notice shows it, the warning does not repeat it.
+		$_GET['outlinepay_result'] = 'connected';
+		$notice                    = $this->render_private( 'render_notice' );
+		unset( $_GET['outlinepay_result'] );
+		$this->assertStringContainsString( 'Set store currency to KRW', $notice );
+		$this->assertSame( '', $this->render_private( 'render_currency_warning' ) );
+		$this->forget_shown_fix();
 	}
 }
