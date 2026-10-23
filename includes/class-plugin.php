@@ -15,6 +15,12 @@ defined( 'ABSPATH' ) || exit;
 final class Plugin {
 
 	/**
+	 * Set on activation of a store that is not connected. The next admin page
+	 * shows the activation notice once (see Admin_Page::activation_notice).
+	 */
+	const TRANSIENT_ACTIVATED = 'outlinepay_activated';
+
+	/**
 	 * Hooks everything once WooCommerce has loaded.
 	 *
 	 * @return void
@@ -92,14 +98,17 @@ final class Plugin {
 	}
 
 	/**
-	 * Activation: nothing is sent anywhere. The merchant connects from the admin page.
+	 * Activation: nothing is sent anywhere. The merchant connects from the
+	 * admin page, and a store that is not connected gets a notice pointing there.
 	 *
 	 * @return void
 	 */
 	public static function activate() {
 		if ( Settings::is_connected() ) {
 			Scheduler::schedule_recurring();
+			return;
 		}
+		set_transient( self::TRANSIENT_ACTIVATED, 1, Scheduler::DAY );
 	}
 
 	/**

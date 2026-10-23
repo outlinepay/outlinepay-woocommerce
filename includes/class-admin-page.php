@@ -45,6 +45,7 @@ final class Admin_Page {
 		add_action( 'admin_post_outlinepay_shopper_cancel', array( self::class, 'save_shopper_cancel' ) );
 		add_action( 'admin_enqueue_scripts', array( self::class, 'enqueue' ) );
 		add_action( 'admin_notices', array( self::class, 'copy_notice' ) );
+		add_action( 'admin_notices', array( self::class, 'activation_notice' ) );
 		add_action( 'admin_init', array( Site_Identity::class, 'ensure_saved' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( OUTLINEPAY_PLUGIN_FILE ), array( self::class, 'action_links' ) );
 	}
@@ -124,6 +125,19 @@ final class Admin_Page {
 			self::back( 'connect_failed' );
 		}
 
+		$set_decimals = isset( $_POST['outlinepay_set_decimals'] ) && 'yes' === sanitize_key( wp_unslash( $_POST['outlinepay_set_decimals'] ) );
+		self::back( 'connected', self::finish_connect( $installation, $set_decimals ) );
+	}
+
+	/**
+	 * Saves a successful connect, fetches the methods so checkout has them
+	 * right away, and sets the decimals when the merchant left the box checked.
+	 *
+	 * @param array $installation Connect answer, with token and signing_secret.
+	 * @param bool  $set_decimals The merchant asked to set Number of decimals to 0.
+	 * @return array Extra query args for the connected notice.
+	 */
+	public static function finish_connect( array $installation, $set_decimals ) {
 		Credentials::save( $installation['token'], $installation['signing_secret'] );
 		Site_Identity::remember_current();
 		unset( $installation['token'], $installation['signing_secret'] );
@@ -131,9 +145,18 @@ final class Admin_Page {
 		update_option( Settings::OPTION_VERSION, OUTLINEPAY_VERSION, false );
 		Logger::info( 'Store connected', array( 'status' => isset( $installation['status'] ) ? $installation['status'] : '' ) );
 
-		Scheduler::refresh_methods();
+		if ( ! Scheduler::refresh_methods() ) {
+			// The background job tries again in a moment.
+			Scheduler::queue_methods_refresh();
+		}
 		Scheduler::schedule_recurring();
-		self::back( 'connected' );
+
+		$args = array();
+		if ( $set_decimals && Settings::krw_with_decimals() ) {
+			Settings::set_no_decimals();
+			$args['outlinepay_decimals'] = '1';
+		}
+		return $args;
 	}
 
 	/**
@@ -188,6 +211,24 @@ final class Admin_Page {
 		$updated = Site_Identity::accept_move();
 		Scheduler::schedule_recurring();
 		self::back( $updated ? 'moved' : 'moved_callback_failed' );
+	}
+
+	/**
+	 * Once after activation of a store that is not connected: where to paste
+	 * the connect code.
+	 *
+	 * @return void
+	 */
+	public static function activation_notice() {
+		if ( ! current_user_can( self::CAPABILITY ) || ! get_transient( Plugin::TRANSIENT_ACTIVATED ) ) {
+			return;
+		}
+		delete_transient( Plugin::TRANSIENT_ACTIVATED );
+		if ( Settings::is_connected() ) {
+			return;
+		}
+		echo '<div class="notice notice-info is-dismissible outlinepay-activated"><p>' . esc_html__( 'OutlinePay is active. Paste your connect code to start taking payments.', 'outlinepay-for-woocommerce' );
+		echo ' <a href="' . esc_url( self::url( array( 'focus' => 'connect_code' ) ) ) . '">' . esc_html__( 'Go to OutlinePay', 'outlinepay-for-woocommerce' ) . '</a></p></div>';
 	}
 
 	/**
@@ -436,7 +477,13 @@ final class Admin_Page {
 		wp_nonce_field( 'outlinepay_connect' );
 		echo '<input type="hidden" name="action" value="outlinepay_connect">';
 		echo '<table class="form-table" role="presentation"><tr><th scope="row"><label for="outlinepay_connect_code">' . esc_html__( 'Connect code', 'outlinepay-for-woocommerce' ) . '</label></th>';
-		echo '<td><input type="text" class="regular-text code" id="outlinepay_connect_code" name="outlinepay_connect_code" autocomplete="off" spellcheck="false" placeholder="olp_cc_..." required></td></tr></table>';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only: focuses the field.
+		$focus = isset( $_GET['focus'] ) && 'connect_code' === sanitize_key( wp_unslash( $_GET['focus'] ) );
+		echo '<td><input type="text" class="regular-text code" id="outlinepay_connect_code" name="outlinepay_connect_code" autocomplete="off" spellcheck="false" placeholder="olp_cc_..." required' . ( $focus ? ' autofocus' : '' ) . '>';
+		if ( Settings::krw_with_decimals() ) {
+			echo '<p><label><input type="checkbox" name="outlinepay_set_decimals" value="yes" checked> ' . esc_html__( 'Set Number of decimals to 0. The won has none.', 'outlinepay-for-woocommerce' ) . '</label></p>';
+		}
+		echo '</td></tr></table>';
 		submit_button( __( 'Connect', 'outlinepay-for-woocommerce' ) );
 		echo '</form>';
 	}
@@ -679,7 +726,35 @@ final class Admin_Page {
 		if ( ! isset( $messages[ $result ] ) ) {
 			return;
 		}
+		if ( 'connected' === $result ) {
+			self::render_connected_notice( $messages[ $result ][1] );
+			return;
+		}
 		echo '<div class="notice notice-' . esc_attr( $messages[ $result ][0] ) . ' is-dismissible"><p>' . esc_html( $messages[ $result ][1] ) . '</p></div>';
+	}
+
+	/**
+	 * The notice after a connect: what changed, then three next steps.
+	 *
+	 * @param string $message The connected sentence.
+	 * @return void
+	 */
+	private static function render_connected_notice( $message ) {
+		echo '<div class="notice notice-success is-dismissible outlinepay-connected"><p>' . esc_html( $message ) . '</p>';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only: adds a fixed line.
+		if ( isset( $_GET['outlinepay_decimals'] ) ) {
+			echo '<p>' . esc_html__( 'Number of decimals set to 0.', 'outlinepay-for-woocommerce' ) . '</p>';
+		}
+		echo '<p><strong>' . esc_html__( 'What\'s next', 'outlinepay-for-woocommerce' ) . '</strong></p><ul>';
+		echo '<li>' . esc_html__( 'Your payment methods now show at checkout.', 'outlinepay-for-woocommerce' ) . ' <a href="' . esc_url( wc_get_checkout_url() ) . '">' . esc_html__( 'View checkout', 'outlinepay-for-woocommerce' ) . '</a></li>';
+		echo '<li><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		wp_nonce_field( 'outlinepay_self_check' );
+		echo '<input type="hidden" name="action" value="outlinepay_self_check">';
+		echo esc_html__( 'Run the self-check.', 'outlinepay-for-woocommerce' ) . ' ';
+		submit_button( __( 'Run check', 'outlinepay-for-woocommerce' ), 'secondary small', 'outlinepay_run_check_next', false );
+		echo '</form></li>';
+		echo '<li>' . esc_html__( 'Place a test order.', 'outlinepay-for-woocommerce' ) . ' <a href="' . esc_url( wc_get_page_permalink( 'shop' ) ) . '">' . esc_html__( 'Go to the shop', 'outlinepay-for-woocommerce' ) . '</a></li>';
+		echo '</ul></div>';
 	}
 
 	/**
@@ -719,10 +794,11 @@ final class Admin_Page {
 	 * Redirects back to the page with a result.
 	 *
 	 * @param string $result Notice key.
+	 * @param array  $args   Extra query args.
 	 * @return void
 	 */
-	private static function back( $result ) {
-		wp_safe_redirect( self::url( array( 'outlinepay_result' => $result ) ) );
+	private static function back( $result, array $args = array() ) {
+		wp_safe_redirect( self::url( array_merge( array( 'outlinepay_result' => $result ), $args ) ) );
 		exit;
 	}
 }
