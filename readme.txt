@@ -41,6 +41,7 @@ What the plugin does:
 * Can let shoppers cancel their own paid orders from My Account. Cancelling refunds the full payment and cancels the order. Off until you turn on "Let shoppers cancel their own paid orders".
 * Shows a "View card receipt" link for card payments on the order screen, the thank-you page, the shopper's order page and the completed-order email.
 * Supports High-Performance Order Storage (HPOS).
+* Walks you through setup after you connect. The OutlinePay page lists each check. Fix all makes the fixes the plugin can make itself. Payment methods show at checkout once every check passes.
 * Checks its own setup. The Self-check on the OutlinePay page shows each check, who needs to act when one fails, a button for the fixes the plugin can make, and a diagnostic code to send to your payment provider. It also runs once a day.
 * Can email the site admin address when a daily check starts failing. Off until you turn on "Email me when a daily check fails".
 * Adds an "OutlinePay connection" test to Tools > Site Health.
@@ -57,7 +58,8 @@ OutlinePay is operated by Arandu Payments LLC.
 3. Set the store currency to South Korean won (KRW) in WooCommerce > Settings > General.
 4. Ask your payment provider for a connect code.
 5. Open WooCommerce > OutlinePay, paste the code and click Connect.
-6. Choose which methods to show at checkout and click Save methods.
+6. The page shows the setup checks. Click Fix all. If a check still fails, follow the line next to it, then click Check again.
+7. When every check passes, choose which methods to show at checkout and click Save methods.
 
 The plugin sends nothing to OutlinePay until you click Connect.
 
@@ -65,7 +67,7 @@ The plugin sends nothing to OutlinePay until you click Connect.
 
 = Why do I not see any OutlinePay methods at checkout? =
 
-Each method shows only when all of these are true. The store is connected. The store currency is KRW. Your payment provider has the method enabled. You have not hidden it on the OutlinePay page.
+Each method shows only when all of these are true. The store is connected. Setup on the OutlinePay page is complete. The store currency is KRW. Your payment provider has the method enabled. You have not hidden it on the OutlinePay page.
 
 = What is test mode? =
 
@@ -142,7 +144,9 @@ CookiePay privacy policy: https://www.cookiepayments.com/terms/private
 
 = 0.5.0 =
 * WooCommerce > Settings > Payments shows one OutlinePay row instead of one row per method. The plugin now needs WooCommerce 9.9 or later.
-* After activation, a notice links to the OutlinePay page and puts the cursor in the connect code field. After connecting, the notice lists three next steps: check the checkout, run the self-check, place a test order.
+* After activation, a notice links to the OutlinePay page and puts the cursor in the connect code field.
+* After connecting, the OutlinePay page shows a setup screen with every check and its result. Fix all makes every fix the plugin can make itself: it sets the store currency, schedules the background jobs and runs them, and fetches the payment methods. Checks the plugin cannot fix keep their instruction, such as asking your host to run WP-Cron.
+* Payment methods show at checkout only after every setup check has passed once. After that, a failing daily check shows on the page but does not hide checkout. Stores connected before 0.5.0 skip setup when their last self-check passed.
 * At connect, and in the daily self-check, the plugin checks that the store currency is one your payment provider takes, and offers one click to switch the store. Prices keep their numbers. Prices then show the number of decimals that currency has, none for the won.
 * Self-check rows that fail now carry their fix: Run now for background checks, Use this address for a moved store, and Copy code when OutlinePay recorded problems for your payment provider.
 * Order notes are always in the store's language. A private note when a shopper starts an OutlinePay payment, and another when a payment window attempt expires. A refused refund gets a note with the amount and the reason.

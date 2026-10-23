@@ -31,7 +31,8 @@ OutlinePay is operated by Arandu Payments LLC.
 | `includes/class-site-health.php` | Site Health test "OutlinePay connection" |
 | `includes/class-abilities.php` | Abilities API (WordPress 6.9+): `outlinepay/run-self-check`, `outlinepay/get-connection-status` |
 | `includes/class-unpaid-guard.php` | Expires open attempts before WooCommerce cancels an unpaid order |
-| `includes/class-admin-page.php` | WooCommerce > OutlinePay, including the Self-check section |
+| `includes/class-setup.php` | The one-time setup gate: checkout waits for the first run where checks A to I all pass |
+| `includes/class-admin-page.php` | WooCommerce > OutlinePay: the setup screen with Fix all, then the connected view with the Self-check section |
 | `assets/js/admin.js` | Copy buttons for the diagnostic code, no build step |
 | `includes/class-blocks-method.php`, `assets/js/blocks.js` | Checkout block integration, no build step |
 
@@ -52,6 +53,12 @@ When a self-check run reaches OutlinePay, its id (`chk_...`) is the diagnostic c
 | I | `versions` | PHP, WordPress or WooCommerce below the plugin header minimums, or HPOS compatibility not registered |
 
 An offline code always has at least one letter. With every local check green, it is `OP-OFFLINE-C`.
+
+## Setup after connect
+
+After connect, the OutlinePay page shows a setup screen until one stored self-check result has checks A to I all passing. Until then no OutlinePay method shows at checkout. Fix all applies the fixes the plugin can make (store currency, recurring jobs and a reconcile run, method refresh), then runs the checks again. When OutlinePay refuses a second run within a minute, the local rows are rerun and merged into the stored result.
+
+The first all-green result saves `outlinepay_setup_done`. The gate is one-time: later failures show on the page but do not hide checkout. Disconnect deletes the flag. A store connected before 0.5.0 has no flag. It counts as done when its stored result has no failed check.
 
 ## Development
 
