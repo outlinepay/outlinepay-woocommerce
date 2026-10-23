@@ -193,6 +193,51 @@ class ShopperCancelTest extends RefundTestCase {
 		$this->assertSame( '', ob_get_clean() );
 	}
 
+	public function test_a_refund_on_the_order_shows_why_cancel_is_gone() {
+		$this->order->refunds[] = new \WC_Order_Refund( 1, '1000' );
+		$this->assertFalse( Shopper_Cancel::can_cancel( $this->order, self::USER ) );
+		$this->assertTrue( Shopper_Cancel::blocked_by_refund( $this->order, self::USER ) );
+
+		ob_start();
+		Shopper_Cancel::render_form( 42 );
+		$html = ob_get_clean();
+		$this->assertStringContainsString( 'Cancellation is not available for this order. Contact the store.', $html );
+		$this->assertStringNotContainsString( '<form', $html );
+	}
+
+	public function test_a_pending_refund_also_shows_why_cancel_is_gone() {
+		Refunds::remember_pending( $this->order, 'pref_one', 25000, 'shopper' );
+		$this->assertTrue( Shopper_Cancel::blocked_by_refund( $this->order, self::USER ) );
+	}
+
+	/**
+	 * @dataProvider hidden_cases
+	 */
+	public function test_the_refund_line_shows_only_where_cancel_would_otherwise_show( $change ) {
+		$change( $this );
+		$this->order->refunds[] = new \WC_Order_Refund( 1, '1000' );
+		$blocked                = Shopper_Cancel::blocked_by_refund( $this->order, self::USER );
+		ob_start();
+		Shopper_Cancel::render_form( 42 );
+		$html = ob_get_clean();
+		// Only the refund rules leave the line showing: every other rule hides it too.
+		$this->assertSame( in_array( $this->dataName(), array( 'already refunded', 'refund pending' ), true ), $blocked, (string) $this->dataName() );
+		$this->assertSame( $blocked, '' !== $html );
+		if ( $blocked ) {
+			$this->assertStringContainsString( 'Cancellation is not available', $html );
+		}
+	}
+
+	public function test_no_refund_line_on_an_order_without_a_refund() {
+		$this->assertFalse( Shopper_Cancel::blocked_by_refund( $this->order, self::USER ) );
+	}
+
+	public function test_no_refund_line_on_an_order_paid_another_way() {
+		$this->order->payment_method = 'bacs';
+		$this->order->refunds[]      = new \WC_Order_Refund( 1, '1000' );
+		$this->assertFalse( Shopper_Cancel::blocked_by_refund( $this->order, self::USER ) );
+	}
+
 	public function test_a_bad_nonce_or_another_shopper_is_refused_before_anything_is_sent() {
 		$this->assertSame( 'error', $this->cancel( 'stale' )['type'] );
 		$this->assertSame( 'error', $this->cancel( 'good-outlinepay_cancel_order_42', 8 )['type'] );

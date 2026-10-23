@@ -99,27 +99,51 @@ final class Shopper_Cancel {
 	 * @return bool
 	 */
 	public static function can_cancel( $order, $user_id ) {
+		return 'ok' === self::cancel_state( $order, $user_id );
+	}
+
+	/**
+	 * True when Cancel would show but a refund is already on the order: the
+	 * page says why instead.
+	 *
+	 * @param mixed $order   Order.
+	 * @param int   $user_id Current user id.
+	 * @return bool
+	 */
+	public static function blocked_by_refund( $order, $user_id ) {
+		return 'refunded' === self::cancel_state( $order, $user_id );
+	}
+
+	/**
+	 * Whether this user may cancel this order: ok, refunded (every rule holds
+	 * but a refund is already on the order), or no.
+	 *
+	 * @param mixed $order   Order.
+	 * @param int   $user_id Current user id.
+	 * @return string
+	 */
+	private static function cancel_state( $order, $user_id ) {
 		if ( ! $order instanceof \WC_Order || (int) $user_id <= 0 || (int) $order->get_customer_id() !== (int) $user_id ) {
-			return false;
+			return 'no';
 		}
 		$setting = Settings::shopper_cancel();
 		if ( ! $setting['enabled'] || ! in_array( $order->get_status(), $setting['statuses'], true ) ) {
-			return false;
+			return 'no';
 		}
 		$method = Settings::method_for_gateway( $order->get_payment_method() );
 		if ( null === $method || ! Settings::refundable( $method ) || ! Settings::is_connected() ) {
-			return false;
+			return 'no';
 		}
 		if ( ! Api_Client::valid_payment_id( $order->get_meta( Order_Sync::META_PAYMENT_ID ) ) || ! $order->get_date_paid() ) {
-			return false;
+			return 'no';
 		}
 		if ( '' !== (string) $order->get_meta( Order_Sync::META_SETTLED ) || '' !== (string) $order->get_meta( Order_Sync::META_HOLD ) ) {
-			return false;
+			return 'no';
 		}
-		if ( (float) $order->get_total_refunded() > 0 || Refunds::has_any( $order ) ) {
-			return false;
+		if ( null === Amount::to_krw( $order->get_total() ) ) {
+			return 'no';
 		}
-		return null !== Amount::to_krw( $order->get_total() );
+		return (float) $order->get_total_refunded() > 0 || Refunds::has_any( $order ) ? 'refunded' : 'ok';
 	}
 
 	/**
@@ -154,13 +178,18 @@ final class Shopper_Cancel {
 	}
 
 	/**
-	 * The cancel form on the My Account order page.
+	 * The cancel form on the My Account order page. Where a refund already
+	 * took it away, one line says so.
 	 *
 	 * @param int $order_id Order id.
 	 * @return void
 	 */
 	public static function render_form( $order_id ) {
 		$order = wc_get_order( $order_id );
+		if ( self::blocked_by_refund( $order, get_current_user_id() ) ) {
+			echo '<p class="outlinepay-cancel-unavailable">' . esc_html__( 'Cancellation is not available for this order. Contact the store.', 'outlinepay-for-woocommerce' ) . '</p>';
+			return;
+		}
 		if ( ! self::can_cancel( $order, get_current_user_id() ) ) {
 			return;
 		}
