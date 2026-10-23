@@ -1481,12 +1481,6 @@ msgstr "스토어가 연결되어 있지 않습니다. 아무것도 실행하지
 msgid "Set store currency to %s"
 msgstr "스토어 통화를 %s로 설정"
 
-#. translators: %s: currency code such as KRW.
-#: includes/class-admin-page.php:839
-#, php-format
-msgid "Store currency set to %s."
-msgstr "스토어 통화를 %s로 설정했습니다."
-
 #. translators: 1: store currency code such as USD, 2: payment provider name, 3: currency codes the provider takes, such as KRW.
 #: includes/class-self-check.php:923
 #, php-format
@@ -1514,3 +1508,13 @@ msgstr "이 결제수단은 %s 결제만 받습니다."
 #, php-format
 msgid "Your store currency is %1$s. %2$s takes payments in %3$s only."
 msgstr "스토어 통화가 %1$s입니다. %2$s에서는 %3$s 결제만 받습니다."
+
+#: includes/class-admin-page.php:685
+msgid "Prices keep their numbers. Check your product prices after switching."
+msgstr "가격 숫자는 그대로 유지됩니다. 통화를 바꾼 뒤 상품 가격을 확인하십시오."
+
+#. translators: %s: currency code such as KRW.
+#: includes/class-admin-page.php:849
+#, php-format
+msgid "Store currency set to %s. Prices kept their numbers. Check your product prices."
+msgstr "스토어 통화를 %s로 설정했습니다. 가격 숫자는 그대로 유지되었습니다. 상품 가격을 확인하십시오."

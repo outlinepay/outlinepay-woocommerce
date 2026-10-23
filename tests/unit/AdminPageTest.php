@@ -272,7 +272,7 @@ class AdminPageTest extends TestCase {
 		$this->assertStringContainsString( 'Copy code', $html );
 		$this->assertSame( 2, substr_count( $html, 'data-outlinepay-copy' ), 'the code box and the problems row' );
 		$this->assertStringNotContainsString( 'Use this address', $html, 'not a copy: no move button' );
-		$this->assertStringContainsString( 'The store currency is USD. CookiePay takes payments in KRW only.', $html );
+		$this->assertStringContainsString( 'The store currency is USD. CookiePay takes payments in KRW only. Prices keep their numbers. Check your product prices after switching.', $html );
 		$this->assertStringContainsString( 'value="Set store currency to KRW"', $html );
 		$this->assertStringContainsString( 'Email me when a daily check fails (to the site admin address, owner@shop.example)', $html );
 	}
@@ -356,7 +356,7 @@ class AdminPageTest extends TestCase {
 		$html = ob_get_clean();
 		unset( $_GET['outlinepay_result'] );
 
-		$this->assertStringContainsString( 'Your store currency is USD. CookiePay takes payments in KRW only.', $html );
+		$this->assertStringContainsString( 'Your store currency is USD. CookiePay takes payments in KRW only. Prices keep their numbers. Check your product prices after switching.</p>', $html );
 		$this->assertStringContainsString( 'value="outlinepay_set_currency"', $html );
 		$this->assertStringContainsString( 'nonce-outlinepay_set_currency', $html );
 		$this->assertStringContainsString( 'value="Set store currency to KRW"', $html );

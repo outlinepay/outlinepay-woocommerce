@@ -1187,12 +1187,6 @@ msgstr ""
 msgid "Set store currency to %s"
 msgstr ""
 
-#. translators: %s: currency code such as KRW.
-#: includes/class-admin-page.php:839
-#, php-format
-msgid "Store currency set to %s."
-msgstr ""
-
 #. translators: 1: store currency code such as USD, 2: payment provider name, 3: currency codes the provider takes, such as KRW.
 #: includes/class-self-check.php:923
 #, php-format
@@ -1219,4 +1213,14 @@ msgstr ""
 #: includes/class-admin-page.php:669
 #, php-format
 msgid "Your store currency is %1$s. %2$s takes payments in %3$s only."
+msgstr ""
+
+#: includes/class-admin-page.php:685
+msgid "Prices keep their numbers. Check your product prices after switching."
+msgstr ""
+
+#. translators: %s: currency code such as KRW.
+#: includes/class-admin-page.php:849
+#, php-format
+msgid "Store currency set to %s. Prices kept their numbers. Check your product prices."
 msgstr ""

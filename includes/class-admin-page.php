@@ -638,6 +638,7 @@ final class Admin_Page {
 				return;
 			case 'store_currency':
 				if ( Settings::is_connected() && ! Settings::provider_takes( get_woocommerce_currency() ) ) {
+					echo ' ' . esc_html( self::prices_note() );
 					self::render_currency_button();
 				}
 				return;
@@ -671,8 +672,17 @@ final class Admin_Page {
 				Settings::provider_display_name(),
 				implode( ', ', Settings::provider_currencies() )
 			)
-		) . '</p>';
+		) . ' ' . esc_html( self::prices_note() ) . '</p>';
 		self::render_currency_button();
+	}
+
+	/**
+	 * What the currency switch does to prices, said next to every button.
+	 *
+	 * @return string
+	 */
+	private static function prices_note() {
+		return __( 'Prices keep their numbers. Check your product prices after switching.', 'outlinepay-for-woocommerce' );
 	}
 
 	/**
@@ -836,7 +846,7 @@ final class Admin_Page {
 			'jobs_ran_methods_failed' => array( 'warning', __( 'The payment check ran now. The method list could not be refreshed. Try again in a few minutes.', 'outlinepay-for-woocommerce' ) ),
 			'jobs_not_connected'      => array( 'error', __( 'The store is not connected. Nothing ran.', 'outlinepay-for-woocommerce' ) ),
 			/* translators: %s: currency code such as KRW. */
-			'currency_set'            => array( 'success', sprintf( __( 'Store currency set to %s.', 'outlinepay-for-woocommerce' ), get_woocommerce_currency() ) ),
+			'currency_set'            => array( 'success', sprintf( __( 'Store currency set to %s. Prices kept their numbers. Check your product prices.', 'outlinepay-for-woocommerce' ), get_woocommerce_currency() ) ),
 			'currency_not_connected'  => array( 'error', __( 'The store is not connected. Nothing changed.', 'outlinepay-for-woocommerce' ) ),
 		);
 		if ( ! isset( $messages[ $result ] ) ) {
