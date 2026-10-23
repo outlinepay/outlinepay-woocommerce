@@ -363,4 +363,32 @@ class AdminPageTest extends TestCase {
 		$this->assertStringContainsString( 'What&#039;s next', $html );
 		$this->assertStringNotContainsString( 'now show at checkout', $html, 'not true until the currency is switched' );
 	}
+
+	public function test_prices_show_no_decimals_on_a_connected_krw_store() {
+		Admin_Page::finish_connect( array_merge( self::answer(), array( 'currencies' => array( 'KRW' ) ) ) );
+		$this->assertSame( 0, Settings::price_decimals( 2 ) );
+		$this->assertArrayNotHasKey( 'woocommerce_price_num_decimals', $this->options, 'no option write' );
+	}
+
+	public function test_decimals_are_left_alone_when_the_store_currency_is_not_a_provider_currency() {
+		Admin_Page::finish_connect( array_merge( self::answer(), array( 'currencies' => array( 'KRW' ) ) ) );
+		$this->currency = 'USD';
+		$this->assertSame( 2, Settings::price_decimals( 2 ) );
+		$this->assertSame( 3, Settings::price_decimals( 3 ) );
+	}
+
+	public function test_decimals_are_left_alone_when_the_store_is_not_connected() {
+		$this->assertSame( 2, Settings::price_decimals( 2 ) );
+		$this->options['outlinepay_installation'] = array( 'status' => 'revoked', 'currencies' => array( 'KRW' ) );
+		$this->assertSame( 2, Settings::price_decimals( 2 ) );
+	}
+
+	public function test_the_minor_unit_table_and_the_boot_hook() {
+		$this->assertSame( 0, Settings::minor_units( 'KRW' ) );
+		$this->assertSame( 0, Settings::minor_units( 'pyg' ) );
+		$this->assertSame( 2, Settings::minor_units( 'USD' ) );
+		$this->assertSame( 2, Settings::minor_units( 'XYZ' ), 'unknown: 2' );
+		$source = file_get_contents( dirname( __DIR__, 2 ) . '/includes/class-plugin.php' );
+		$this->assertStringContainsString( "add_filter( 'wc_get_price_decimals', array( Settings::class, 'price_decimals' ) );", $source );
+	}
 }

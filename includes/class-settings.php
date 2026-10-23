@@ -350,6 +350,22 @@ final class Settings {
 	}
 
 	/**
+	 * Filter on wc_get_price_decimals: while connected and selling in a
+	 * currency the provider takes, prices show that currency's number of
+	 * decimals, none for the won. The saved option is left as it is.
+	 *
+	 * @param int $decimals Decimals WooCommerce would use.
+	 * @return int
+	 */
+	public static function price_decimals( $decimals ) {
+		$currency = get_woocommerce_currency();
+		if ( ! self::provider_takes( $currency ) || ! self::is_connected() ) {
+			return $decimals;
+		}
+		return self::minor_units( $currency );
+	}
+
+	/**
 	 * The provider's name for the merchant, or "Your payment provider".
 	 *
 	 * @return string

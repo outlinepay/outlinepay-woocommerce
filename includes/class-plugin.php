@@ -36,6 +36,7 @@ final class Plugin {
 		add_filter( 'woocommerce_payment_gateways', array( self::class, 'add_gateways' ) );
 		add_action( 'woocommerce_blocks_payment_method_type_registration', array( self::class, 'register_blocks' ) );
 		add_action( 'outlinepay_token_rejected', array( Settings::class, 'mark_revoked' ) );
+		add_filter( 'wc_get_price_decimals', array( Settings::class, 'price_decimals' ) );
 
 		Admin_Page::register();
 		Return_Handler::register();
