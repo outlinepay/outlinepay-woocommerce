@@ -143,8 +143,7 @@ CookiePay privacy policy: https://www.cookiepayments.com/terms/private
 = 0.5.0 =
 * WooCommerce > Settings > Payments shows one OutlinePay row instead of one row per method. The plugin now needs WooCommerce 9.9 or later.
 * After activation, a notice links to the OutlinePay page and puts the cursor in the connect code field. After connecting, the notice lists three next steps: check the checkout, run the self-check, place a test order.
-* When a KRW store shows prices with decimals, the connect form offers to set Number of decimals to 0. The setting changes only if you leave the box checked.
-* Self-check rows that fail now carry their fix: Set decimals to 0, Run now for background checks, Use this address for a moved store, and Copy code when OutlinePay recorded problems for your payment provider.
+* Self-check rows that fail now carry their fix: Run now for background checks, Use this address for a moved store, and Copy code when OutlinePay recorded problems for your payment provider.
 * Order notes are always in the store's language. A private note when a shopper starts an OutlinePay payment, and another when a payment window attempt expires. A refused refund gets a note with the amount and the reason.
 * The pay page has a link back to the order. While the payment window is open, the Pay button says to finish the payment in the window.
 * Checkout shows each payment method's name only, without a line under it.

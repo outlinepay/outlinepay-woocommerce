@@ -1430,10 +1430,6 @@ msgstr "OutlinePay로 이동"
 msgid "Go to the shop"
 msgstr "상점 페이지로 이동"
 
-#: includes/class-admin-page.php:813 includes/class-admin-page.php:839
-msgid "Number of decimals set to 0."
-msgstr "소수점 자릿수를 0으로 설정했습니다."
-
 #: includes/class-gateway.php:86
 msgid "OutlinePay (not connected)"
 msgstr "OutlinePay (연결되지 않음)"
@@ -1462,14 +1458,6 @@ msgstr "OutlinePay가 지난 7일 동안 기록한 문제 중 아직 해결되�
 msgid "Place a test order."
 msgstr "테스트 주문을 하십시오."
 
-#: includes/class-self-check.php:938
-msgid "Prices show decimals. The won has none."
-msgstr "가격에 소수점이 표시됩니다. 원화에는 소수점이 없습니다."
-
-#: includes/class-self-check.php:937
-msgid "Prices show no decimals."
-msgstr "가격에 소수점이 표시되지 않습니다."
-
 #. translators: 1: amount such as 5,000 won, 2: why OutlinePay refused, one sentence.
 #: includes/class-refunds.php:273
 #, php-format
@@ -1483,14 +1471,6 @@ msgstr "지금 실행"
 #: includes/class-admin-page.php:846
 msgid "Run the self-check."
 msgstr "자체 점검을 실행하십시오."
-
-#: includes/class-admin-page.php:517
-msgid "Set Number of decimals to 0. The won has none."
-msgstr "소수점 자릿수를 0으로 설정합니다. 원화에는 소수점이 없습니다."
-
-#: includes/class-admin-page.php:655
-msgid "Set decimals to 0"
-msgstr "소수점 자릿수를 0으로 설정"
 
 #: includes/class-admin-page.php:660
 msgid "Use this address"
@@ -1507,10 +1487,6 @@ msgstr "다음 단계"
 #: includes/class-admin-page.php:842
 msgid "Your payment methods now show at checkout."
 msgstr "이제 결제 화면에 결제수단이 표시됩니다."
-
-#: includes/class-admin-page.php:814
-msgid "The store currency is not KRW. Nothing changed."
-msgstr "스토어 통화가 KRW가 아닙니다. 바뀐 것은 없습니다."
 
 #: includes/class-admin-page.php:815
 msgid "The payment check and the method refresh ran now."

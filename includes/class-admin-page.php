@@ -42,7 +42,6 @@ final class Admin_Page {
 		add_action( 'admin_post_outlinepay_copy_moved', array( self::class, 'copy_moved' ) );
 		add_action( 'admin_post_outlinepay_self_check', array( self::class, 'self_check' ) );
 		add_action( 'admin_post_outlinepay_self_check_email', array( self::class, 'save_self_check_email' ) );
-		add_action( 'admin_post_outlinepay_set_decimals', array( self::class, 'set_decimals' ) );
 		add_action( 'admin_post_outlinepay_run_jobs', array( self::class, 'run_jobs' ) );
 		add_action( 'admin_post_outlinepay_shopper_cancel', array( self::class, 'save_shopper_cancel' ) );
 		add_action( 'admin_enqueue_scripts', array( self::class, 'enqueue' ) );
@@ -127,19 +126,18 @@ final class Admin_Page {
 			self::back( 'connect_failed' );
 		}
 
-		$set_decimals = isset( $_POST['outlinepay_set_decimals'] ) && 'yes' === sanitize_key( wp_unslash( $_POST['outlinepay_set_decimals'] ) );
-		self::back( 'connected', self::finish_connect( $installation, $set_decimals ) );
+		self::finish_connect( $installation );
+		self::back( 'connected' );
 	}
 
 	/**
-	 * Saves a successful connect, fetches the methods so checkout has them
-	 * right away, and sets the decimals when the merchant left the box checked.
+	 * Saves a successful connect and fetches the methods so checkout has them
+	 * right away.
 	 *
 	 * @param array $installation Connect answer, with token and signing_secret.
-	 * @param bool  $set_decimals The merchant asked to set Number of decimals to 0.
-	 * @return array Extra query args for the connected notice.
+	 * @return void
 	 */
-	public static function finish_connect( array $installation, $set_decimals ) {
+	public static function finish_connect( array $installation ) {
 		Credentials::save( $installation['token'], $installation['signing_secret'] );
 		Site_Identity::remember_current();
 		unset( $installation['token'], $installation['signing_secret'] );
@@ -152,13 +150,6 @@ final class Admin_Page {
 			Scheduler::queue_methods_refresh();
 		}
 		Scheduler::schedule_recurring();
-
-		$args = array();
-		if ( $set_decimals && Settings::krw_with_decimals() ) {
-			Settings::set_no_decimals();
-			$args['outlinepay_decimals'] = '1';
-		}
-		return $args;
 	}
 
 	/**
@@ -330,21 +321,6 @@ final class Admin_Page {
 	}
 
 	/**
-	 * "Set decimals to 0" on the krw_decimals check.
-	 *
-	 * @return void
-	 */
-	public static function set_decimals() {
-		self::require_capability();
-		check_admin_referer( 'outlinepay_set_decimals' );
-		if ( 'KRW' !== get_woocommerce_currency() ) {
-			self::back( 'decimals_not_krw' );
-		}
-		Settings::set_no_decimals();
-		self::back( 'decimals_set' );
-	}
-
-	/**
 	 * "Run now" on the scheduler_jobs and wp_cron checks: the background
 	 * payment check and the method refresh, in this request.
 	 *
@@ -512,11 +488,7 @@ final class Admin_Page {
 		echo '<table class="form-table" role="presentation"><tr><th scope="row"><label for="outlinepay_connect_code">' . esc_html__( 'Connect code', 'outlinepay-for-woocommerce' ) . '</label></th>';
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only: focuses the field.
 		$focus = isset( $_GET['focus'] ) && 'connect_code' === sanitize_key( wp_unslash( $_GET['focus'] ) );
-		echo '<td><input type="text" class="regular-text code" id="outlinepay_connect_code" name="outlinepay_connect_code" autocomplete="off" spellcheck="false" placeholder="olp_cc_..." required' . ( $focus ? ' autofocus' : '' ) . '>';
-		if ( Settings::krw_with_decimals() ) {
-			echo '<p><label><input type="checkbox" name="outlinepay_set_decimals" value="yes" checked> ' . esc_html__( 'Set Number of decimals to 0. The won has none.', 'outlinepay-for-woocommerce' ) . '</label></p>';
-		}
-		echo '</td></tr></table>';
+		echo '<td><input type="text" class="regular-text code" id="outlinepay_connect_code" name="outlinepay_connect_code" autocomplete="off" spellcheck="false" placeholder="olp_cc_..." required' . ( $focus ? ' autofocus' : '' ) . '></td></tr></table>';
 		submit_button( __( 'Connect', 'outlinepay-for-woocommerce' ) );
 		echo '</form>';
 	}
@@ -650,9 +622,6 @@ final class Admin_Page {
 				}
 				echo '<br><button type="button" class="button button-small" data-outlinepay-copy data-target="outlinepay-check-code" data-status="outlinepay-copy-status-problems" data-copied="' . esc_attr__( 'Copied', 'outlinepay-for-woocommerce' ) . '" data-manual="' . esc_attr__( 'Selected. Press Ctrl+C to copy.', 'outlinepay-for-woocommerce' ) . '">' . esc_html__( 'Copy code', 'outlinepay-for-woocommerce' ) . '</button>';
 				echo ' <span id="outlinepay-copy-status-problems" aria-live="polite"></span>';
-				return;
-			case 'krw_decimals':
-				self::render_action_form( 'outlinepay_set_decimals', __( 'Set decimals to 0', 'outlinepay-for-woocommerce' ) );
 				return;
 			case 'not_a_copy':
 				if ( Site_Identity::is_copy() ) {
@@ -810,8 +779,6 @@ final class Admin_Page {
 			'self_check_done'         => array( 'success', __( 'The check finished. The results are below.', 'outlinepay-for-woocommerce' ) ),
 			'self_check_email_saved'  => array( 'success', __( 'Email setting saved.', 'outlinepay-for-woocommerce' ) ),
 			'shopper_cancel_saved'    => array( 'success', __( 'Cancellation setting saved.', 'outlinepay-for-woocommerce' ) ),
-			'decimals_set'            => array( 'success', __( 'Number of decimals set to 0.', 'outlinepay-for-woocommerce' ) ),
-			'decimals_not_krw'        => array( 'error', __( 'The store currency is not KRW. Nothing changed.', 'outlinepay-for-woocommerce' ) ),
 			'jobs_ran'                => array( 'success', __( 'The payment check and the method refresh ran now.', 'outlinepay-for-woocommerce' ) ),
 			'jobs_ran_methods_failed' => array( 'warning', __( 'The payment check ran now. The method list could not be refreshed. Try again in a few minutes.', 'outlinepay-for-woocommerce' ) ),
 			'jobs_not_connected'      => array( 'error', __( 'The store is not connected. Nothing ran.', 'outlinepay-for-woocommerce' ) ),
@@ -827,17 +794,13 @@ final class Admin_Page {
 	}
 
 	/**
-	 * The notice after a connect: what changed, then three next steps.
+	 * The notice after a connect, then three next steps.
 	 *
 	 * @param string $message The connected sentence.
 	 * @return void
 	 */
 	private static function render_connected_notice( $message ) {
 		echo '<div class="notice notice-success is-dismissible outlinepay-connected"><p>' . esc_html( $message ) . '</p>';
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only: adds a fixed line.
-		if ( isset( $_GET['outlinepay_decimals'] ) ) {
-			echo '<p>' . esc_html__( 'Number of decimals set to 0.', 'outlinepay-for-woocommerce' ) . '</p>';
-		}
 		echo '<p><strong>' . esc_html__( 'What\'s next', 'outlinepay-for-woocommerce' ) . '</strong></p><ul>';
 		echo '<li>' . esc_html__( 'Your payment methods now show at checkout.', 'outlinepay-for-woocommerce' ) . ' <a href="' . esc_url( wc_get_checkout_url() ) . '">' . esc_html__( 'View checkout', 'outlinepay-for-woocommerce' ) . '</a></li>';
 		echo '<li><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';

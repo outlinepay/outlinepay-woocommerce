@@ -135,11 +135,6 @@ class AdminPageTest extends TestCase {
 				return $currency;
 			}
 		);
-		Functions\when( 'wc_get_price_decimals' )->alias(
-			static function () use ( &$options ) {
-				return isset( $options['woocommerce_price_num_decimals'] ) ? (int) $options['woocommerce_price_num_decimals'] : 2;
-			}
-		);
 	}
 
 	protected function tearDown(): void {
@@ -159,7 +154,7 @@ class AdminPageTest extends TestCase {
 	}
 
 	public function test_connect_fetches_the_methods_once_right_away() {
-		Admin_Page::finish_connect( self::answer(), false );
+		Admin_Page::finish_connect( self::answer() );
 
 		$this->assertSame( array( 'GET https://api.outlinepay.com/plugin/v1/methods' ), $this->requests );
 		$this->assertTrue( Settings::method_enabled_by_server( 'card' ) );
@@ -172,32 +167,10 @@ class AdminPageTest extends TestCase {
 		Functions\when( 'as_has_scheduled_action' )->justReturn( false );
 		Functions\when( 'wp_rand' )->justReturn( 5 );
 
-		Admin_Page::finish_connect( self::answer(), false );
+		Admin_Page::finish_connect( self::answer() );
 
 		$this->assertCount( 1, $this->requests );
 		$this->assertContains( Scheduler::HOOK_METHODS_NOW, $this->queued );
-	}
-
-	public function test_connect_sets_the_decimals_when_the_box_is_checked() {
-		$args = Admin_Page::finish_connect( self::answer(), true );
-
-		$this->assertSame( 0, $this->options['woocommerce_price_num_decimals'] );
-		$this->assertSame( array( 'outlinepay_decimals' => '1' ), $args );
-	}
-
-	public function test_connect_leaves_the_decimals_alone_when_the_box_is_unchecked() {
-		$args = Admin_Page::finish_connect( self::answer(), false );
-
-		$this->assertArrayNotHasKey( 'woocommerce_price_num_decimals', $this->options );
-		$this->assertSame( array(), $args );
-	}
-
-	public function test_connect_leaves_the_decimals_alone_when_the_store_is_not_in_krw() {
-		$this->currency = 'USD';
-		$args           = Admin_Page::finish_connect( self::answer(), true );
-
-		$this->assertArrayNotHasKey( 'woocommerce_price_num_decimals', $this->options );
-		$this->assertSame( array(), $args );
 	}
 
 	public function test_activation_of_a_store_that_is_not_connected_shows_the_notice_once() {
@@ -217,7 +190,7 @@ class AdminPageTest extends TestCase {
 	}
 
 	public function test_activation_of_a_connected_store_shows_no_notice() {
-		Admin_Page::finish_connect( self::answer(), false );
+		Admin_Page::finish_connect( self::answer() );
 		Plugin::activate();
 
 		$this->assertArrayNotHasKey( Plugin::TRANSIENT_ACTIVATED, $this->transients );
@@ -238,17 +211,15 @@ class AdminPageTest extends TestCase {
 				echo '<input type="submit" value="' . $text . '">';
 			}
 		);
-		$_GET['outlinepay_result']   = 'connected';
-		$_GET['outlinepay_decimals'] = '1';
-		$render                      = new \ReflectionMethod( Admin_Page::class, 'render_notice' );
+		$_GET['outlinepay_result'] = 'connected';
+		$render                    = new \ReflectionMethod( Admin_Page::class, 'render_notice' );
 		$render->setAccessible( true );
 		ob_start();
 		$render->invoke( null );
 		$html = ob_get_clean();
-		unset( $_GET['outlinepay_result'], $_GET['outlinepay_decimals'] );
+		unset( $_GET['outlinepay_result'] );
 
 		$this->assertStringContainsString( 'Your store is connected.', $html );
-		$this->assertStringContainsString( 'Number of decimals set to 0.', $html );
 		$this->assertSame( 3, substr_count( $html, '<li>' ) );
 		$this->assertStringContainsString( 'href="https://shop.example/checkout/"', $html );
 		$this->assertStringContainsString( 'value="outlinepay_self_check"', $html );
@@ -257,7 +228,7 @@ class AdminPageTest extends TestCase {
 	}
 
 	public function test_failed_checks_show_their_fix_and_the_email_line_names_the_address() {
-		Admin_Page::finish_connect( self::answer(), false );
+		Admin_Page::finish_connect( self::answer() );
 		Functions\when( 'sanitize_key' )->returnArg();
 		Functions\when( 'wp_unslash' )->returnArg();
 		Functions\when( 'wp_date' )->justReturn( '2026-10-23 10:00' );
@@ -282,7 +253,6 @@ class AdminPageTest extends TestCase {
 			'worst_side'   => 'store',
 			'checks'       => array(
 				array( 'code' => 'scheduler_jobs', 'ok' => false, 'side' => 'store', 'detail' => array() ),
-				array( 'code' => 'krw_decimals', 'ok' => false, 'side' => 'store', 'detail' => array() ),
 				array( 'code' => 'not_a_copy', 'ok' => true, 'side' => 'store', 'detail' => array() ),
 				array( 'code' => 'open_problems_7d', 'ok' => false, 'side' => 'unknown', 'detail' => array() ),
 				array( 'code' => 'wp_cron', 'ok' => false, 'side' => 'store', 'detail' => array() ),
@@ -297,8 +267,6 @@ class AdminPageTest extends TestCase {
 		$this->assertSame( 2, substr_count( $html, 'value="outlinepay_run_jobs"' ), 'Run now under scheduler_jobs and wp_cron' );
 		$this->assertStringContainsString( 'nonce-outlinepay_run_jobs', $html );
 		$this->assertStringContainsString( 'value="Run now"', $html );
-		$this->assertStringContainsString( 'value="outlinepay_set_decimals"', $html );
-		$this->assertStringContainsString( 'value="Set decimals to 0"', $html );
 		$this->assertStringContainsString( 'Copy code', $html );
 		$this->assertSame( 2, substr_count( $html, 'data-outlinepay-copy' ), 'the code box and the problems row' );
 		$this->assertStringNotContainsString( 'Use this address', $html, 'not a copy: no move button' );
@@ -314,8 +282,7 @@ class AdminPageTest extends TestCase {
 			$keys = array_merge( $keys, $found[1] );
 		}
 		// The rate-limit line sits in the Self-check section (render_self_check), not on top.
-		$keys = array_diff( array_unique( $keys ), array( 'outlinepay_decimals', 'self_check_rate_limited' ) );
-		$this->assertContains( 'decimals_set', $keys );
+		$keys = array_diff( array_unique( $keys ), array( 'self_check_rate_limited' ) );
 		$this->assertContains( 'jobs_ran_methods_failed', $keys );
 
 		Functions\when( 'sanitize_key' )->returnArg();

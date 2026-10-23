@@ -37,7 +37,7 @@ OutlinePay is operated by Arandu Payments LLC.
 
 ## Self-check offline codes
 
-When a self-check run reaches OutlinePay, its id (`chk_...`) is the diagnostic code. When it does not (a staging copy, no connection, OutlinePay unreachable), the plugin shows `OP-OFFLINE-` followed by one letter per failed check, in this order. A letter never changes meaning. A new check gets the next free letter, wherever it sits in the order.
+When a self-check run reaches OutlinePay, its id (`chk_...`) is the diagnostic code. When it does not (a staging copy, no connection, OutlinePay unreachable), the plugin shows `OP-OFFLINE-` followed by one letter per failed check, in this order. A letter never changes meaning. New checks get new letters at the end. A retired letter is never used again: J (krw_decimals, never released) is retired.
 
 | Letter | Check | Fails when |
 | --- | --- | --- |
@@ -48,7 +48,6 @@ When a self-check run reaches OutlinePay, its id (`chk_...`) is the diagnostic c
 | E | `wp_cron` | `DISABLE_WP_CRON` is set and no scheduled action ran in 2 hours |
 | F | `methods_fresh` | Methods not fetched in 2 hours, or none shown at checkout |
 | G | `store_currency` | The store currency is not KRW |
-| J | `krw_decimals` | A KRW store shows prices with decimals (no row when the currency is not KRW) |
 | H | `not_a_copy` | This site is a copy of the store (see `Site_Identity`) |
 | I | `versions` | PHP, WordPress or WooCommerce below the plugin header minimums, or HPOS compatibility not registered |
 

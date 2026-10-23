@@ -1131,10 +1131,6 @@ msgstr ""
 msgid "Go to the shop"
 msgstr ""
 
-#: includes/class-admin-page.php:813 includes/class-admin-page.php:839
-msgid "Number of decimals set to 0."
-msgstr ""
-
 #: includes/class-gateway.php:86
 msgid "OutlinePay (not connected)"
 msgstr ""
@@ -1163,14 +1159,6 @@ msgstr ""
 msgid "Place a test order."
 msgstr ""
 
-#: includes/class-self-check.php:938
-msgid "Prices show decimals. The won has none."
-msgstr ""
-
-#: includes/class-self-check.php:937
-msgid "Prices show no decimals."
-msgstr ""
-
 #. translators: 1: amount such as 5,000 won, 2: why OutlinePay refused, one sentence.
 #: includes/class-refunds.php:273
 #, php-format
@@ -1183,14 +1171,6 @@ msgstr ""
 
 #: includes/class-admin-page.php:846
 msgid "Run the self-check."
-msgstr ""
-
-#: includes/class-admin-page.php:517
-msgid "Set Number of decimals to 0. The won has none."
-msgstr ""
-
-#: includes/class-admin-page.php:655
-msgid "Set decimals to 0"
 msgstr ""
 
 #: includes/class-admin-page.php:660
@@ -1207,10 +1187,6 @@ msgstr ""
 
 #: includes/class-admin-page.php:842
 msgid "Your payment methods now show at checkout."
-msgstr ""
-
-#: includes/class-admin-page.php:814
-msgid "The store currency is not KRW. Nothing changed."
 msgstr ""
 
 #: includes/class-admin-page.php:815

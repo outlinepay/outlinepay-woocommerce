@@ -294,25 +294,6 @@ final class Settings {
 	}
 
 	/**
-	 * True when the store sells in KRW and shows prices with decimals. The
-	 * won has none.
-	 *
-	 * @return bool
-	 */
-	public static function krw_with_decimals() {
-		return 'KRW' === get_woocommerce_currency() && 0 !== (int) wc_get_price_decimals();
-	}
-
-	/**
-	 * Sets WooCommerce's Number of decimals to 0. Only on the merchant's click.
-	 *
-	 * @return void
-	 */
-	public static function set_no_decimals() {
-		update_option( 'woocommerce_price_num_decimals', 0 );
-	}
-
-	/**
 	 * True when the running WooCommerce shows one OutlinePay row on Settings >
 	 * Payments: the card gateway carries the admin title, the others carry
 	 * none and WooCommerce hides them.
