@@ -32,10 +32,10 @@
 		}
 
 		var title = data.title || method;
-		var description = data.description || '';
 
+		// The label is all the shopper needs. Nothing shows under it.
 		var Content = function () {
-			return element.createElement( 'div', { className: 'outlinepay-description' }, description );
+			return null;
 		};
 		var Label = function () {
 			return element.createElement( 'span', { className: 'outlinepay-label' }, title );

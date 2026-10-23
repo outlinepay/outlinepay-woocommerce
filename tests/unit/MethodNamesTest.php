@@ -7,8 +7,8 @@ use OutlinePay\WooCommerce\Gateway;
 use OutlinePay\WooCommerce\Settings;
 
 /**
- * Method names and the line under them come from the plugin's translations,
- * not from the server's Korean labels.
+ * Method names come from the plugin's translations, not from the server's
+ * Korean labels. Nothing shows under them at checkout.
  */
 class MethodNamesTest extends TestCase {
 
@@ -30,7 +30,6 @@ class MethodNamesTest extends TestCase {
 		'KakaoPay'                 => '카카오페이',
 		'Naver Pay'                => '네이버페이',
 		'Mobile carrier billing'   => '휴대폰 결제',
-		'Paid securely through %s.' => '%s로 안전하게 결제됩니다.',
 	);
 
 	/** @var array Options by name. */
@@ -73,11 +72,11 @@ class MethodNamesTest extends TestCase {
 			$gateway = new Gateway( $method );
 			$this->assertSame( $name, $gateway->title, $method );
 			$this->assertSame( 'OutlinePay: ' . $name, $gateway->method_title, $method );
-			$this->assertSame( 'Paid securely through CookiePay.', $gateway->description, $method );
+			$this->assertSame( '', $gateway->description, $method );
 
 			$data = ( new Blocks_Method( $method ) )->get_payment_method_data();
 			$this->assertSame( $name, $data['title'], $method );
-			$this->assertSame( 'Paid securely through CookiePay.', $data['description'], $method );
+			$this->assertArrayNotHasKey( 'description', $data, $method );
 		}
 	}
 
@@ -90,21 +89,13 @@ class MethodNamesTest extends TestCase {
 		$this->assertSame( 'paypay', Settings::method_name( 'paypay' ) );
 	}
 
-	public function test_description_names_the_provider() {
-		$this->options['outlinepay_installation']['provider'] = 'bepsa';
-		$this->assertSame( 'Paid securely through Bepsa.', Settings::method_description() );
-
-		unset( $this->options['outlinepay_installation']['provider'] );
-		$this->assertSame( '', Settings::method_description() );
-	}
-
 	public function test_provider_name() {
 		$this->assertSame( 'CookiePay', Settings::provider_name( 'cookiepay' ) );
 		$this->assertSame( 'Bepsa', Settings::provider_name( 'bepsa' ) );
 		$this->assertSame( '', Settings::provider_name( '' ) );
 	}
 
-	public function test_korean_translations_cover_every_name_and_the_description() {
+	public function test_korean_translations_cover_every_name() {
 		$po = file_get_contents( dirname( __DIR__, 2 ) . '/languages/outlinepay-for-woocommerce-ko_KR.po' );
 		foreach ( self::KOREAN as $english => $korean ) {
 			$this->assertStringContainsString( 'msgid "' . $english . "\"\nmsgstr \"" . $korean . '"', $po, $english );

@@ -294,22 +294,6 @@ final class Settings {
 	}
 
 	/**
-	 * The line shown under each method at checkout, in the site language.
-	 * Empty when the store has no provider yet.
-	 *
-	 * @return string
-	 */
-	public static function method_description() {
-		$installation = self::installation();
-		$provider     = isset( $installation['provider'] ) ? self::provider_name( $installation['provider'] ) : '';
-		if ( '' === $provider ) {
-			return '';
-		}
-		/* translators: %s: payment provider name, such as CookiePay. */
-		return sprintf( __( 'Paid securely through %s.', 'outlinepay-for-woocommerce' ), $provider );
-	}
-
-	/**
 	 * True when the running WooCommerce shows one OutlinePay row on Settings >
 	 * Payments: the card gateway carries the admin title, the others carry
 	 * none and WooCommerce hides them.

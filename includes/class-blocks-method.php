@@ -79,9 +79,8 @@ final class Blocks_Method extends AbstractPaymentMethodType {
 	 */
 	public function get_payment_method_data() {
 		return array(
-			'title'       => Settings::method_name( $this->method ),
-			'description' => Settings::method_description(),
-			'supports'    => Gateway::features( $this->method ),
+			'title'    => Settings::method_name( $this->method ),
+			'supports' => Gateway::features( $this->method ),
 		);
 	}
 }

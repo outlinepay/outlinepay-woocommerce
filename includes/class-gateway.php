@@ -49,7 +49,7 @@ class Gateway extends \WC_Payment_Gateway {
 		$this->init_settings();
 
 		$this->title       = Settings::method_name( $method );
-		$this->description = Settings::method_description();
+		$this->description = '';
 		$this->enabled     = Settings::shown( $method ) ? 'yes' : 'no';
 	}
 
