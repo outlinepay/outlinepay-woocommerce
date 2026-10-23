@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: OutlinePay for WooCommerce 0.4.0\n"
+"Project-Id-Version: OutlinePay for WooCommerce 0.5.0\n"
 "Report-Msgid-Bugs-To: https://outlinepay.com\n"
 "Last-Translator: OutlinePay <dev@outlinepay.com>\n"
 "Language-Team: OutlinePay <dev@outlinepay.com>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-18T07:36:52+00:00\n"
+"POT-Creation-Date: 2026-10-23T16:00:00+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: outlinepay-for-woocommerce\n"
@@ -292,12 +292,6 @@ msgstr ""
 
 #: includes/class-admin-page.php:534
 msgid "Run check"
-msgstr ""
-
-#. translators: %s: the site admin email address.
-#: includes/class-admin-page.php:544
-#, php-format
-msgid "Email me when a daily check fails (to %s)"
 msgstr ""
 
 #: includes/class-admin-page.php:548
@@ -806,10 +800,6 @@ msgstr ""
 msgid "Shopper"
 msgstr ""
 
-#: includes/class-self-check.php:846
-msgid "Not sure"
-msgstr ""
-
 #: includes/class-self-check.php:863
 msgid "The connection is saved on this site."
 msgstr ""
@@ -1070,10 +1060,6 @@ msgstr ""
 msgid "The payment window was closed. Pay again or go back."
 msgstr ""
 
-#: includes/class-launch-page.php:402
-msgid "Back to checkout"
-msgstr ""
-
 #: includes/class-return-handler.php:131
 msgid "Continue to the store"
 msgstr ""
@@ -1106,12 +1092,138 @@ msgstr ""
 msgid "Mobile carrier billing"
 msgstr ""
 
-#. translators: %s: payment provider name, such as CookiePay.
-#: includes/class-settings.php:296
-#, php-format
-msgid "Paid securely through %s."
-msgstr ""
-
 #: includes/class-settings.php:281
 msgid "CookiePay"
+msgstr ""
+
+#: includes/class-launch-page.php:455
+msgid "Back to the order"
+msgstr ""
+
+#: includes/class-launch-page.php:453
+msgid "Back to the store"
+msgstr ""
+
+#: includes/class-shopper-cancel.php:190
+msgid "Cancellation is not available for this order. Contact the store."
+msgstr ""
+
+#: includes/class-gateway.php:87
+msgid "Connect the store on the OutlinePay page to take payments."
+msgstr ""
+
+#: includes/class-admin-page.php:651
+msgid "Copy code"
+msgstr ""
+
+#. translators: %s: the site admin email address.
+#: includes/class-admin-page.php:628
+#, php-format
+msgid "Email me when a daily check fails (to the site admin address, %s)"
+msgstr ""
+
+#: includes/class-launch-page.php:451
+msgid "Finish the payment in the window"
+msgstr ""
+
+#: includes/class-admin-page.php:233
+msgid "Go to OutlinePay"
+msgstr ""
+
+#: includes/class-admin-page.php:849
+msgid "Go to the shop"
+msgstr ""
+
+#: includes/class-admin-page.php:813 includes/class-admin-page.php:839
+msgid "Number of decimals set to 0."
+msgstr ""
+
+#: includes/class-gateway.php:86
+msgid "OutlinePay (not connected)"
+msgstr ""
+
+#: includes/class-admin-page.php:232
+msgid "OutlinePay is active. Paste your connect code to start taking payments."
+msgstr ""
+
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:171
+#, php-format
+msgid "OutlinePay payment %s expired. The shopper did not finish."
+msgstr ""
+
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:168
+#, php-format
+msgid "OutlinePay payment %s started. Waiting for the shopper."
+msgstr ""
+
+#: includes/class-self-check.php:964
+msgid "OutlinePay recorded problems in the last 7 days that are not resolved yet. Send the diagnostic code to your payment provider."
+msgstr ""
+
+#: includes/class-admin-page.php:849
+msgid "Place a test order."
+msgstr ""
+
+#: includes/class-self-check.php:938
+msgid "Prices show decimals. The won has none."
+msgstr ""
+
+#: includes/class-self-check.php:937
+msgid "Prices show no decimals."
+msgstr ""
+
+#. translators: 1: amount such as ₩5,000, 2: why OutlinePay refused, one sentence.
+#: includes/class-refunds.php:273
+#, php-format
+msgid "Refund of %1$s was refused: %2$s"
+msgstr ""
+
+#: includes/class-admin-page.php:666
+msgid "Run now"
+msgstr ""
+
+#: includes/class-admin-page.php:846
+msgid "Run the self-check."
+msgstr ""
+
+#: includes/class-admin-page.php:517
+msgid "Set Number of decimals to 0. The won has none."
+msgstr ""
+
+#: includes/class-admin-page.php:655
+msgid "Set decimals to 0"
+msgstr ""
+
+#: includes/class-admin-page.php:660
+msgid "Use this address"
+msgstr ""
+
+#: includes/class-admin-page.php:842
+msgid "View checkout"
+msgstr ""
+
+#: includes/class-admin-page.php:841
+msgid "What's next"
+msgstr ""
+
+#: includes/class-admin-page.php:842
+msgid "Your payment methods now show at checkout."
+msgstr ""
+
+#: includes/class-admin-page.php:814
+msgid "The store currency is not KRW. Nothing changed."
+msgstr ""
+
+#: includes/class-admin-page.php:815
+msgid "The payment check and the method refresh ran now."
+msgstr ""
+
+#: includes/class-admin-page.php:816
+msgid "The payment check ran now. The method list could not be refreshed. Try again in a few minutes."
+msgstr ""
+
+#: includes/class-admin-page.php:817
+msgid "The store is not connected. Nothing ran."
 msgstr ""

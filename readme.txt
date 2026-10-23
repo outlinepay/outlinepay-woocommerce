@@ -5,7 +5,7 @@ Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
 WC requires at least: 9.9
-Stable tag: 0.4.2
+Stable tag: 0.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -41,7 +41,7 @@ What the plugin does:
 * Can let shoppers cancel their own paid orders from My Account. Cancelling refunds the full payment and cancels the order. Off until you turn on "Let shoppers cancel their own paid orders".
 * Shows a "View card receipt" link for card payments on the order screen, the thank-you page, the shopper's order page and the completed-order email.
 * Supports High-Performance Order Storage (HPOS).
-* Checks its own setup. The Self-check on the OutlinePay page shows each check, who needs to act when one fails, and a diagnostic code to send to your payment provider. It also runs once a day.
+* Checks its own setup. The Self-check on the OutlinePay page shows each check, who needs to act when one fails, a button for the fixes the plugin can make, and a diagnostic code to send to your payment provider. It also runs once a day.
 * Can email the site admin address when a daily check starts failing. Off until you turn on "Email me when a daily check fails".
 * Adds an "OutlinePay connection" test to Tools > Site Health.
 * On WordPress 6.9 and later, offers two read-only abilities for tools and AI agents that act for a store manager: run the self-check, and read the connection status.
@@ -139,6 +139,17 @@ CookiePay is the payment provider that takes the payment. The shopper clicks Pay
 CookiePay privacy policy: https://www.cookiepayments.com/terms/private
 
 == Changelog ==
+
+= 0.5.0 =
+* WooCommerce > Settings > Payments shows one OutlinePay row instead of one row per method. The plugin now needs WooCommerce 9.9 or later.
+* After activation, a notice links to the OutlinePay page and puts the cursor in the connect code field. After connecting, the notice lists three next steps: check the checkout, run the self-check, place a test order.
+* When a KRW store shows prices with decimals, the connect form offers to set Number of decimals to 0. The setting changes only if you leave the box checked.
+* Self-check rows that fail now carry their fix: Set decimals to 0, Run now for background checks, Use this address for a moved store, and Copy code when OutlinePay recorded problems for your payment provider.
+* Order notes are always in the store's language. A pending order gets a note when a payment starts and when it expires. A refused refund gets a note with the reason.
+* The pay page has a link back to the store. While the payment window is open, the Pay button says to finish the payment in the window.
+* Checkout shows each payment method's name only, without a line under it.
+* In My Account, an order that already has a refund says that cancellation is not available, instead of showing nothing.
+* Payment methods show at checkout right after connecting, without waiting for the background refresh.
 
 = 0.4.2 =
 * The order screen offers Refund via OutlinePay only on orders that were paid. An order the shopper never paid shows a manual refund only.
