@@ -9,7 +9,7 @@ OutlinePay is operated by Arandu Payments LLC.
 - PHP 7.4 or later
 - WordPress 6.2 or later
 - WooCommerce 9.9 or later
-- Store currency KRW
+- Store currency one the payment provider takes (KRW for CookiePay)
 
 ## Layout
 
@@ -37,7 +37,7 @@ OutlinePay is operated by Arandu Payments LLC.
 
 ## Self-check offline codes
 
-When a self-check run reaches OutlinePay, its id (`chk_...`) is the diagnostic code. When it does not (a staging copy, no connection, OutlinePay unreachable), the plugin shows `OP-OFFLINE-` followed by one letter per failed check, in this order. A letter never changes meaning. New checks get new letters at the end. A retired letter is never used again: J (krw_decimals, never released) is retired.
+When a self-check run reaches OutlinePay, its id (`chk_...`) is the diagnostic code. When it does not (a staging copy, no connection, OutlinePay unreachable), the plugin shows `OP-OFFLINE-` followed by one letter per failed check, in this order. A letter never changes meaning. New checks get new letters at the end. J is retired and never used: it belonged to a check that was dropped before release.
 
 | Letter | Check | Fails when |
 | --- | --- | --- |
@@ -47,7 +47,7 @@ When a self-check run reaches OutlinePay, its id (`chk_...`) is the diagnostic c
 | D | `scheduler_jobs` | Reconcile or method refresh is missing or more than an hour late |
 | E | `wp_cron` | `DISABLE_WP_CRON` is set and no scheduled action ran in 2 hours |
 | F | `methods_fresh` | Methods not fetched in 2 hours, or none shown at checkout |
-| G | `store_currency` | The store currency is not KRW |
+| G | `store_currency` | The store currency is not one the payment provider takes (the installation's `currencies`, KRW when the server sent none) |
 | H | `not_a_copy` | This site is a copy of the store (see `Site_Identity`) |
 | I | `versions` | PHP, WordPress or WooCommerce below the plugin header minimums, or HPOS compatibility not registered |
 

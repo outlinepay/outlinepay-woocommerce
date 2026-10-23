@@ -143,6 +143,7 @@ CookiePay privacy policy: https://www.cookiepayments.com/terms/private
 = 0.5.0 =
 * WooCommerce > Settings > Payments shows one OutlinePay row instead of one row per method. The plugin now needs WooCommerce 9.9 or later.
 * After activation, a notice links to the OutlinePay page and puts the cursor in the connect code field. After connecting, the notice lists three next steps: check the checkout, run the self-check, place a test order.
+* At connect, and in the daily self-check, the plugin checks that the store currency is one your payment provider takes, and offers one click to switch the store. Prices then show the number of decimals that currency has, none for the won.
 * Self-check rows that fail now carry their fix: Run now for background checks, Use this address for a moved store, and Copy code when OutlinePay recorded problems for your payment provider.
 * Order notes are always in the store's language. A private note when a shopper starts an OutlinePay payment, and another when a payment window attempt expires. A refused refund gets a note with the amount and the reason.
 * The pay page has a link back to the order. While the payment window is open, the Pay button says to finish the payment in the window.
