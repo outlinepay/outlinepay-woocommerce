@@ -269,15 +269,9 @@ final class Refunds {
 			Notes::write(
 				$order,
 				fn () => sprintf(
-					/* translators: 1: amount such as ₩5,000, 2: why OutlinePay refused, one sentence. */
+					/* translators: 1: amount such as 5,000 won, 2: why OutlinePay refused, one sentence. */
 					__( 'Refund of %1$s was refused: %2$s', 'outlinepay-for-woocommerce' ),
-					wc_price(
-						$krw,
-						array(
-							'currency' => 'KRW',
-							'decimals' => 0,
-						)
-					),
+					self::won( $krw ),
 					self::refusal_sentence( $error )
 				)
 			);

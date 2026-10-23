@@ -1473,7 +1473,7 @@ msgstr "가격에 소수점이 표시됩니다. 원화에는 소수점이 없습
 msgid "Prices show no decimals."
 msgstr "가격에 소수점이 표시되지 않습니다."
 
-#. translators: 1: amount such as ₩5,000, 2: why OutlinePay refused, one sentence.
+#. translators: 1: amount such as 5,000 won, 2: why OutlinePay refused, one sentence.
 #: includes/class-refunds.php:273
 #, php-format
 msgid "Refund of %1$s was refused: %2$s"

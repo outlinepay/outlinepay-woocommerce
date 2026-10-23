@@ -119,7 +119,7 @@ class ProcessRefundTest extends RefundTestCase {
 		$this->assertInstanceOf( \WP_Error::class, $result );
 		$this->assertStringContainsString( $needle, $result->get_error_message() );
 		$this->assertStringNotContainsString( $code, $result->get_error_message(), 'no technical codes' );
-		$this->assertSame( array( 'Refund of ₩5,000 was refused: ' . $result->get_error_message() ), $this->order->notes );
+		$this->assertSame( array( 'Refund of 5,000 won was refused: ' . $result->get_error_message() ), $this->order->notes );
 		$this->assertSame( array(), Refunds::pending( $this->order ) );
 		$this->assertArrayNotHasKey( Refunds::META_UNANSWERED, $this->order->meta );
 	}
