@@ -3,10 +3,14 @@ namespace OutlinePay\WooCommerce\Tests;
 
 use Brain\Monkey\Functions;
 use OutlinePay\WooCommerce\Admin_Page;
+use OutlinePay\WooCommerce\Api_Client;
+use OutlinePay\WooCommerce\Api_Error;
 use OutlinePay\WooCommerce\Credentials;
 use OutlinePay\WooCommerce\Plugin;
 use OutlinePay\WooCommerce\Scheduler;
+use OutlinePay\WooCommerce\Self_Check;
 use OutlinePay\WooCommerce\Settings;
+use OutlinePay\WooCommerce\Setup;
 
 /**
  * The OutlinePay page: activation notice, connect, and the fixes under failed checks.
@@ -37,7 +41,6 @@ class AdminPageTest extends TestCase {
 		Functions\stubEscapeFunctions();
 		Credentials::reset_cache();
 		Settings::forget_price_decimals();
-		$this->forget_shown_fix();
 		$this->answer = array(
 			'response' => array( 'code' => 200 ),
 			'body'     => json_encode( array( 'data' => array( array( 'method' => 'card', 'label_ko' => '신용카드' ) ) ) ),
@@ -141,6 +144,7 @@ class AdminPageTest extends TestCase {
 
 	protected function tearDown(): void {
 		Admin_Page::set_redirect( null );
+		Admin_Page::set_self_check( null );
 		Credentials::reset_cache();
 		Settings::forget_price_decimals();
 		parent::tearDown();
@@ -198,37 +202,6 @@ class AdminPageTest extends TestCase {
 		Plugin::activate();
 
 		$this->assertArrayNotHasKey( Plugin::TRANSIENT_ACTIVATED, $this->transients );
-	}
-
-	public function test_the_connected_notice_lists_three_next_steps() {
-		Functions\when( 'sanitize_key' )->returnArg();
-		Functions\when( 'wp_unslash' )->returnArg();
-		Functions\when( 'wc_get_checkout_url' )->justReturn( 'https://shop.example/checkout/' );
-		Functions\when( 'wc_get_page_permalink' )->justReturn( 'https://shop.example/shop/' );
-		Functions\when( 'wp_nonce_field' )->alias(
-			static function ( $action ) {
-				echo '<input type="hidden" name="_wpnonce" value="nonce-' . $action . '">';
-			}
-		);
-		Functions\when( 'submit_button' )->alias(
-			static function ( $text ) {
-				echo '<input type="submit" value="' . $text . '">';
-			}
-		);
-		$_GET['outlinepay_result'] = 'connected';
-		$render                    = new \ReflectionMethod( Admin_Page::class, 'render_notice' );
-		$render->setAccessible( true );
-		ob_start();
-		$render->invoke( null );
-		$html = ob_get_clean();
-		unset( $_GET['outlinepay_result'] );
-
-		$this->assertStringContainsString( 'Your store is connected.', $html );
-		$this->assertSame( 3, substr_count( $html, '<li>' ) );
-		$this->assertStringContainsString( 'href="https://shop.example/checkout/"', $html );
-		$this->assertStringContainsString( 'value="outlinepay_self_check"', $html );
-		$this->assertStringContainsString( 'nonce-outlinepay_self_check', $html );
-		$this->assertStringContainsString( 'href="https://shop.example/shop/"', $html );
 	}
 
 	public function test_failed_checks_show_their_fix_and_the_email_line_names_the_address() {
@@ -335,39 +308,6 @@ class AdminPageTest extends TestCase {
 		$this->assertSame( 0, $this->options['woocommerce_price_num_decimals'] );
 	}
 
-	public function test_the_connected_notice_offers_the_currency_switch_for_a_usd_store() {
-		Admin_Page::finish_connect( array_merge( self::answer(), array( 'currencies' => array( 'KRW' ) ) ) );
-		$this->currency = 'USD';
-		Functions\when( 'sanitize_key' )->returnArg();
-		Functions\when( 'wp_unslash' )->returnArg();
-		Functions\when( 'wc_get_checkout_url' )->justReturn( 'https://shop.example/checkout/' );
-		Functions\when( 'wc_get_page_permalink' )->justReturn( 'https://shop.example/shop/' );
-		Functions\when( 'wp_nonce_field' )->alias(
-			static function ( $action ) {
-				echo '<input type="hidden" name="_wpnonce" value="nonce-' . $action . '">';
-			}
-		);
-		Functions\when( 'submit_button' )->alias(
-			static function ( $text ) {
-				echo '<input type="submit" value="' . $text . '">';
-			}
-		);
-		$_GET['outlinepay_result'] = 'connected';
-		$render                    = new \ReflectionMethod( Admin_Page::class, 'render_notice' );
-		$render->setAccessible( true );
-		ob_start();
-		$render->invoke( null );
-		$html = ob_get_clean();
-		unset( $_GET['outlinepay_result'] );
-
-		$this->assertStringContainsString( 'Your store currency is USD. CookiePay takes payments in KRW only. Prices keep their numbers. Check your product prices after switching.</p>', $html );
-		$this->assertStringContainsString( 'value="outlinepay_set_currency"', $html );
-		$this->assertStringContainsString( 'nonce-outlinepay_set_currency', $html );
-		$this->assertStringContainsString( 'value="Set store currency to KRW"', $html );
-		$this->assertStringContainsString( 'What&#039;s next', $html );
-		$this->assertStringNotContainsString( 'now show at checkout', $html, 'not true until the currency is switched' );
-	}
-
 	public function test_prices_show_no_decimals_on_a_connected_krw_store() {
 		Admin_Page::finish_connect( array_merge( self::answer(), array( 'currencies' => array( 'KRW' ) ) ) );
 		$this->assertSame( 0, Settings::price_decimals( 2 ) );
@@ -447,41 +387,6 @@ class AdminPageTest extends TestCase {
 		return ob_get_clean();
 	}
 
-	private function forget_shown_fix() {
-		$shown = new \ReflectionProperty( Admin_Page::class, 'currency_fix_shown' );
-		$shown->setAccessible( true );
-		$shown->setValue( null, false );
-	}
-
-	public function test_the_page_warning_is_left_out_when_the_connected_notice_showed_the_fix() {
-		Admin_Page::finish_connect( array_merge( self::answer(), array( 'currencies' => array( 'KRW' ) ) ) );
-		$this->currency = 'USD';
-		Functions\when( 'sanitize_key' )->returnArg();
-		Functions\when( 'wp_unslash' )->returnArg();
-		Functions\when( 'wc_get_checkout_url' )->justReturn( 'https://shop.example/checkout/' );
-		Functions\when( 'wc_get_page_permalink' )->justReturn( 'https://shop.example/shop/' );
-		Functions\when( 'wp_nonce_field' )->justReturn( '' );
-		Functions\when( 'submit_button' )->alias(
-			static function ( $text ) {
-				echo '<input type="submit" value="' . $text . '">';
-			}
-		);
-		$this->forget_shown_fix();
-
-		// A later visit, no notice: the warning shows the fix.
-		$warning = $this->render_private( 'render_currency_warning' );
-		$this->assertStringContainsString( 'Your store currency is USD.', $warning );
-		$this->assertStringContainsString( 'Set store currency to KRW', $warning );
-
-		// Right after connect: the notice shows it, the warning does not repeat it.
-		$_GET['outlinepay_result'] = 'connected';
-		$notice                    = $this->render_private( 'render_notice' );
-		unset( $_GET['outlinepay_result'] );
-		$this->assertStringContainsString( 'Set store currency to KRW', $notice );
-		$this->assertSame( '', $this->render_private( 'render_currency_warning' ) );
-		$this->forget_shown_fix();
-	}
-
 	/**
 	 * Runs Admin_Page::set_currency() as admin-post.php would: the result key
 	 * it redirects with, or the wp_die / nonce refusal.
@@ -558,5 +463,419 @@ class AdminPageTest extends TestCase {
 		$html                      = $this->render_private( 'render_notice' );
 		unset( $_GET['outlinepay_result'] );
 		return trim( strip_tags( $html ) );
+	}
+
+	// ---- setup screen and Fix all ----
+
+	const NOW = 1790000000;
+
+	/** @var array Fact overrides for the injected Self_Check. */
+	private $facts = array();
+
+	/** @var mixed What POST /self_checks answers, or an Api_Error to throw. */
+	private $self_check_answer;
+
+	/** @var string[] Calls to as_schedule_recurring_action, by hook. */
+	private $scheduled = array();
+
+	/**
+	 * A connected store with an injected Self_Check: facts from $this->facts
+	 * over a healthy store, the network routed by path.
+	 */
+	private function connected_store() {
+		Admin_Page::finish_connect( array_merge( self::answer(), array( 'currencies' => array( 'KRW' ) ) ) );
+		$this->requests = array();
+		$this->self_check_answer = array(
+			'status' => 201,
+			'body'   => json_encode( array( 'id' => 'chk_Server1', 'checks' => array() ) ),
+		);
+		$facts     = &$this->facts;
+		$currency  = &$this->currency;
+		$options   = &$this->options;
+		$requests  = &$this->requests;
+		$sc_answer = &$this->self_check_answer;
+		$scheduled = &$this->scheduled;
+		Functions\when( 'as_schedule_recurring_action' )->alias(
+			static function ( $time, $interval, $hook ) use ( &$scheduled ) {
+				$scheduled[] = $hook;
+				return 1;
+			}
+		);
+		Functions\when( 'wc_get_orders' )->justReturn( array() );
+		$transport = static function ( $method, $url ) use ( &$requests, &$sc_answer ) {
+			$requests[] = $method . ' ' . $url;
+			if ( false !== strpos( $url, '/self_checks' ) ) {
+				if ( $sc_answer instanceof Api_Error ) {
+					throw $sc_answer;
+				}
+				return $sc_answer;
+			}
+			return array(
+				'status' => 200,
+				'body'   => json_encode( array( 'status' => 'connected', 'currencies' => array( 'KRW' ) ) ),
+			);
+		};
+		Admin_Page::set_self_check(
+			static function () use ( &$facts, &$currency, &$options, $transport ) {
+				return new Self_Check(
+					static function () use ( &$facts, &$currency, &$options ) {
+						// WooCommerce reads the currency option: a switch shows at once.
+						return array_merge( self::healthy_facts( isset( $options['woocommerce_currency'] ) ? $options['woocommerce_currency'] : $currency ), $facts );
+					},
+					new Api_Client(
+						static function () {
+							return 'olp_it_test_token';
+						},
+						$transport,
+						'https://api.example.test/plugin/v1'
+					),
+					static function () {
+						return self::NOW;
+					}
+				);
+			}
+		);
+	}
+
+	private static function healthy_facts( $currency ) {
+		return array(
+			'has_installation'     => true,
+			'credentials_stored'   => true,
+			'credentials_readable' => true,
+			'status'               => 'connected',
+			'is_copy'              => false,
+			'as_available'         => true,
+			'jobs'                 => array(
+				Scheduler::HOOK_RECONCILE => self::NOW + 600,
+				Scheduler::HOOK_METHODS   => self::NOW + 1800,
+			),
+			'cron_disabled'        => false,
+			'as_ran_recently'      => true,
+			'methods_fetched_at'   => self::NOW - 600,
+			'methods_enabled'      => 1,
+			'methods_shown'        => 1,
+			'currency'             => $currency,
+			'provider_currencies'  => array( 'KRW' ),
+			'provider'             => 'CookiePay',
+			'php'                  => '8.3.6',
+			'wp'                   => '7.1.3',
+			'wc'                   => '11.2.1',
+			'min_php'              => '7.4',
+			'min_wp'               => '6.2',
+			'min_wc'               => '9.9',
+			'hpos'                 => 'declared',
+		);
+	}
+
+	/** The server answer to POST /self_checks: it echoes the rows it got. */
+	private function server_echoes( array $extra = array() ) {
+		$this->self_check_answer = null;
+		$requests                = &$this->requests;
+		$extra_rows              = $extra;
+		// Rebuild the engine so its transport echoes the posted body.
+		$facts     = &$this->facts;
+		$currency  = &$this->currency;
+		$options   = &$this->options;
+		$transport = static function ( $method, $url, $headers, $body ) use ( &$requests, $extra_rows ) {
+			$requests[] = $method . ' ' . $url;
+			if ( false !== strpos( $url, '/self_checks' ) ) {
+				$sent = json_decode( $body, true );
+				return array(
+					'status' => 201,
+					'body'   => json_encode(
+						array(
+							'id'     => 'chk_Echo1',
+							'checks' => array_merge( $sent['checks'], $extra_rows ),
+						)
+					),
+				);
+			}
+			return array(
+				'status' => 200,
+				'body'   => json_encode( array( 'status' => 'connected' ) ),
+			);
+		};
+		Admin_Page::set_self_check(
+			static function () use ( &$facts, &$currency, &$options, $transport ) {
+				return new Self_Check(
+					static function () use ( &$facts, &$currency, &$options ) {
+						// WooCommerce reads the currency option: a switch shows at once.
+						return array_merge( self::healthy_facts( isset( $options['woocommerce_currency'] ) ? $options['woocommerce_currency'] : $currency ), $facts );
+					},
+					new Api_Client(
+						static function () {
+							return 'olp_it_test_token';
+						},
+						$transport,
+						'https://api.example.test/plugin/v1'
+					),
+					static function () {
+						return self::NOW;
+					}
+				);
+			}
+		);
+	}
+
+	/**
+	 * Runs a form handler as admin-post.php would: the redirect URL, or the
+	 * wp_die / nonce refusal.
+	 */
+	private function post( $handler, $nonce_action, $can = true, $nonce_ok = true ) {
+		Functions\when( 'current_user_can' )->justReturn( $can );
+		Functions\when( 'esc_html__' )->returnArg();
+		Functions\when( 'wp_die' )->alias(
+			static function () {
+				throw new \RuntimeException( 'wp_die' );
+			}
+		);
+		Functions\when( 'check_admin_referer' )->alias(
+			static function ( $action ) use ( $nonce_action, $nonce_ok ) {
+				if ( $nonce_action !== $action || ! $nonce_ok ) {
+					throw new \RuntimeException( 'bad nonce' );
+				}
+				return 1;
+			}
+		);
+		Admin_Page::set_redirect(
+			static function ( $url ) {
+				throw new \RuntimeException( 'redirect ' . $url );
+			}
+		);
+		try {
+			call_user_func( array( Admin_Page::class, $handler ) );
+		} catch ( \RuntimeException $stop ) {
+			return $stop->getMessage();
+		}
+		$this->fail( 'the handler must stop' );
+	}
+
+	public function test_fix_all_needs_the_capability() {
+		$this->connected_store();
+		$this->currency = 'USD';
+		$this->assertSame( 'wp_die', $this->post( 'fix_all', 'outlinepay_fix_all', false ) );
+		$this->assertArrayNotHasKey( 'woocommerce_currency', $this->options );
+		$this->assertSame( array(), $this->requests );
+	}
+
+	public function test_fix_all_needs_a_good_nonce() {
+		$this->connected_store();
+		$this->currency = 'USD';
+		$this->assertSame( 'bad nonce', $this->post( 'fix_all', 'outlinepay_fix_all', true, false ) );
+		$this->assertArrayNotHasKey( 'woocommerce_currency', $this->options );
+		$this->assertSame( array(), $this->requests );
+	}
+
+	public function test_fix_all_on_a_store_that_is_not_connected_changes_nothing() {
+		$this->currency = 'USD';
+		$result         = $this->post( 'fix_all', 'outlinepay_fix_all' );
+		$this->assertStringContainsString( 'outlinepay_result=fix_not_connected', $result );
+		$this->assertArrayNotHasKey( 'woocommerce_currency', $this->options );
+		$this->assertSame( array(), $this->requests );
+	}
+
+	public function test_fix_all_applies_only_the_fixes_that_are_needed() {
+		$this->connected_store();
+		$this->server_echoes();
+		$this->post( 'fix_all', 'outlinepay_fix_all' );
+
+		$this->assertArrayNotHasKey( 'woocommerce_currency', $this->options, 'KRW already: no switch' );
+		$this->assertArrayNotHasKey( Scheduler::OPTION_CURSOR, $this->options, 'jobs fine: no reconcile' );
+		$this->assertSame( 0, count( preg_grep( '#/methods$#', $this->requests ) ), 'methods fresh: no refresh' );
+		$this->assertSame( 1, count( preg_grep( '#POST .*/self_checks$#', $this->requests ) ), 'the checks ran again' );
+	}
+
+	public function test_fix_all_switches_the_currency_runs_the_jobs_and_refreshes_the_methods() {
+		$this->connected_store();
+		$this->server_echoes();
+		$this->currency = 'USD';
+		$this->facts    = array(
+			'jobs'               => array(),
+			'methods_fetched_at' => 0,
+		);
+		$currency = &$this->currency;
+		$options  = &$this->options;
+		Functions\when( 'get_woocommerce_currency' )->alias(
+			static function () use ( &$currency, &$options ) {
+				return isset( $options['woocommerce_currency'] ) ? $options['woocommerce_currency'] : $currency;
+			}
+		);
+
+		$result = $this->post( 'fix_all', 'outlinepay_fix_all' );
+
+		$this->assertSame( 'KRW', $this->options['woocommerce_currency'] );
+		$this->assertSame( 0, $this->options['woocommerce_price_num_decimals'] );
+		$this->assertArrayHasKey( Scheduler::OPTION_CURSOR, $this->options, 'reconcile ran' );
+		$this->assertSame( 1, count( preg_grep( '#GET https://api\.outlinepay\.com/plugin/v1/methods$#', $this->requests ) ), 'methods refreshed' );
+		$this->assertStringContainsString( 'outlinepay_result=fixes_applied', $result, 'the facts still say the jobs are missing' );
+	}
+
+	public function test_fix_all_that_completes_setup_says_so() {
+		$this->connected_store();
+		$this->server_echoes();
+		$this->currency = 'USD';
+		$this->options['outlinepay_self_check_last'] = Self_Check::offline( Self_Check::local_checks( self::healthy_facts( 'USD' ), self::NOW ), 'page', self::NOW );
+		$this->assertFalse( Setup::is_done() );
+
+		$result = $this->post( 'fix_all', 'outlinepay_fix_all' );
+
+		$this->assertStringContainsString( 'outlinepay_result=setup_done', $result );
+		$this->assertTrue( Setup::is_done() );
+		$this->assertSame( 'Setup is complete. Your payment methods now show at checkout.', $this->notice_for( 'setup_done' ) );
+	}
+
+	public function test_fix_all_within_the_rate_limit_uses_the_fresh_local_rows() {
+		$this->connected_store();
+		$this->options['outlinepay_self_check_last'] = Self_Check::from_server(
+			array(
+				'id'     => 'chk_First',
+				'checks' => array_merge(
+					Self_Check::wire( Self_Check::local_checks( self::healthy_facts( 'USD' ), self::NOW - 20 ) ),
+					array(
+						array( 'code' => 'api_reachable', 'ok' => true, 'side' => 'store', 'detail' => array( 'elapsed_ms' => '80' ) ),
+						array( 'code' => 'callback_reachable', 'ok' => true, 'side' => 'store' ),
+					)
+				),
+			),
+			'page',
+			self::NOW - 20
+		);
+		$this->self_check_answer = new Api_Error( 429, 'rate_limited' );
+		$this->currency          = 'USD';
+
+		$result = $this->post( 'fix_all', 'outlinepay_fix_all' );
+
+		$this->assertStringContainsString( 'outlinepay_result=setup_done', $result, 'the merged result decides' );
+		$last = Self_Check::last();
+		$this->assertSame( 'chk_First', $last['code'] );
+		$this->assertSame( 0, $last['failed_count'] );
+		$this->assertContains( 'callback_reachable', array_column( $last['checks'], 'code' ) );
+	}
+
+	/** Renders the whole page with the stubs a page view needs. */
+	private function render_page() {
+		Functions\when( 'sanitize_key' )->returnArg();
+		Functions\when( 'wp_unslash' )->returnArg();
+		Functions\when( 'wp_date' )->justReturn( '2026-10-23 10:00' );
+		Functions\when( 'checked' )->justReturn( '' );
+		Functions\when( 'wp_nonce_field' )->alias(
+			static function ( $action ) {
+				echo '<input type="hidden" name="_wpnonce" value="nonce-' . $action . '">';
+			}
+		);
+		Functions\when( 'submit_button' )->alias(
+			static function ( $text ) {
+				echo '<input type="submit" value="' . $text . '">';
+			}
+		);
+		$this->answer = array(
+			'response' => array( 'code' => 200 ),
+			'body'     => json_encode( array( 'status' => 'connected', 'currencies' => array( 'KRW' ), 'data' => array( array( 'method' => 'card', 'label_ko' => '신용카드' ) ) ) ),
+		);
+		ob_start();
+		Admin_Page::render();
+		return ob_get_clean();
+	}
+
+	public function test_before_setup_the_page_is_the_setup_screen() {
+		$this->connected_store();
+		$this->currency = 'USD';
+		$this->options['outlinepay_self_check_last'] = Self_Check::offline(
+			array_merge(
+				array( Self_Check::check( 'api_reachable', true, 'store', array( 'elapsed_ms' => '80' ) ) ),
+				Self_Check::local_checks( self::healthy_facts( 'USD' ), self::NOW - 60 )
+			),
+			'page',
+			self::NOW - 60
+		);
+
+		$html = $this->render_page();
+
+		$this->assertStringContainsString( 'Set up OutlinePay', $html );
+		$this->assertStringContainsString( 'value="outlinepay_fix_all"', $html );
+		$this->assertStringContainsString( 'nonce-outlinepay_fix_all', $html );
+		$this->assertStringContainsString( 'value="Fix all"', $html );
+		$this->assertStringContainsString( 'value="Check again"', $html );
+		$this->assertSame( 9, substr_count( $html, '<tr class="outlinepay-check-' ), 'all nine rows' );
+		$this->assertStringContainsString( 'The store currency is USD. CookiePay takes payments in KRW only. Fix all sets the store currency to KRW. Prices keep their numbers.', $html );
+		$this->assertStringNotContainsString( 'value="Set store currency to KRW"', $html, 'Fix all covers it' );
+		$this->assertStringNotContainsString( 'Payment methods</h2>', $html );
+		$this->assertStringNotContainsString( 'Refunds and cancellations', $html );
+		$this->assertStringNotContainsString( 'Email me when a daily check fails', $html );
+		$this->assertStringContainsString( 'value="outlinepay_disconnect"', $html );
+		$this->assertSame( array(), preg_grep( '#/self_checks$#', $this->requests ), 'a stored run: local rows only' );
+		$this->assertFalse( Setup::is_done() );
+	}
+
+	public function test_opening_the_page_after_a_fix_made_elsewhere_finishes_setup() {
+		$this->connected_store();
+		$this->options['outlinepay_self_check_last'] = Self_Check::offline(
+			array_merge(
+				array( Self_Check::check( 'api_reachable', true, 'store', array( 'elapsed_ms' => '80' ) ) ),
+				Self_Check::local_checks( self::healthy_facts( 'USD' ), self::NOW - 60 )
+			),
+			'page',
+			self::NOW - 60
+		);
+		// The merchant switched to KRW in WooCommerce settings.
+		$html = $this->render_page();
+
+		$this->assertTrue( Setup::is_done() );
+		$this->assertStringContainsString( 'Setup is complete. Your payment methods now show at checkout.', $html );
+		$this->assertStringNotContainsString( 'Set up OutlinePay', $html );
+		$this->assertStringContainsString( 'Payment methods</h2>', $html );
+	}
+
+	public function test_the_first_visit_after_connect_runs_the_full_check() {
+		$this->connected_store();
+		$this->server_echoes();
+		$this->facts = array( 'cron_disabled' => true, 'as_ran_recently' => false );
+		$_GET['outlinepay_result'] = 'connected';
+		$html                      = $this->render_page();
+		unset( $_GET['outlinepay_result'] );
+
+		$this->assertCount( 1, preg_grep( '#POST .*/self_checks$#', $this->requests ) );
+		$this->assertStringContainsString( 'Your store is connected. Finish setup below.', $html );
+		$this->assertStringNotContainsString( 'What&#039;s next', $html );
+		$this->assertStringContainsString( 'Ask your host to run wp-cron.php from a server cron job.', $html );
+		$this->assertStringNotContainsString( 'value="Run now"', $html );
+		$this->assertFalse( Setup::is_done(), 'WP-Cron blocks too' );
+	}
+
+	public function test_after_setup_the_page_is_the_connected_view() {
+		$this->connected_store();
+		$this->options[ Setup::OPTION_DONE ] = self::NOW;
+		$this->options['outlinepay_self_check_last'] = Self_Check::offline( Self_Check::local_checks( self::healthy_facts( 'KRW' ), self::NOW ), 'daily', self::NOW );
+
+		$html = $this->render_page();
+
+		$this->assertStringNotContainsString( 'Set up OutlinePay', $html );
+		$this->assertStringContainsString( 'Self-check</h2>', $html );
+		$this->assertStringContainsString( 'Payment methods</h2>', $html );
+		$this->assertStringContainsString( 'Refunds and cancellations', $html );
+		$this->assertSame( array(), preg_grep( '#/self_checks$#', $this->requests ), 'no run on a plain visit' );
+	}
+
+	public function test_check_again_that_completes_setup_says_so() {
+		$this->connected_store();
+		$this->server_echoes();
+		$result = $this->post( 'self_check', 'outlinepay_self_check' );
+		$this->assertStringContainsString( 'outlinepay_result=setup_done', $result );
+	}
+
+	public function test_the_currency_warning_shows_on_the_connected_view() {
+		Admin_Page::finish_connect( array_merge( self::answer(), array( 'currencies' => array( 'KRW' ) ) ) );
+		$this->currency = 'USD';
+		Functions\when( 'wp_nonce_field' )->justReturn( '' );
+		Functions\when( 'submit_button' )->alias(
+			static function ( $text ) {
+				echo '<input type="submit" value="' . $text . '">';
+			}
+		);
+		$warning = $this->render_private( 'render_currency_warning' );
+		$this->assertStringContainsString( 'Your store currency is USD. CookiePay takes payments in KRW only. Prices keep their numbers.', $warning );
+		$this->assertStringContainsString( 'Set store currency to KRW', $warning );
+		$this->currency = 'KRW';
+		$this->assertSame( '', $this->render_private( 'render_currency_warning' ) );
 	}
 }

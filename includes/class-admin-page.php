@@ -1,9 +1,13 @@
 <?php
 /**
- * WooCommerce > OutlinePay: connect, status, self-check, method switches,
- * disconnect.
+ * WooCommerce > OutlinePay: connect, setup, status, self-check, method
+ * switches, disconnect.
  *
- * Nothing on this page calls OutlinePay until the merchant connects.
+ * Nothing on this page calls OutlinePay until the merchant connects. After
+ * connect, the page shows the setup screen until every local self-check row
+ * passes (see Setup): the nine checks, Fix all and Check again. Checkout
+ * shows no OutlinePay method until then. After that, the page is the
+ * connected view.
  *
  * @package OutlinePay\WooCommerce
  */
@@ -29,12 +33,12 @@ final class Admin_Page {
 	private static $hook_suffix = '';
 
 	/**
-	 * True once this request showed the currency fix in the connected notice,
-	 * so the page does not show it twice.
+	 * Test seam: returns the Self_Check the page and its handlers use. Null
+	 * uses a new Self_Check.
 	 *
-	 * @var bool
+	 * @var callable|null
 	 */
-	private static $currency_fix_shown = false;
+	private static $self_check = null;
 
 	/**
 	 * Test seam: receives the redirect URL instead of redirecting. It must
@@ -60,6 +64,7 @@ final class Admin_Page {
 		add_action( 'admin_post_outlinepay_self_check_email', array( self::class, 'save_self_check_email' ) );
 		add_action( 'admin_post_outlinepay_run_jobs', array( self::class, 'run_jobs' ) );
 		add_action( 'admin_post_outlinepay_set_currency', array( self::class, 'set_currency' ) );
+		add_action( 'admin_post_outlinepay_fix_all', array( self::class, 'fix_all' ) );
 		add_action( 'admin_post_outlinepay_shopper_cancel', array( self::class, 'save_shopper_cancel' ) );
 		add_action( 'admin_enqueue_scripts', array( self::class, 'enqueue' ) );
 		add_action( 'admin_notices', array( self::class, 'copy_notice' ) );
@@ -333,8 +338,67 @@ final class Admin_Page {
 	public static function self_check() {
 		self::require_capability();
 		check_admin_referer( 'outlinepay_self_check' );
-		$outcome = ( new Self_Check() )->run( Self_Check::TRIGGER_PAGE );
+		$was_done = Setup::is_done();
+		$outcome  = self::engine()->run( Self_Check::TRIGGER_PAGE );
+		if ( ! $was_done && Setup::is_done() ) {
+			self::back( 'setup_done' );
+		}
 		self::back( $outcome['rate_limited'] ? 'self_check_rate_limited' : 'self_check_done' );
+	}
+
+	/**
+	 * "Fix all" on the setup screen: every fix the plugin can make itself, in
+	 * this request, each only when its check fails. Then the checks run again.
+	 * When OutlinePay refuses a second run within a minute, the local rows
+	 * are still fresh (see Self_Check::run).
+	 *
+	 * @return void
+	 */
+	public static function fix_all() {
+		self::require_capability();
+		check_admin_referer( 'outlinepay_fix_all' );
+		if ( ! Settings::is_connected() ) {
+			self::back( 'fix_not_connected' );
+		}
+		$engine = self::engine();
+		$failed = array();
+		foreach ( $engine->local() as $check ) {
+			if ( ! $check['ok'] ) {
+				$failed[ $check['code'] ] = true;
+			}
+		}
+		if ( isset( $failed['store_currency'] ) && ! Settings::provider_takes( get_woocommerce_currency() ) ) {
+			Settings::set_store_currency();
+		}
+		if ( isset( $failed['scheduler_jobs'] ) || isset( $failed['wp_cron'] ) ) {
+			Scheduler::schedule_recurring();
+			Scheduler::reconcile();
+		}
+		if ( isset( $failed['scheduler_jobs'] ) || isset( $failed['methods_fresh'] ) ) {
+			Scheduler::refresh_methods();
+		}
+		$was_done = Setup::is_done();
+		$engine->run( Self_Check::TRIGGER_PAGE );
+		self::back( ! $was_done && Setup::is_done() ? 'setup_done' : 'fixes_applied' );
+	}
+
+	/**
+	 * The Self_Check to use.
+	 *
+	 * @return Self_Check
+	 */
+	private static function engine() {
+		return self::$self_check ? call_user_func( self::$self_check ) : new Self_Check();
+	}
+
+	/**
+	 * Replaces the Self_Check, for tests. Null restores it.
+	 *
+	 * @param callable|null $factory Returns a Self_Check.
+	 * @return void
+	 */
+	public static function set_self_check( $factory ) {
+		self::$self_check = $factory;
 	}
 
 	/**
@@ -423,15 +487,25 @@ final class Admin_Page {
 		$installation = Settings::installation();
 		$has_link     = ! empty( $installation ) && Credentials::present();
 
-		$is_copy = $has_link && Site_Identity::is_copy();
+		$is_copy      = $has_link && Site_Identity::is_copy();
+		$in_setup     = false;
+		$finished_now = false;
 		if ( $has_link && ! $is_copy ) {
 			self::refresh();
 			$installation = Settings::installation();
+			if ( isset( $installation['status'] ) && 'connected' === $installation['status'] && ! Setup::is_done() ) {
+				self::refresh_setup_checks();
+				$in_setup     = ! Setup::is_done();
+				$finished_now = ! $in_setup;
+			}
 		}
 
 		echo '<div class="wrap outlinepay-admin">';
 		echo '<h1>' . esc_html__( 'OutlinePay', 'outlinepay-for-woocommerce' ) . '</h1>';
-		self::render_notice();
+		self::render_notice( $in_setup );
+		if ( $finished_now ) {
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html( self::setup_done_message() ) . '</p></div>';
+		}
 
 		if ( Credentials::unreadable() ) {
 			echo '<div class="notice notice-error"><p>' . esc_html__( 'The saved connection can no longer be read. This happens when the site security keys change. Disconnect, then connect again with a new code.', 'outlinepay-for-woocommerce' ) . '</p></div>';
@@ -447,6 +521,13 @@ final class Admin_Page {
 		if ( $is_copy ) {
 			self::render_copy_banner();
 			self::render_self_check();
+			echo '</div>';
+			return;
+		}
+
+		if ( $in_setup ) {
+			self::render_setup();
+			self::render_disconnect_form( true );
 			echo '</div>';
 			return;
 		}
@@ -496,6 +577,80 @@ final class Admin_Page {
 			Scheduler::refresh_methods();
 			Scheduler::schedule_recurring();
 		}
+	}
+
+	/**
+	 * During setup, on every page load: the local rows run fresh, so a fix
+	 * made elsewhere shows. The full check (with OutlinePay) runs only when
+	 * no stored result has reached OutlinePay yet, such as right after connect.
+	 *
+	 * @return void
+	 */
+	private static function refresh_setup_checks() {
+		$last = Self_Check::last();
+		if ( ! $last || ! Self_Check::has_row( $last, 'api_reachable' ) ) {
+			self::engine()->run( Self_Check::TRIGGER_PAGE );
+			return;
+		}
+		self::engine()->run_local();
+	}
+
+	/**
+	 * The setup screen: the checks with their result, Fix all and Check again.
+	 *
+	 * @return void
+	 */
+	private static function render_setup() {
+		$last = Self_Check::last();
+		echo '<h2 id="outlinepay-setup">' . esc_html__( 'Set up OutlinePay', 'outlinepay-for-woocommerce' ) . '</h2>';
+		echo '<p>' . esc_html__( 'Payment methods show at checkout when every check below passes.', 'outlinepay-for-woocommerce' ) . '</p>';
+		self::render_rate_limited_notice();
+		if ( $last ) {
+			self::render_check_table( $last, true );
+		}
+		echo '<div style="display:flex;flex-wrap:wrap;gap:8px;margin:12px 0">';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		wp_nonce_field( 'outlinepay_fix_all' );
+		echo '<input type="hidden" name="action" value="outlinepay_fix_all">';
+		submit_button( __( 'Fix all', 'outlinepay-for-woocommerce' ), 'primary', 'outlinepay_fix_all', false );
+		echo '</form>';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		wp_nonce_field( 'outlinepay_self_check' );
+		echo '<input type="hidden" name="action" value="outlinepay_self_check">';
+		submit_button( __( 'Check again', 'outlinepay-for-woocommerce' ), 'secondary', 'outlinepay_check_again', false );
+		echo '</form>';
+		echo '</div>';
+		if ( $last ) {
+			self::render_check_code( $last );
+		}
+		if ( $last && self::none_shown( $last ) && Settings::methods() ) {
+			// The merchant hid every method: the switches are the only fix.
+			self::render_methods();
+		}
+	}
+
+	/**
+	 * Whether methods_fresh failed because no method is shown at checkout.
+	 *
+	 * @param array $result Self-check result.
+	 * @return bool
+	 */
+	private static function none_shown( array $result ) {
+		foreach ( $result['checks'] as $check ) {
+			if ( isset( $check['code'] ) && 'methods_fresh' === $check['code'] && empty( $check['ok'] ) ) {
+				return isset( $check['detail']['problem'] ) && 'none_shown' === $check['detail']['problem'];
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * The notice when setup finishes.
+	 *
+	 * @return string
+	 */
+	private static function setup_done_message() {
+		return __( 'Setup is complete. Your payment methods now show at checkout.', 'outlinepay-for-woocommerce' );
 	}
 
 	/**
@@ -555,56 +710,15 @@ final class Admin_Page {
 	 * @return void
 	 */
 	private static function render_self_check() {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only: picks one of the fixed messages below.
-		$notice = isset( $_GET['outlinepay_result'] ) ? sanitize_key( wp_unslash( $_GET['outlinepay_result'] ) ) : '';
-		$last   = Self_Check::last();
+		$last = Self_Check::last();
 
 		echo '<h2 id="outlinepay-self-check">' . esc_html__( 'Self-check', 'outlinepay-for-woocommerce' ) . '</h2>';
 		echo '<p>' . esc_html__( 'Checks the connection between this store, OutlinePay and your payment provider. No shopper or order details are checked or sent.', 'outlinepay-for-woocommerce' ) . '</p>';
-
-		if ( 'self_check_rate_limited' === $notice ) {
-			echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'A check ran less than a minute ago.', 'outlinepay-for-woocommerce' ) . '</p></div>';
-		}
+		self::render_rate_limited_notice();
 
 		if ( $last ) {
-			echo '<div class="outlinepay-check-code" style="margin:12px 0;padding:12px 16px;background:#fff;border:1px solid #c3c4c7;border-left:4px solid ' . ( 0 === (int) $last['failed_count'] ? '#00a32a' : '#d63638' ) . ';max-width:640px;box-sizing:border-box">';
-			echo '<p style="margin:0 0 4px">' . esc_html__( 'Diagnostic code', 'outlinepay-for-woocommerce' ) . '</p>';
-			echo '<p style="margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:8px"><code id="outlinepay-check-code" style="font-size:20px;padding:4px 8px;user-select:all">' . esc_html( $last['code'] ) . '</code>';
-			echo '<button type="button" class="button" id="outlinepay-copy-code" data-outlinepay-copy data-target="outlinepay-check-code" data-status="outlinepay-copy-status" data-copied="' . esc_attr__( 'Copied', 'outlinepay-for-woocommerce' ) . '" data-manual="' . esc_attr__( 'Selected. Press Ctrl+C to copy.', 'outlinepay-for-woocommerce' ) . '">' . esc_html__( 'Copy', 'outlinepay-for-woocommerce' ) . '</button>';
-			echo '<span id="outlinepay-copy-status" aria-live="polite"></span></p>';
-			echo '<p style="margin:8px 0 0">' . esc_html__( 'Send this code to your payment provider if you need help.', 'outlinepay-for-woocommerce' ) . '</p>';
-			echo '<p style="margin:4px 0 0;color:#50575e">' . esc_html(
-				sprintf(
-					/* translators: %s: date and time of the last check. */
-					'daily' === $last['trigger'] ? __( 'Last run %s (daily check).', 'outlinepay-for-woocommerce' ) : __( 'Last run %s.', 'outlinepay-for-woocommerce' ),
-					wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) $last['ran_at'] )
-				)
-			);
-			if ( empty( $last['online'] ) ) {
-				echo ' ' . esc_html__( 'OutlinePay was not reached, so this code was made on this site.', 'outlinepay-for-woocommerce' );
-			}
-			echo '</p></div>';
-
-			echo '<table class="widefat striped outlinepay-checks" style="max-width:640px"><thead><tr>';
-			echo '<th scope="col" style="width:70px">' . esc_html__( 'Result', 'outlinepay-for-woocommerce' ) . '</th>';
-			echo '<th scope="col">' . esc_html__( 'Check', 'outlinepay-for-woocommerce' ) . '</th>';
-			echo '<th scope="col" style="width:150px">' . esc_html__( 'Who acts next', 'outlinepay-for-woocommerce' ) . '</th>';
-			echo '</tr></thead><tbody>';
-			foreach ( $last['checks'] as $check ) {
-				$ok = ! empty( $check['ok'] );
-				echo '<tr class="' . ( $ok ? 'outlinepay-check-ok' : 'outlinepay-check-failed' ) . '">';
-				echo '<td>' . ( $ok
-					? '<span aria-hidden="true" style="color:#00a32a;font-weight:600">&#10003;</span> ' . esc_html__( 'Pass', 'outlinepay-for-woocommerce' )
-					: '<span aria-hidden="true" style="color:#d63638;font-weight:600">&#10007;</span> <strong>' . esc_html__( 'Fail', 'outlinepay-for-woocommerce' ) . '</strong>' ) . '</td>';
-				echo '<td>' . esc_html( Self_Check::sentence( $check ) );
-				if ( ! $ok ) {
-					self::render_check_action( $check );
-				}
-				echo '</td>';
-				echo '<td>' . ( $ok ? '' : esc_html( Self_Check::who( isset( $check['side'] ) ? $check['side'] : 'unknown' ) ) ) . '</td>';
-				echo '</tr>';
-			}
-			echo '</tbody></table>';
+			self::render_check_code( $last );
+			self::render_check_table( $last, false );
 		} else {
 			echo '<p>' . esc_html__( 'No check has run yet.', 'outlinepay-for-woocommerce' ) . '</p>';
 		}
@@ -631,13 +745,86 @@ final class Admin_Page {
 	}
 
 	/**
-	 * The one-click fix under a failed check, when the plugin has one. Each
-	 * button posts a nonce-protected action, or opens an existing confirm step.
+	 * "A check ran less than a minute ago", after a run OutlinePay refused.
 	 *
-	 * @param array $check Failed check.
 	 * @return void
 	 */
-	private static function render_check_action( array $check ) {
+	private static function render_rate_limited_notice() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only: picks one of the fixed messages below.
+		$notice = isset( $_GET['outlinepay_result'] ) ? sanitize_key( wp_unslash( $_GET['outlinepay_result'] ) ) : '';
+		if ( 'self_check_rate_limited' === $notice ) {
+			echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'A check ran less than a minute ago.', 'outlinepay-for-woocommerce' ) . '</p></div>';
+		}
+	}
+
+	/**
+	 * The diagnostic code box of a result, with Copy.
+	 *
+	 * @param array $last Stored result.
+	 * @return void
+	 */
+	private static function render_check_code( array $last ) {
+		echo '<div class="outlinepay-check-code" style="margin:12px 0;padding:12px 16px;background:#fff;border:1px solid #c3c4c7;border-left:4px solid ' . ( 0 === (int) $last['failed_count'] ? '#00a32a' : '#d63638' ) . ';max-width:640px;box-sizing:border-box">';
+		echo '<p style="margin:0 0 4px">' . esc_html__( 'Diagnostic code', 'outlinepay-for-woocommerce' ) . '</p>';
+		echo '<p style="margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:8px"><code id="outlinepay-check-code" style="font-size:20px;padding:4px 8px;user-select:all">' . esc_html( $last['code'] ) . '</code>';
+		echo '<button type="button" class="button" id="outlinepay-copy-code" data-outlinepay-copy data-target="outlinepay-check-code" data-status="outlinepay-copy-status" data-copied="' . esc_attr__( 'Copied', 'outlinepay-for-woocommerce' ) . '" data-manual="' . esc_attr__( 'Selected. Press Ctrl+C to copy.', 'outlinepay-for-woocommerce' ) . '">' . esc_html__( 'Copy', 'outlinepay-for-woocommerce' ) . '</button>';
+		echo '<span id="outlinepay-copy-status" aria-live="polite"></span></p>';
+		echo '<p style="margin:8px 0 0">' . esc_html__( 'Send this code to your payment provider if you need help.', 'outlinepay-for-woocommerce' ) . '</p>';
+		echo '<p style="margin:4px 0 0;color:#50575e">' . esc_html(
+			sprintf(
+				/* translators: %s: date and time of the last check. */
+				'daily' === $last['trigger'] ? __( 'Last run %s (daily check).', 'outlinepay-for-woocommerce' ) : __( 'Last run %s.', 'outlinepay-for-woocommerce' ),
+				wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) $last['ran_at'] )
+			)
+		);
+		if ( empty( $last['online'] ) ) {
+			echo ' ' . esc_html__( 'OutlinePay was not reached, so this code was made on this site.', 'outlinepay-for-woocommerce' );
+		}
+		echo '</p></div>';
+	}
+
+	/**
+	 * The rows of a result: pass or fail, the sentence, the fix, who acts
+	 * next. The setup screen and the self-check share it.
+	 *
+	 * @param array $last  Stored result.
+	 * @param bool  $setup True on the setup screen, where Fix all replaces the per-row fixes it covers.
+	 * @return void
+	 */
+	private static function render_check_table( array $last, $setup ) {
+		echo '<table class="widefat striped outlinepay-checks" style="max-width:640px"><thead><tr>';
+		echo '<th scope="col" style="width:70px">' . esc_html__( 'Result', 'outlinepay-for-woocommerce' ) . '</th>';
+		echo '<th scope="col">' . esc_html__( 'Check', 'outlinepay-for-woocommerce' ) . '</th>';
+		echo '<th scope="col" style="width:150px">' . esc_html__( 'Who acts next', 'outlinepay-for-woocommerce' ) . '</th>';
+		echo '</tr></thead><tbody>';
+		foreach ( $last['checks'] as $check ) {
+			$ok = ! empty( $check['ok'] );
+			echo '<tr class="' . ( $ok ? 'outlinepay-check-ok' : 'outlinepay-check-failed' ) . '">';
+			echo '<td>' . ( $ok
+				? '<span aria-hidden="true" style="color:#00a32a;font-weight:600">&#10003;</span> ' . esc_html__( 'Pass', 'outlinepay-for-woocommerce' )
+				: '<span aria-hidden="true" style="color:#d63638;font-weight:600">&#10007;</span> <strong>' . esc_html__( 'Fail', 'outlinepay-for-woocommerce' ) . '</strong>' ) . '</td>';
+			echo '<td>' . esc_html( Self_Check::sentence( $check ) );
+			if ( ! $ok ) {
+				self::render_check_action( $check, $setup );
+			}
+			echo '</td>';
+			echo '<td>' . ( $ok ? '' : esc_html( Self_Check::who( isset( $check['side'] ) ? $check['side'] : 'unknown' ) ) ) . '</td>';
+			echo '</tr>';
+		}
+		echo '</tbody></table>';
+	}
+
+	/**
+	 * The one-click fix under a failed check, when the plugin has one. Each
+	 * button posts a nonce-protected action, or opens an existing confirm step.
+	 * On the setup screen, Fix all covers the currency and the background
+	 * jobs, so those rows say what Fix all does instead of showing a button.
+	 *
+	 * @param array $check Failed check.
+	 * @param bool  $setup True on the setup screen.
+	 * @return void
+	 */
+	private static function render_check_action( array $check, $setup = false ) {
 		$code = isset( $check['code'] ) ? $check['code'] : '';
 		$side = isset( $check['side'] ) ? $check['side'] : 'unknown';
 		switch ( $code ) {
@@ -650,6 +837,16 @@ final class Admin_Page {
 				return;
 			case 'store_currency':
 				if ( Settings::is_connected() && ! Settings::provider_takes( get_woocommerce_currency() ) ) {
+					if ( $setup ) {
+						echo ' ' . esc_html(
+							sprintf(
+								/* translators: %s: currency code such as KRW. */
+								__( 'Fix all sets the store currency to %s.', 'outlinepay-for-woocommerce' ),
+								Settings::provider_currencies()[0]
+							)
+						) . ' ' . esc_html( self::prices_note() );
+						return;
+					}
 					echo ' ' . esc_html( self::prices_note() );
 					self::render_currency_button();
 				}
@@ -662,7 +859,7 @@ final class Admin_Page {
 				return;
 			case 'scheduler_jobs':
 			case 'wp_cron':
-				if ( Settings::is_connected() ) {
+				if ( Settings::is_connected() && ! $setup ) {
 					self::render_action_form( 'outlinepay_run_jobs', __( 'Run now', 'outlinepay-for-woocommerce' ) );
 				}
 				return;
@@ -670,28 +867,16 @@ final class Admin_Page {
 	}
 
 	/**
-	 * The currency fix as a warning on the page, unless the connected notice
-	 * above already showed it in this request.
+	 * The currency fix as a warning on the connected view. The setup screen
+	 * carries it in the currency row instead.
 	 *
 	 * @return void
 	 */
 	private static function render_currency_warning() {
-		if ( self::$currency_fix_shown || Settings::provider_takes( get_woocommerce_currency() ) ) {
+		if ( Settings::provider_takes( get_woocommerce_currency() ) ) {
 			return;
 		}
-		echo '<div class="notice notice-warning inline">';
-		self::render_currency_fix();
-		echo '</div>';
-	}
-
-	/**
-	 * The store currency is one the provider does not take: one sentence and
-	 * the button that switches the store.
-	 *
-	 * @return void
-	 */
-	private static function render_currency_fix() {
-		echo '<p>' . esc_html(
+		echo '<div class="notice notice-warning inline"><p>' . esc_html(
 			sprintf(
 				/* translators: 1: store currency code such as USD, 2: payment provider name, 3: currency codes the provider takes, such as KRW. */
 				__( 'Your store currency is %1$s. %2$s takes payments in %3$s only.', 'outlinepay-for-woocommerce' ),
@@ -701,6 +886,7 @@ final class Admin_Page {
 			)
 		) . ' ' . esc_html( self::prices_note() ) . '</p>';
 		self::render_currency_button();
+		echo '</div>';
 	}
 
 	/**
@@ -847,13 +1033,14 @@ final class Admin_Page {
 	/**
 	 * Result notice after a form post. Fixed messages only.
 	 *
+	 * @param bool $in_setup Whether the page shows the setup screen.
 	 * @return void
 	 */
-	private static function render_notice() {
+	private static function render_notice( $in_setup = false ) {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only: picks one of the fixed messages below.
 		$result   = isset( $_GET['outlinepay_result'] ) ? sanitize_key( wp_unslash( $_GET['outlinepay_result'] ) ) : '';
 		$messages = array(
-			'connected'               => array( 'success', __( 'Your store is connected.', 'outlinepay-for-woocommerce' ) ),
+			'connected'               => array( 'success', $in_setup ? __( 'Your store is connected. Finish setup below.', 'outlinepay-for-woocommerce' ) : __( 'Your store is connected.', 'outlinepay-for-woocommerce' ) ),
 			'disconnected'            => array( 'success', __( 'Your store is disconnected.', 'outlinepay-for-woocommerce' ) ),
 			'methods_saved'           => array( 'success', __( 'Payment methods saved.', 'outlinepay-for-woocommerce' ) ),
 			'code_missing'            => array( 'error', __( 'Enter the connect code from your payment provider.', 'outlinepay-for-woocommerce' ) ),
@@ -875,42 +1062,14 @@ final class Admin_Page {
 			/* translators: %s: currency code such as KRW. */
 			'currency_set'            => array( 'success', sprintf( __( 'Store currency set to %s. Prices kept their numbers. Check your product prices.', 'outlinepay-for-woocommerce' ), get_woocommerce_currency() ) ),
 			'currency_not_connected'  => array( 'error', __( 'The store is not connected. Nothing changed.', 'outlinepay-for-woocommerce' ) ),
+			'fix_not_connected'       => array( 'error', __( 'The store is not connected. Nothing changed.', 'outlinepay-for-woocommerce' ) ),
+			'fixes_applied'           => array( 'success', __( 'The fixes ran and the checks ran again. The results are below.', 'outlinepay-for-woocommerce' ) ),
+			'setup_done'              => array( 'success', self::setup_done_message() ),
 		);
 		if ( ! isset( $messages[ $result ] ) ) {
 			return;
 		}
-		if ( 'connected' === $result ) {
-			self::render_connected_notice( $messages[ $result ][1] );
-			return;
-		}
 		echo '<div class="notice notice-' . esc_attr( $messages[ $result ][0] ) . ' is-dismissible"><p>' . esc_html( $messages[ $result ][1] ) . '</p></div>';
-	}
-
-	/**
-	 * The notice after a connect, the currency fix when the provider does not
-	 * take the store currency, then three next steps.
-	 *
-	 * @param string $message The connected sentence.
-	 * @return void
-	 */
-	private static function render_connected_notice( $message ) {
-		echo '<div class="notice notice-success is-dismissible outlinepay-connected"><p>' . esc_html( $message ) . '</p>';
-		if ( ! Settings::provider_takes( get_woocommerce_currency() ) ) {
-			self::render_currency_fix();
-			self::$currency_fix_shown = true;
-		}
-		echo '<p><strong>' . esc_html__( 'What\'s next', 'outlinepay-for-woocommerce' ) . '</strong></p><ul>';
-		if ( Settings::provider_takes( get_woocommerce_currency() ) ) {
-			echo '<li>' . esc_html__( 'Your payment methods now show at checkout.', 'outlinepay-for-woocommerce' ) . ' <a href="' . esc_url( wc_get_checkout_url() ) . '">' . esc_html__( 'View checkout', 'outlinepay-for-woocommerce' ) . '</a></li>';
-		}
-		echo '<li><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
-		wp_nonce_field( 'outlinepay_self_check' );
-		echo '<input type="hidden" name="action" value="outlinepay_self_check">';
-		echo esc_html__( 'Run the self-check.', 'outlinepay-for-woocommerce' ) . ' ';
-		submit_button( __( 'Run check', 'outlinepay-for-woocommerce' ), 'secondary small', 'outlinepay_run_check_next', false );
-		echo '</form></li>';
-		echo '<li>' . esc_html__( 'Place a test order.', 'outlinepay-for-woocommerce' ) . ' <a href="' . esc_url( wc_get_page_permalink( 'shop' ) ) . '">' . esc_html__( 'Go to the shop', 'outlinepay-for-woocommerce' ) . '</a></li>';
-		echo '</ul></div>';
 	}
 
 	/**
