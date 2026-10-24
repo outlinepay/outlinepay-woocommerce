@@ -251,4 +251,64 @@ class GatewayLaunchTest extends RefundTestCase {
 		$this->gateway->process_payment( 42 );
 		$this->assertCount( 1, $this->order->notes );
 	}
+
+	public function test_a_provider_error_gets_one_note_however_often_the_shopper_presses() {
+		$error = self::json( 502, array( 'error' => array( 'code' => 'processor_error', 'message' => 'Upstream failed.' ) ) );
+		$this->answers[] = $error;
+		$this->answers[] = $error;
+		$this->answers[] = $error;
+
+		$this->gateway->process_payment( 42 );
+		$this->gateway->process_payment( 42 );
+		$result = $this->gateway->process_payment( 42 );
+
+		$this->assertSame( 'failure', $result['result'] );
+		$this->assertCount( 1, $this->order->notes, 'one note for three presses' );
+		$this->assertStringContainsString( 'An OutlinePay payment by Credit or debit card could not start:', $this->order->notes[0] );
+		$this->assertStringContainsString( 'returned an error. The shopper saw an error and can try again.', $this->order->notes[0] );
+	}
+
+	public function test_a_method_the_provider_has_not_enabled_gets_its_own_note() {
+		Functions\when( 'as_has_scheduled_action' )->justReturn( true );
+		$this->answers[] = self::json( 400, array( 'error' => array( 'code' => 'payment_method_not_enabled', 'message' => 'No.' ) ) );
+
+		$this->gateway->process_payment( 42 );
+
+		$this->assertCount( 1, $this->order->notes );
+		$this->assertStringContainsString( 'has not enabled this method for the store. The shopper was asked to choose another method.', $this->order->notes[0] );
+	}
+
+	public function test_another_outlinepay_error_names_its_code() {
+		Functions\when( 'sanitize_key' )->returnArg();
+		$this->answers[] = self::json( 400, array( 'error' => array( 'code' => 'invalid_request', 'message' => 'Bad.' ) ) );
+
+		$this->gateway->process_payment( 42 );
+
+		$this->assertSame( array( 'An OutlinePay payment by Credit or debit card could not start (invalid_request). The shopper saw an error and can try again.' ), $this->order->notes );
+	}
+
+	public function test_an_answer_the_store_cannot_use_gets_a_note() {
+		$this->answers[] = self::opened( array( 'window' => self::form_window( array( 'action' => 'javascript:alert(1)' ) ) ) );
+
+		$this->gateway->process_payment( 42 );
+
+		$this->assertSame( array( "An OutlinePay payment by Credit or debit card could not start: OutlinePay's answer could not be used. The shopper saw an error and can try again." ), $this->order->notes );
+	}
+
+	public function test_a_site_that_cannot_reach_outlinepay_gets_its_own_note() {
+		$this->assertTrue( Order_Sync::note_refused( $this->order, 'unreachable', 'card' ) );
+		$this->assertFalse( Order_Sync::note_refused( $this->order, 'unreachable', 'card' ), 'once per order and reason' );
+		$this->assertSame( array( 'An OutlinePay payment by Credit or debit card could not start: this site could not reach OutlinePay. The shopper saw an error and can try again.' ), $this->order->notes );
+	}
+
+	public function test_a_started_attempt_after_a_refusal_keeps_both_notes() {
+		$this->answers[] = self::json( 502, array( 'error' => array( 'code' => 'processor_error', 'message' => 'Upstream failed.' ) ) );
+		$this->answers[] = self::opened( array( 'window' => self::form_window() ) );
+
+		$this->gateway->process_payment( 42 );
+		$this->gateway->process_payment( 42 );
+
+		$this->assertCount( 2, $this->order->notes );
+		$this->assertSame( 'OutlinePay payment ppay_new started. Waiting for the shopper.', $this->order->notes[1] );
+	}
 }

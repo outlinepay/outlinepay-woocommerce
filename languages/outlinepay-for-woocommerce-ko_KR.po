@@ -1549,3 +1549,39 @@ msgstr "결제대행사에 문의하세요."
 #: includes/class-admin-page.php:788
 msgid "Give them this code:"
 msgstr "문의할 때 이 코드를 알려 주세요:"
+
+#. translators: 1: payment method name, 2: payment provider name such as CookiePay.
+#: includes/class-order-sync.php:174
+#, php-format
+msgid "An OutlinePay payment by %1$s could not start: %2$s returned an error. The shopper saw an error and can try again."
+msgstr "%1$s(으)로 OutlinePay 결제를 시작하지 못했습니다. %2$s에서 오류를 반환했습니다. 구매자에게 오류가 표시되었으며 다시 시도할 수 있습니다."
+
+#. translators: %s: payment method name.
+#: includes/class-order-sync.php:178
+#, php-format
+msgid "An OutlinePay payment by %s could not start: this site could not reach OutlinePay. The shopper saw an error and can try again."
+msgstr "%s(으)로 OutlinePay 결제를 시작하지 못했습니다. 이 사이트에서 OutlinePay에 연결할 수 없었습니다. 구매자에게 오류가 표시되었으며 다시 시도할 수 있습니다."
+
+#. translators: 1: payment method name, 2: payment provider name such as CookiePay.
+#: includes/class-order-sync.php:182
+#, php-format
+msgid "An OutlinePay payment by %1$s could not start: %2$s has not enabled this method for the store. The shopper was asked to choose another method."
+msgstr "%1$s(으)로 OutlinePay 결제를 시작하지 못했습니다. %2$s에서 이 스토어에 해당 결제수단을 활성화하지 않았습니다. 구매자에게 다른 결제수단을 선택하도록 안내했습니다."
+
+#. translators: %s: payment method name.
+#: includes/class-order-sync.php:186
+#, php-format
+msgid "An OutlinePay payment by %s could not start: OutlinePay's answer could not be used. The shopper saw an error and can try again."
+msgstr "%s(으)로 OutlinePay 결제를 시작하지 못했습니다. OutlinePay의 응답을 사용할 수 없었습니다. 구매자에게 오류가 표시되었으며 다시 시도할 수 있습니다."
+
+#. translators: %s: payment method name.
+#: includes/class-order-sync.php:190
+#, php-format
+msgid "An OutlinePay payment by %s could not start: the order total is not a whole number of won. Check the product prices."
+msgstr "%s(으)로 OutlinePay 결제를 시작하지 못했습니다. 주문 금액이 원 단위 정수가 아닙니다. 상품 가격을 확인하세요."
+
+#. translators: 1: payment method name, 2: OutlinePay error code.
+#: includes/class-order-sync.php:194
+#, php-format
+msgid "An OutlinePay payment by %1$s could not start (%2$s). The shopper saw an error and can try again."
+msgstr "%1$s(으)로 OutlinePay 결제를 시작하지 못했습니다(%2$s). 구매자에게 오류가 표시되었으며 다시 시도할 수 있습니다."

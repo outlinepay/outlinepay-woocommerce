@@ -148,6 +148,59 @@ final class Order_Sync {
 	}
 
 	/**
+	 * The private note for a payment that could not start, at most once per
+	 * order and reason: a shopper pressing Place order again does not add
+	 * another. Saves the order.
+	 *
+	 * @param \WC_Order $order  Order.
+	 * @param string    $reason provider_error, unreachable, method_not_enabled,
+	 *                          not_whole_won, bad_answer, or an OutlinePay
+	 *                          error code.
+	 * @param string    $method Payment method key.
+	 * @return bool True when the note was added.
+	 */
+	public static function note_refused( $order, $reason, $method ) {
+		$key   = 'refused:' . $reason;
+		$noted = $order->get_meta( self::META_NOTED );
+		$noted = is_array( $noted ) ? $noted : array();
+		if ( in_array( $key, $noted, true ) ) {
+			return false;
+		}
+		$name     = Settings::method_name( $method );
+		$provider = Settings::provider_display_name();
+		switch ( $reason ) {
+			case 'provider_error':
+				/* translators: 1: payment method name, 2: payment provider name such as CookiePay. */
+				$text = fn () => sprintf( __( 'An OutlinePay payment by %1$s could not start: %2$s returned an error. The shopper saw an error and can try again.', 'outlinepay-for-woocommerce' ), $name, $provider );
+				break;
+			case 'unreachable':
+				/* translators: %s: payment method name. */
+				$text = fn () => sprintf( __( 'An OutlinePay payment by %s could not start: this site could not reach OutlinePay. The shopper saw an error and can try again.', 'outlinepay-for-woocommerce' ), $name );
+				break;
+			case 'method_not_enabled':
+				/* translators: 1: payment method name, 2: payment provider name such as CookiePay. */
+				$text = fn () => sprintf( __( 'An OutlinePay payment by %1$s could not start: %2$s has not enabled this method for the store. The shopper was asked to choose another method.', 'outlinepay-for-woocommerce' ), $name, $provider );
+				break;
+			case 'bad_answer':
+				/* translators: %s: payment method name. */
+				$text = fn () => sprintf( __( 'An OutlinePay payment by %s could not start: OutlinePay\'s answer could not be used. The shopper saw an error and can try again.', 'outlinepay-for-woocommerce' ), $name );
+				break;
+			case 'not_whole_won':
+				/* translators: %s: payment method name. */
+				$text = fn () => sprintf( __( 'An OutlinePay payment by %s could not start: the order total is not a whole number of won. Check the product prices.', 'outlinepay-for-woocommerce' ), $name );
+				break;
+			default:
+				/* translators: 1: payment method name, 2: OutlinePay error code. */
+				$text = fn () => sprintf( __( 'An OutlinePay payment by %1$s could not start (%2$s). The shopper saw an error and can try again.', 'outlinepay-for-woocommerce' ), $name, $reason );
+		}
+		Notes::write( $order, $text );
+		$noted[] = $key;
+		$order->update_meta_data( self::META_NOTED, array_slice( $noted, -2 * self::MAX_ATTEMPTS ) );
+		$order->save();
+		return true;
+	}
+
+	/**
 	 * The private note for an attempt that started or expired, at most once
 	 * per attempt and event. The caller saves the order.
 	 *

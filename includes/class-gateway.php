@@ -203,6 +203,7 @@ class Gateway extends \WC_Payment_Gateway {
 		}
 		$amount = Amount::to_krw( $order->get_total() );
 		if ( null === $amount ) {
+			Order_Sync::note_refused( $order, 'not_whole_won', $this->outlinepay_method );
 			return $this->refuse( __( 'The order total must be a whole number of won. Contact the store.', 'outlinepay-for-woocommerce' ) );
 		}
 
@@ -228,6 +229,7 @@ class Gateway extends \WC_Payment_Gateway {
 
 		if ( ! isset( $payment['id'] ) || ! Api_Client::valid_payment_id( $payment['id'] ) ) {
 			Logger::error( 'Payment answer missing id or redirect', array( 'order_id' => $order->get_id() ) );
+			Order_Sync::note_refused( $order, 'bad_answer', $this->outlinepay_method );
 			return $this->refuse( __( 'The payment could not be started. Try again in a moment.', 'outlinepay-for-woocommerce' ) );
 		}
 
@@ -243,6 +245,7 @@ class Gateway extends \WC_Payment_Gateway {
 						'payment_id' => $payment['id'],
 					)
 				);
+				Order_Sync::note_refused( $order, 'bad_answer', $this->outlinepay_method );
 				return $this->refuse( __( 'The payment could not be started. Try again in a moment.', 'outlinepay-for-woocommerce' ) );
 			}
 			$order->update_meta_data( Order_Sync::META_LAUNCH, $launch );
@@ -251,6 +254,7 @@ class Gateway extends \WC_Payment_Gateway {
 			$redirect = isset( $payment['redirect_url'] ) && is_string( $payment['redirect_url'] ) ? $payment['redirect_url'] : '';
 			if ( ! preg_match( '#^https?://#i', $redirect ) ) {
 				Logger::error( 'Payment answer missing id or redirect', array( 'order_id' => $order->get_id() ) );
+				Order_Sync::note_refused( $order, 'bad_answer', $this->outlinepay_method );
 				return $this->refuse( __( 'The payment could not be started. Try again in a moment.', 'outlinepay-for-woocommerce' ) );
 			}
 			// One launch slot per order: an earlier attempt's form is not posted again.
@@ -409,12 +413,32 @@ class Gateway extends \WC_Payment_Gateway {
 				return $this->refuse( __( 'A payment for this order is already being opened. Wait a moment and try again.', 'outlinepay-for-woocommerce' ) );
 
 			case 'payment_method_not_enabled':
+				Order_Sync::note_refused( $order, 'method_not_enabled', $this->outlinepay_method );
 				Scheduler::queue_methods_refresh();
 				return $this->refuse( __( 'This payment method is not available right now. Choose another method.', 'outlinepay-for-woocommerce' ) );
 
 			default:
+				Order_Sync::note_refused( $order, self::refusal_reason( $error ), $this->outlinepay_method );
 				return $this->refuse( __( 'The payment could not be started. Try again in a moment.', 'outlinepay-for-woocommerce' ) );
 		}
+	}
+
+	/**
+	 * The note reason for a refusal: the site could not reach OutlinePay, the
+	 * provider did not answer (OutlinePay's processor_error), or OutlinePay's
+	 * own error code.
+	 *
+	 * @param Api_Error $error Error.
+	 * @return string
+	 */
+	private static function refusal_reason( Api_Error $error ) {
+		if ( 0 === $error->get_http_status() ) {
+			return 'unreachable';
+		}
+		if ( 'processor_error' === $error->get_error_code() ) {
+			return 'provider_error';
+		}
+		return sanitize_key( $error->get_error_code() );
 	}
 
 	/**

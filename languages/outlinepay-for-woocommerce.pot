@@ -1256,3 +1256,39 @@ msgstr ""
 #: includes/class-admin-page.php:788
 msgid "Give them this code:"
 msgstr ""
+
+#. translators: 1: payment method name, 2: payment provider name such as CookiePay.
+#: includes/class-order-sync.php:174
+#, php-format
+msgid "An OutlinePay payment by %1$s could not start: %2$s returned an error. The shopper saw an error and can try again."
+msgstr ""
+
+#. translators: %s: payment method name.
+#: includes/class-order-sync.php:178
+#, php-format
+msgid "An OutlinePay payment by %s could not start: this site could not reach OutlinePay. The shopper saw an error and can try again."
+msgstr ""
+
+#. translators: 1: payment method name, 2: payment provider name such as CookiePay.
+#: includes/class-order-sync.php:182
+#, php-format
+msgid "An OutlinePay payment by %1$s could not start: %2$s has not enabled this method for the store. The shopper was asked to choose another method."
+msgstr ""
+
+#. translators: %s: payment method name.
+#: includes/class-order-sync.php:186
+#, php-format
+msgid "An OutlinePay payment by %s could not start: OutlinePay's answer could not be used. The shopper saw an error and can try again."
+msgstr ""
+
+#. translators: %s: payment method name.
+#: includes/class-order-sync.php:190
+#, php-format
+msgid "An OutlinePay payment by %s could not start: the order total is not a whole number of won. Check the product prices."
+msgstr ""
+
+#. translators: 1: payment method name, 2: OutlinePay error code.
+#: includes/class-order-sync.php:194
+#, php-format
+msgid "An OutlinePay payment by %1$s could not start (%2$s). The shopper saw an error and can try again."
+msgstr ""
