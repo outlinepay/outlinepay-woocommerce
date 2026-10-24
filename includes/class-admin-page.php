@@ -627,7 +627,7 @@ final class Admin_Page {
 		echo '</form>';
 		echo '</div>';
 		if ( $last ) {
-			self::render_check_code( $last );
+			self::render_support_line( $last );
 		}
 		if ( $last && self::none_shown( $last ) && Settings::methods() ) {
 			// The merchant hid every method: the switches are the only fix.
@@ -776,6 +776,41 @@ final class Admin_Page {
 		if ( 'self_check_rate_limited' === $notice ) {
 			echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'A check ran less than a minute ago.', 'outlinepay-for-woocommerce' ) . '</p></div>';
 		}
+	}
+
+	/**
+	 * The setup screen's last resort: one line that sends the merchant to the
+	 * provider's support page with the diagnostic code to give them.
+	 *
+	 * @param array $last Stored result.
+	 * @return void
+	 */
+	private static function render_support_line( array $last ) {
+		$url          = Settings::provider_support_url();
+		$installation = Settings::installation();
+		$name         = isset( $installation['provider'] ) ? Settings::provider_name( (string) $installation['provider'] ) : '';
+		echo '<p class="outlinepay-support-line" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:16px 0 4px">';
+		echo esc_html__( 'Still stuck?', 'outlinepay-for-woocommerce' ) . ' ';
+		$label = '' !== $name
+			/* translators: %s: payment provider name, such as CookiePay. */
+			? sprintf( __( 'Contact %s support.', 'outlinepay-for-woocommerce' ), $name )
+			: __( 'Contact your payment provider.', 'outlinepay-for-woocommerce' );
+		if ( '' !== $url ) {
+			echo '<a href="' . esc_url( $url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html( $label ) . '</a> ';
+		} else {
+			echo esc_html( $label ) . ' ';
+		}
+		echo esc_html__( 'Give them this code:', 'outlinepay-for-woocommerce' ) . ' ';
+		echo '<code id="outlinepay-check-code" style="user-select:all">' . esc_html( $last['code'] ) . '</code>';
+		echo '<button type="button" class="button button-small" id="outlinepay-copy-code" data-outlinepay-copy data-target="outlinepay-check-code" data-status="outlinepay-copy-status" data-copied="' . esc_attr__( 'Copied', 'outlinepay-for-woocommerce' ) . '" data-manual="' . esc_attr__( 'Selected. Press Ctrl+C to copy.', 'outlinepay-for-woocommerce' ) . '">' . esc_html__( 'Copy', 'outlinepay-for-woocommerce' ) . '</button>';
+		echo '<span id="outlinepay-copy-status" aria-live="polite"></span></p>';
+		echo '<p style="margin:0 0 12px;color:#50575e">' . esc_html(
+			sprintf(
+				/* translators: %s: date and time of the last check. */
+				__( 'Last run %s.', 'outlinepay-for-woocommerce' ),
+				wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) $last['ran_at'] )
+			)
+		) . '</p>';
 	}
 
 	/**

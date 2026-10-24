@@ -1238,3 +1238,21 @@ msgid "%d check still needs you. Follow the step in its row."
 msgid_plural "%d checks still need you. Follow the step in each row."
 msgstr[0] ""
 msgstr[1] ""
+
+#: includes/class-admin-page.php:788
+msgid "Still stuck?"
+msgstr ""
+
+#. translators: %s: payment provider name, such as CookiePay.
+#: includes/class-admin-page.php:788
+#, php-format
+msgid "Contact %s support."
+msgstr ""
+
+#: includes/class-admin-page.php:788
+msgid "Contact your payment provider."
+msgstr ""
+
+#: includes/class-admin-page.php:788
+msgid "Give them this code:"
+msgstr ""

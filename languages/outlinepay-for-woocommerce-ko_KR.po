@@ -1531,3 +1531,21 @@ msgstr "설정을 마쳤습니다. 이제 결제 화면에 결제수단이 표�
 msgid "%d check still needs you. Follow the step in its row."
 msgid_plural "%d checks still need you. Follow the step in each row."
 msgstr[0] "확인이 필요한 점검이 %d개 남았습니다. 각 행의 안내를 따르십시오."
+
+#: includes/class-admin-page.php:788
+msgid "Still stuck?"
+msgstr "아직 해결되지 않았나요?"
+
+#. translators: %s: payment provider name, such as CookiePay.
+#: includes/class-admin-page.php:788
+#, php-format
+msgid "Contact %s support."
+msgstr "%s 고객지원에 문의하세요."
+
+#: includes/class-admin-page.php:788
+msgid "Contact your payment provider."
+msgstr "결제대행사에 문의하세요."
+
+#: includes/class-admin-page.php:788
+msgid "Give them this code:"
+msgstr "문의할 때 이 코드를 알려 주세요:"

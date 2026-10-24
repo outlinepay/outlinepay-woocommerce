@@ -321,6 +321,33 @@ final class Settings {
 	}
 
 	/**
+	 * Support pages of the providers this plugin knows, for stores whose
+	 * installation record has no support_url yet.
+	 */
+	const PROVIDER_SUPPORT_URLS = array(
+		'cookiepay' => 'https://www.cookiepayments.com/iroboard/list?bId=contact',
+	);
+
+	/**
+	 * The payment provider's support page: the installation record's
+	 * support_url when it is an https address, else the known page for the
+	 * provider, else an empty string.
+	 *
+	 * @return string
+	 */
+	public static function provider_support_url() {
+		$installation = self::installation();
+		if ( isset( $installation['support_url'] ) && is_string( $installation['support_url'] ) ) {
+			$url = $installation['support_url'];
+			if ( 0 === strpos( $url, 'https://' ) && false !== filter_var( $url, FILTER_VALIDATE_URL ) ) {
+				return $url;
+			}
+		}
+		$provider = isset( $installation['provider'] ) ? (string) $installation['provider'] : '';
+		return isset( self::PROVIDER_SUPPORT_URLS[ $provider ] ) ? self::PROVIDER_SUPPORT_URLS[ $provider ] : '';
+	}
+
+	/**
 	 * The currencies the payment provider takes payments in, from the saved
 	 * installation. KRW when the record has none: a store connected before
 	 * OutlinePay sent the list behaves as it always did.

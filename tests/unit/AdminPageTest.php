@@ -291,6 +291,38 @@ class AdminPageTest extends TestCase {
 		$this->assertSame( array( 'JPY', 'KRW' ), Settings::provider_currencies() );
 	}
 
+	public function test_setup_support_line_without_a_known_provider_has_no_link() {
+		$this->connected_store();
+		unset( $this->options['outlinepay_installation']['provider'] );
+		$this->options['outlinepay_self_check_last'] = Self_Check::offline(
+			Self_Check::local_checks( self::healthy_facts( 'USD' ), self::NOW - 60 ),
+			'page',
+			self::NOW - 60
+		);
+
+		$html = $this->render_page( '' );
+
+		$this->assertStringContainsString( 'Still stuck? Contact your payment provider. Give them this code:', $html );
+		$this->assertStringNotContainsString( 'outlinepay-support-line" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:16px 0 4px">Still stuck? <a', $html );
+	}
+
+	public function test_provider_support_url_prefers_the_record_then_the_known_page() {
+		$this->options['outlinepay_installation'] = array( 'id' => 'inst_1', 'status' => 'connected', 'provider' => 'cookiepay' );
+		$this->assertSame( 'https://www.cookiepayments.com/iroboard/list?bId=contact', Settings::provider_support_url() );
+
+		$this->options['outlinepay_installation']['support_url'] = 'https://help.example.com/plugin';
+		$this->assertSame( 'https://help.example.com/plugin', Settings::provider_support_url() );
+
+		$this->options['outlinepay_installation']['support_url'] = 'http://help.example.com/plugin';
+		$this->assertSame( 'https://www.cookiepayments.com/iroboard/list?bId=contact', Settings::provider_support_url(), 'plain http is ignored' );
+
+		$this->options['outlinepay_installation']['support_url'] = 'javascript:alert(1)';
+		$this->assertSame( 'https://www.cookiepayments.com/iroboard/list?bId=contact', Settings::provider_support_url() );
+
+		$this->options['outlinepay_installation'] = array( 'id' => 'inst_1', 'status' => 'connected', 'provider' => 'other' );
+		$this->assertSame( '', Settings::provider_support_url(), 'unknown provider, no record: no link' );
+	}
+
 	public function test_connect_keeps_the_provider_currencies() {
 		Admin_Page::finish_connect( array_merge( self::answer(), array( 'currencies' => array( 'KRW' ) ) ) );
 		$this->assertSame( array( 'KRW' ), $this->options['outlinepay_installation']['currencies'] );
@@ -765,7 +797,7 @@ class AdminPageTest extends TestCase {
 	}
 
 	/** Renders the whole page with the stubs a page view needs. */
-	private function render_page() {
+	private function render_page( $provider = 'cookiepay' ) {
 		Functions\when( 'sanitize_key' )->returnArg();
 		Functions\when( 'wp_unslash' )->returnArg();
 		Functions\when( 'wp_date' )->justReturn( '2026-10-23 10:00' );
@@ -782,7 +814,7 @@ class AdminPageTest extends TestCase {
 		);
 		$this->answer = array(
 			'response' => array( 'code' => 200 ),
-			'body'     => json_encode( array( 'status' => 'connected', 'currencies' => array( 'KRW' ), 'data' => array( array( 'method' => 'card', 'label_ko' => '신용카드' ) ) ) ),
+			'body'     => json_encode( array_filter( array( 'status' => 'connected', 'provider' => $provider, 'currencies' => array( 'KRW' ), 'data' => array( array( 'method' => 'card', 'label_ko' => '신용카드' ) ) ) ) ),
 		);
 		ob_start();
 		Admin_Page::render();
@@ -810,6 +842,11 @@ class AdminPageTest extends TestCase {
 		$this->assertStringContainsString( 'value="Check again"', $html );
 		$this->assertSame( 9, substr_count( $html, '<tr class="outlinepay-check-' ), 'all nine rows' );
 		$this->assertStringContainsString( 'The store currency is USD. CookiePay takes payments in KRW only. Fix all sets the store currency to KRW. Prices keep their numbers.', $html );
+		$this->assertStringContainsString( 'Still stuck?', $html );
+		$this->assertStringContainsString( 'href="https://www.cookiepayments.com/iroboard/list?bId=contact"', $html );
+		$this->assertStringContainsString( 'Contact CookiePay support.</a>', $html );
+		$this->assertStringContainsString( 'id="outlinepay-check-code"', $html );
+		$this->assertStringNotContainsString( 'Send this code to your payment provider', $html, 'no diagnostic panel on the setup screen' );
 		$this->assertStringNotContainsString( 'value="Set store currency to KRW"', $html, 'Fix all covers it' );
 		$this->assertStringNotContainsString( 'Payment methods</h2>', $html );
 		$this->assertStringNotContainsString( 'Refunds and cancellations', $html );
