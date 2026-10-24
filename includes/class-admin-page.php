@@ -160,11 +160,14 @@ final class Admin_Page {
 	 * @return void
 	 */
 	public static function finish_connect( array $installation ) {
+		// The version goes first: a request that lands while the connection is
+		// being saved must not mistake this fresh connect for an upgrade
+		// (see Setup::upgrade).
+		update_option( Settings::OPTION_VERSION, OUTLINEPAY_VERSION, false );
 		Credentials::save( $installation['token'], $installation['signing_secret'] );
 		Site_Identity::remember_current();
 		unset( $installation['token'], $installation['signing_secret'] );
 		Settings::save_installation( $installation );
-		update_option( Settings::OPTION_VERSION, OUTLINEPAY_VERSION, false );
 		Logger::info( 'Store connected', array( 'status' => isset( $installation['status'] ) ? $installation['status'] : '' ) );
 
 		if ( ! Scheduler::refresh_methods() ) {
