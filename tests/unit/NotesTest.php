@@ -44,6 +44,9 @@ class NotesTest extends RefundTestCase {
 		$korean = array(
 			'Refunded %1$s through OutlinePay (refund %2$s).' => '%1$s을(를) OutlinePay로 환불했습니다 (환불 %2$s).',
 			'%s won'                                          => '%s원',
+			'Credit or debit card'                            => '신용카드',
+			'Your payment provider'                           => '결제대행사',
+			'An OutlinePay payment by %1$s could not start: %2$s returned an error. The shopper saw an error and can try again.' => '%1$s(으)로 OutlinePay 결제를 시작하지 못했습니다. %2$s에서 오류를 반환했습니다. 구매자에게 오류가 표시되었으며 다시 시도할 수 있습니다.',
 		);
 		Functions\when( '__' )->alias(
 			static function ( $text ) use ( &$locales, $korean ) {
@@ -96,5 +99,11 @@ class NotesTest extends RefundTestCase {
 		}
 		$this->assertSame( array( 'en_US' ), $this->locales );
 		$this->assertSame( array(), $this->order->notes );
+	}
+
+	public function test_a_refused_note_names_the_method_and_provider_in_the_site_language() {
+		\OutlinePay\WooCommerce\Order_Sync::note_refused( $this->order, 'provider_error', 'card' );
+
+		$this->assertSame( array( '신용카드(으)로 OutlinePay 결제를 시작하지 못했습니다. 결제대행사에서 오류를 반환했습니다. 구매자에게 오류가 표시되었으며 다시 시도할 수 있습니다.' ), $this->order->notes );
 	}
 }

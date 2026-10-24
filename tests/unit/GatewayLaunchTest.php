@@ -43,7 +43,11 @@ class GatewayLaunchTest extends RefundTestCase {
 							'url'    => $url,
 							'body'   => null === $body ? null : json_decode( $body, true ),
 						);
-						return array_shift( $answers );
+						$answer = array_shift( $answers );
+						if ( $answer instanceof \OutlinePay\WooCommerce\Api_Error ) {
+							throw $answer;
+						}
+						return $answer;
 					},
 					'https://api.example.test/plugin/v1'
 				);
@@ -296,9 +300,45 @@ class GatewayLaunchTest extends RefundTestCase {
 	}
 
 	public function test_a_site_that_cannot_reach_outlinepay_gets_its_own_note() {
-		$this->assertTrue( Order_Sync::note_refused( $this->order, 'unreachable', 'card' ) );
-		$this->assertFalse( Order_Sync::note_refused( $this->order, 'unreachable', 'card' ), 'once per order and reason' );
+		$this->answers[] = new \OutlinePay\WooCommerce\Api_Error( 0, 'network_error', 'OutlinePay could not be reached.' );
+		$this->answers[] = new \OutlinePay\WooCommerce\Api_Error( 0, 'network_error', 'OutlinePay could not be reached.' );
+
+		$this->gateway->process_payment( 42 );
+		$this->gateway->process_payment( 42 );
+
+		$this->assertSame( array( 'The payment could not be started. Try again in a moment.', 'The payment could not be started. Try again in a moment.' ), $this->notices, 'the shopper sees the same message as before' );
 		$this->assertSame( array( 'An OutlinePay payment by Credit or debit card could not start: this site could not reach OutlinePay. The shopper saw an error and can try again.' ), $this->order->notes );
+	}
+
+	public function test_an_answer_without_a_payment_id_gets_the_answer_note() {
+		$this->answers[] = self::json( 201, array( 'status' => 'awaiting_payment' ) );
+
+		$this->gateway->process_payment( 42 );
+
+		$this->assertSame( array( "An OutlinePay payment by Credit or debit card could not start: OutlinePay's answer could not be used. The shopper saw an error and can try again." ), $this->order->notes );
+	}
+
+	public function test_a_total_that_is_not_whole_won_gets_a_note_and_calls_nothing() {
+		$this->order->total = '1000.50';
+
+		$result = $this->gateway->process_payment( 42 );
+
+		$this->assertSame( 'failure', $result['result'] );
+		$this->assertSame( array(), $this->requests );
+		$this->assertSame( array( 'An OutlinePay payment by Credit or debit card could not start: the order total is not a whole number of won. Check the product prices.' ), $this->order->notes );
+	}
+
+	public function test_a_failure_after_a_started_payment_is_noted_again() {
+		$error = self::json( 502, array( 'error' => array( 'code' => 'processor_error', 'message' => 'Upstream failed.' ) ) );
+		$this->answers[] = $error;
+		$this->answers[] = self::opened( array( 'window' => self::form_window() ) );
+		$this->answers[] = $error;
+
+		$this->gateway->process_payment( 42 );
+		$this->gateway->process_payment( 42 );
+		$this->gateway->process_payment( 42 );
+
+		$this->assertCount( 3, $this->order->notes, 'refused, started, refused again' );
 	}
 
 	public function test_a_started_attempt_after_a_refusal_keeps_both_notes() {

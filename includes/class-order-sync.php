@@ -166,32 +166,34 @@ final class Order_Sync {
 		if ( in_array( $key, $noted, true ) ) {
 			return false;
 		}
-		$name     = Settings::method_name( $method );
-		$provider = Settings::provider_display_name();
+		// Both names are read inside each note's closure, so they come out in
+		// the store's language with the rest of the note (see Notes::write).
+		$name     = fn () => Settings::method_name( $method );
+		$provider = fn () => Settings::provider_display_name();
 		switch ( $reason ) {
 			case 'provider_error':
 				/* translators: 1: payment method name, 2: payment provider name such as CookiePay. */
-				$text = fn () => sprintf( __( 'An OutlinePay payment by %1$s could not start: %2$s returned an error. The shopper saw an error and can try again.', 'outlinepay-for-woocommerce' ), $name, $provider );
+				$text = fn () => sprintf( __( 'An OutlinePay payment by %1$s could not start: %2$s returned an error. The shopper saw an error and can try again.', 'outlinepay-for-woocommerce' ), $name(), $provider() );
 				break;
 			case 'unreachable':
 				/* translators: %s: payment method name. */
-				$text = fn () => sprintf( __( 'An OutlinePay payment by %s could not start: this site could not reach OutlinePay. The shopper saw an error and can try again.', 'outlinepay-for-woocommerce' ), $name );
+				$text = fn () => sprintf( __( 'An OutlinePay payment by %s could not start: this site could not reach OutlinePay. The shopper saw an error and can try again.', 'outlinepay-for-woocommerce' ), $name() );
 				break;
 			case 'method_not_enabled':
 				/* translators: 1: payment method name, 2: payment provider name such as CookiePay. */
-				$text = fn () => sprintf( __( 'An OutlinePay payment by %1$s could not start: %2$s has not enabled this method for the store. The shopper was asked to choose another method.', 'outlinepay-for-woocommerce' ), $name, $provider );
+				$text = fn () => sprintf( __( 'An OutlinePay payment by %1$s could not start: %2$s has not enabled this method for the store. The shopper was asked to choose another method.', 'outlinepay-for-woocommerce' ), $name(), $provider() );
 				break;
 			case 'bad_answer':
 				/* translators: %s: payment method name. */
-				$text = fn () => sprintf( __( 'An OutlinePay payment by %s could not start: OutlinePay\'s answer could not be used. The shopper saw an error and can try again.', 'outlinepay-for-woocommerce' ), $name );
+				$text = fn () => sprintf( __( 'An OutlinePay payment by %s could not start: OutlinePay\'s answer could not be used. The shopper saw an error and can try again.', 'outlinepay-for-woocommerce' ), $name() );
 				break;
 			case 'not_whole_won':
 				/* translators: %s: payment method name. */
-				$text = fn () => sprintf( __( 'An OutlinePay payment by %s could not start: the order total is not a whole number of won. Check the product prices.', 'outlinepay-for-woocommerce' ), $name );
+				$text = fn () => sprintf( __( 'An OutlinePay payment by %s could not start: the order total is not a whole number of won. Check the product prices.', 'outlinepay-for-woocommerce' ), $name() );
 				break;
 			default:
 				/* translators: 1: payment method name, 2: OutlinePay error code. */
-				$text = fn () => sprintf( __( 'An OutlinePay payment by %1$s could not start (%2$s). The shopper saw an error and can try again.', 'outlinepay-for-woocommerce' ), $name, $reason );
+				$text = fn () => sprintf( __( 'An OutlinePay payment by %1$s could not start (%2$s). The shopper saw an error and can try again.', 'outlinepay-for-woocommerce' ), $name(), $reason );
 		}
 		Notes::write( $order, $text );
 		$noted[] = $key;
@@ -224,6 +226,17 @@ final class Order_Sync {
 			Notes::write( $order, fn () => sprintf( __( 'OutlinePay payment %s expired. The shopper did not finish.', 'outlinepay-for-woocommerce' ), $payment_id ) );
 		} else {
 			return false;
+		}
+		if ( 'started' === $event ) {
+			// A payment got going: a later failure on this order is news again.
+			$noted = array_values(
+				array_filter(
+					$noted,
+					static function ( $noted_key ) {
+						return 0 !== strpos( $noted_key, 'refused:' );
+					}
+				)
+			);
 		}
 		$noted[] = $key;
 		$order->update_meta_data( self::META_NOTED, array_slice( $noted, -2 * self::MAX_ATTEMPTS ) );

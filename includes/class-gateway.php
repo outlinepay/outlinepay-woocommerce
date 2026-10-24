@@ -425,15 +425,18 @@ class Gateway extends \WC_Payment_Gateway {
 
 	/**
 	 * The note reason for a refusal: the site could not reach OutlinePay, the
-	 * provider did not answer (OutlinePay's processor_error), or OutlinePay's
-	 * own error code.
+	 * answer could not be read, the provider returned an error (OutlinePay's
+	 * processor_error), or OutlinePay's own error code.
 	 *
 	 * @param Api_Error $error Error.
 	 * @return string
 	 */
 	private static function refusal_reason( Api_Error $error ) {
-		if ( 0 === $error->get_http_status() ) {
+		if ( 'network_error' === $error->get_error_code() ) {
 			return 'unreachable';
+		}
+		if ( 'invalid_response' === $error->get_error_code() ) {
+			return 'bad_answer';
 		}
 		if ( 'processor_error' === $error->get_error_code() ) {
 			return 'provider_error';
