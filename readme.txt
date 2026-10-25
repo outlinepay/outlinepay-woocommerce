@@ -63,6 +63,8 @@ OutlinePay is operated by Arandu Payments LLC.
 
 The plugin sends nothing to OutlinePay until you click Connect.
 
+The plugin needs scheduled tasks to run: WP-Cron, or a server cron job that replaces it. Without them the daily self-check and the background reconcile cannot run, and the setup check for WP-Cron does not pass. Most hosts have this on by default.
+
 == Frequently Asked Questions ==
 
 = Why do I not see any OutlinePay methods at checkout? =
@@ -71,7 +73,7 @@ Each method shows only when all of these are true. The store is connected. Setup
 
 = What is test mode? =
 
-Your payment provider decides whether a connection is in test mode or live mode. The OutlinePay page shows a Test mode badge while the connection is in test mode. Test payments are reversed by your payment provider, so do not ship goods for them. To go live, ask your payment provider for a live connect code.
+Your payment provider decides whether a connection is in test mode or live mode. The OutlinePay page shows a Test mode badge while the connection is in test mode. Test payments go through your payment provider's test system and are not real sales, so do not ship goods for them. To go live, ask your payment provider for a live connect code.
 
 = Does deactivating the plugin disconnect my store? =
 
