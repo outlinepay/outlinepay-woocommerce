@@ -33,6 +33,9 @@ class SelfCheckWatchTest extends TestCase {
 	/** @var array Fact overrides the last engine got from the watch. */
 	private $override = array();
 
+	/** @var array Rows the fake POST /self_checks answer carries. */
+	private $server_rows = array();
+
 	protected function setUp(): void {
 		parent::setUp();
 		Functions\stubTranslationFunctions();
@@ -43,6 +46,7 @@ class SelfCheckWatchTest extends TestCase {
 		$requests = &$this->requests;
 		$facts    = &$this->facts;
 		$override = &$this->override;
+		$rows     = &$this->server_rows;
 		Functions\when( 'get_option' )->alias(
 			static function ( $name, $fallback = false ) use ( &$options ) {
 				return array_key_exists( $name, $options ) ? $options[ $name ] : $fallback;
@@ -105,7 +109,14 @@ class SelfCheckWatchTest extends TestCase {
 		$this->options[ Site_Identity::OPTION ]         = 'https://shop.example.com/';
 
 		$this->facts = self::healthy_facts();
-		$transport   = static function ( $method, $url ) use ( &$requests ) {
+		$this->server_rows = array(
+			array(
+				'code' => 'store_currency',
+				'ok'   => true,
+				'side' => 'store',
+			),
+		);
+		$transport         = static function ( $method, $url ) use ( &$requests, &$rows ) {
 			$requests[] = $method . ' ' . $url;
 			if ( false !== strpos( $url, '/self_checks' ) ) {
 				return array(
@@ -113,13 +124,7 @@ class SelfCheckWatchTest extends TestCase {
 					'body'   => json_encode(
 						array(
 							'id'     => 'chk_Watch1',
-							'checks' => array(
-								array(
-									'code' => 'store_currency',
-									'ok'   => true,
-									'side' => 'store',
-								),
-							),
+							'checks' => $rows,
 						)
 					),
 				);
@@ -466,5 +471,146 @@ class SelfCheckWatchTest extends TestCase {
 		$this->assertTrue( Self_Check::email_enabled() );
 		$this->options[ Self_Check::OPTION_EMAIL ] = 'no';
 		$this->assertFalse( Self_Check::email_enabled() );
+	}
+
+	/** A server answer: every local row passed, plus these rows. */
+	private function server_answers( array $rows ) {
+		$this->server_rows = array();
+		foreach ( array_keys( Self_Check::LETTERS ) as $code ) {
+			$this->server_rows[] = array(
+				'code' => $code,
+				'ok'   => true,
+				'side' => 'store',
+			);
+		}
+		$this->server_rows = array_merge( $this->server_rows, $rows );
+	}
+
+	public function test_notice_level_reads_the_rows() {
+		$level = static function ( array $checks ) {
+			return Self_Check_Watch::notice_level( Self_Check::offline( $checks, 'page', self::NOW ) );
+		};
+		foreach ( array( 'connection_saved', 'connection_status', 'store_currency', 'not_a_copy' ) as $code ) {
+			$this->assertSame( 'hidden', $level( array( Self_Check::check( $code, false, 'store', array() ) ) ), $code );
+		}
+		$this->assertSame( 'hidden', $level( array( Self_Check::check( 'connection_status', false, 'processor', array( 'status' => 'revoked' ) ) ) ), 'revoked hides, whoever acts' );
+		$this->assertSame( 'hidden', $level( array( Self_Check::check( 'methods_fresh', false, 'store', array( 'problem' => 'none_shown' ) ) ) ) );
+		$this->assertSame( 'problem', $level( array( Self_Check::check( 'methods_fresh', false, 'store', array( 'problem' => 'stale' ) ) ) ), 'the cached list still shows' );
+		foreach ( array( 'scheduler_jobs', 'wp_cron', 'versions' ) as $code ) {
+			$this->assertSame( 'problem', $level( array( Self_Check::check( $code, false, 'store', array() ) ) ), $code );
+		}
+		$this->assertSame( '', $level( array( Self_Check::check( 'api_reachable', false, 'outlinepay', array( 'outcome' => 'server_error' ) ) ) ) );
+		$this->assertSame( '', $level( array( Self_Check::check( 'versions', true, 'store', array() ) ) ), 'nothing failed' );
+	}
+
+	public function test_a_server_row_the_store_fixes_gets_the_soft_notice() {
+		$this->server_answers(
+			array(
+				array(
+					'code' => 'callback_reachable',
+					'ok'   => false,
+					'side' => 'store',
+				),
+			)
+		);
+		Self_Check_Watch::run_now();
+		$html = $this->notice();
+		$this->assertStringContainsString( 'self-check found a problem.', $html );
+		$this->assertStringContainsString( 'notice-warning', $html );
+		$this->assertStringContainsString( 'Open the OutlinePay page to fix it.', $html );
+		$this->assertStringNotContainsString( 'not showing at checkout', $html );
+	}
+
+	public function test_server_rows_only_outlinepay_or_the_provider_can_fix_show_no_notice() {
+		$this->server_answers(
+			array(
+				array(
+					'code' => 'deliveries_gave_up_7d',
+					'ok'   => false,
+					'side' => 'outlinepay',
+				),
+				array(
+					'code' => 'open_problems_7d',
+					'ok'   => false,
+					'side' => 'processor',
+				),
+			)
+		);
+		Self_Check_Watch::run_now();
+		$this->assertSame( 2, Self_Check::last()['failed_count'] );
+		$this->assertSame( '', $this->notice() );
+	}
+
+	public function test_an_api_reachable_failure_alone_shows_no_notice() {
+		$this->options[ Self_Check::OPTION_LAST ] = Self_Check::offline(
+			array_merge(
+				array( Self_Check::check( 'api_reachable', false, 'outlinepay', array( 'outcome' => 'server_error' ) ) ),
+				Self_Check::local_checks( $this->facts, self::NOW )
+			),
+			'page',
+			self::NOW
+		);
+		$this->assertSame( 1, Self_Check::last()['failed_count'] );
+		$this->assertSame( '', $this->notice() );
+	}
+
+	public function test_a_hourly_refresh_that_worked_records_outlinepay_reached() {
+		$this->options[ Self_Check::OPTION_LAST ] = Self_Check::offline(
+			array_merge(
+				array( Self_Check::check( 'api_reachable', false, 'store', array( 'outcome' => 'network_error' ) ) ),
+				Self_Check::local_checks( $this->facts, self::NOW - 3600 )
+			),
+			'page',
+			self::NOW - 3600
+		);
+		Self_Check_Watch::record_local( 140 );
+		$last = Self_Check::last();
+		$this->assertSame( 0, $last['failed_count'] );
+		$row = $last['checks'][ array_search( 'api_reachable', array_column( $last['checks'], 'code' ), true ) ];
+		$this->assertTrue( $row['ok'] );
+		$this->assertSame( '140', $row['detail']['elapsed_ms'] );
+		$this->assertCount( 1, array_keys( array_column( $last['checks'], 'code' ), 'api_reachable', true ), 'replaced in place' );
+	}
+
+	public function test_a_hourly_refresh_that_failed_leaves_api_reachable_as_stored() {
+		$this->options[ Self_Check::OPTION_LAST ] = Self_Check::offline(
+			array_merge(
+				array( Self_Check::check( 'api_reachable', false, 'store', array( 'outcome' => 'network_error' ) ) ),
+				Self_Check::local_checks( $this->facts, self::NOW - 3600 )
+			),
+			'page',
+			self::NOW - 3600
+		);
+		Self_Check_Watch::record_local( null );
+		$last = Self_Check::last();
+		$this->assertSame( 1, $last['failed_count'] );
+		$this->assertSame( 'OP-OFFLINE-C', $last['code'] );
+	}
+
+	public function test_the_hourly_action_times_a_refresh_that_worked() {
+		Functions\when( 'wp_remote_request' )->justReturn( array() );
+		Functions\when( 'is_wp_error' )->justReturn( false );
+		Functions\when( 'wp_remote_retrieve_response_code' )->justReturn( 200 );
+		Functions\when( 'wp_remote_retrieve_body' )->justReturn( json_encode( array( 'data' => array( array( 'method' => 'card' ) ) ) ) );
+		Scheduler::hourly();
+		$last = Self_Check::last();
+		$this->assertContains( 'api_reachable', array_column( $last['checks'], 'code' ) );
+		$this->assertSame( 0, $last['failed_count'] );
+	}
+
+	public function test_no_queued_run_when_a_page_run_followed_the_change() {
+		// Fix all: the currency is set, then the page check runs inline.
+		Self_Check_Watch::changed();
+		Self_Check_Watch::run_now();
+		Self_Check_Watch::flush();
+		$this->assertSame( array(), $this->queued );
+		$this->assertSame( 1, $this->posted_runs() );
+	}
+
+	public function test_a_change_after_a_page_run_still_queues() {
+		Self_Check_Watch::run_now();
+		Self_Check_Watch::changed();
+		Self_Check_Watch::flush();
+		$this->assertSame( array( Scheduler::HOOK_CHECK_NOW ), $this->queued );
 	}
 }

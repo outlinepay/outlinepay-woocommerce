@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-25T06:46:08+00:00\n"
+"POT-Creation-Date: 2026-10-25T06:55:16+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: outlinepay-for-woocommerce\n"
@@ -37,7 +37,7 @@ msgstr ""
 #: includes/class-admin-page.php:95
 #: includes/class-admin-page.php:510
 #: includes/class-gateway.php:82
-#: includes/class-self-check.php:937
+#: includes/class-self-check.php:958
 msgid "OutlinePay"
 msgstr ""
 
@@ -1041,164 +1041,168 @@ msgstr ""
 msgid "We could not confirm your payment yet. If you paid, this order updates in a few minutes. Otherwise, pay again below."
 msgstr ""
 
-#: includes/class-self-check-watch.php:219
+#: includes/class-self-check-watch.php:259
 msgid "OutlinePay: payment methods are not showing at checkout."
 msgstr ""
 
-#: includes/class-self-check-watch.php:220
+#: includes/class-self-check-watch.php:261
+msgid "OutlinePay's self-check found a problem."
+msgstr ""
+
+#: includes/class-self-check-watch.php:265
 msgid "Open the OutlinePay page to fix it."
 msgstr ""
 
-#: includes/class-self-check.php:933
+#: includes/class-self-check.php:954
 msgid "You"
 msgstr ""
 
-#: includes/class-self-check.php:935
-#: includes/class-self-check.php:942
-#: includes/class-self-check.php:1008
+#: includes/class-self-check.php:956
+#: includes/class-self-check.php:963
+#: includes/class-self-check.php:1029
 #: includes/class-settings.php:425
 msgid "Your payment provider"
 msgstr ""
 
-#: includes/class-self-check.php:939
+#: includes/class-self-check.php:960
 msgid "Shopper"
 msgstr ""
 
-#: includes/class-self-check.php:959
+#: includes/class-self-check.php:980
 msgid "The connection is saved on this site."
 msgstr ""
 
-#: includes/class-self-check.php:960
+#: includes/class-self-check.php:981
 msgid "The saved connection is missing or can no longer be read. Disconnect, then connect again with a new code from your payment provider."
 msgstr ""
 
-#: includes/class-self-check.php:963
+#: includes/class-self-check.php:984
 msgid "The store is connected."
 msgstr ""
 
-#: includes/class-self-check.php:966
+#: includes/class-self-check.php:987
 msgid "This connection was turned off. Ask your payment provider for a new connect code."
 msgstr ""
 
-#: includes/class-self-check.php:967
+#: includes/class-self-check.php:988
 msgid "The store is not connected. Connect it with a code from your payment provider."
 msgstr ""
 
 #. translators: %s: milliseconds, such as 120.
-#: includes/class-self-check.php:972
+#: includes/class-self-check.php:993
 #, php-format
 msgid "OutlinePay answered in %s ms."
 msgstr ""
 
-#: includes/class-self-check.php:977
+#: includes/class-self-check.php:998
 msgid "This site could not reach OutlinePay. Check that the server can make outgoing HTTPS requests."
 msgstr ""
 
-#: includes/class-self-check.php:980
+#: includes/class-self-check.php:1001
 msgid "OutlinePay refused this store's connection. Ask your payment provider for a new connect code."
 msgstr ""
 
-#: includes/class-self-check.php:982
+#: includes/class-self-check.php:1003
 msgid "OutlinePay could not answer the check. Try again in a few minutes."
 msgstr ""
 
-#: includes/class-self-check.php:985
+#: includes/class-self-check.php:1006
 msgid "Background payment checks are scheduled."
 msgstr ""
 
-#: includes/class-self-check.php:986
+#: includes/class-self-check.php:1007
 msgid "Background payment checks are missing or late. Open WooCommerce > Status > Scheduled Actions and look for failed outlinepay actions."
 msgstr ""
 
-#: includes/class-self-check.php:989
+#: includes/class-self-check.php:1010
 msgid "Scheduled tasks are running."
 msgstr ""
 
-#: includes/class-self-check.php:990
+#: includes/class-self-check.php:1011
 msgid "WP-Cron is turned off and no scheduled task ran in the last 2 hours. Ask your host to run wp-cron.php from a server cron job."
 msgstr ""
 
-#: includes/class-self-check.php:993
+#: includes/class-self-check.php:1014
 msgid "The payment method list is up to date and at least one method shows at checkout."
 msgstr ""
 
-#: includes/class-self-check.php:996
+#: includes/class-self-check.php:1017
 msgid "No OutlinePay method shows at checkout. Turn one on under Payment methods on the OutlinePay page, or ask your payment provider to enable one."
 msgstr ""
 
-#: includes/class-self-check.php:997
+#: includes/class-self-check.php:1018
 msgid "The payment method list was not refreshed in the last 2 hours."
 msgstr ""
 
 #. translators: %s: currency code such as KRW.
-#: includes/class-self-check.php:1002
+#: includes/class-self-check.php:1023
 #, php-format
 msgid "The store currency is %s."
 msgstr ""
 
 #. translators: 1: store currency code such as USD, 2: payment provider name, 3: currency codes the provider takes, such as KRW.
-#: includes/class-self-check.php:1006
+#: includes/class-self-check.php:1027
 #, php-format
 msgid "The store currency is %1$s. %2$s takes payments in %3$s only."
 msgstr ""
 
-#: includes/class-self-check.php:1013
+#: includes/class-self-check.php:1034
 msgid "This site is at the address the store was connected at."
 msgstr ""
 
-#: includes/class-self-check.php:1014
+#: includes/class-self-check.php:1035
 msgid "This site looks like a copy of your store. OutlinePay is off here."
 msgstr ""
 
-#: includes/class-self-check.php:1017
+#: includes/class-self-check.php:1038
 msgid "PHP, WordPress and WooCommerce meet this plugin's requirements."
 msgstr ""
 
-#: includes/class-self-check.php:1018
+#: includes/class-self-check.php:1039
 msgid "PHP, WordPress or WooCommerce is older than this plugin needs, or WooCommerce did not register its order storage support."
 msgstr ""
 
-#: includes/class-self-check.php:1021
+#: includes/class-self-check.php:1042
 msgid "OutlinePay reached this store's payment update address."
 msgstr ""
 
-#: includes/class-self-check.php:1022
+#: includes/class-self-check.php:1043
 msgid "OutlinePay could not reach this store's payment update address. Check that the site is online and that no firewall or security plugin blocks /wp-json/outlinepay/v1/callback."
 msgstr ""
 
-#: includes/class-self-check.php:1025
+#: includes/class-self-check.php:1046
 msgid "This store talked to OutlinePay in the last 24 hours."
 msgstr ""
 
-#: includes/class-self-check.php:1026
+#: includes/class-self-check.php:1047
 msgid "This store has not talked to OutlinePay in the last 24 hours."
 msgstr ""
 
-#: includes/class-self-check.php:1029
+#: includes/class-self-check.php:1050
 msgid "Every payment update in the last 7 days reached the store."
 msgstr ""
 
-#: includes/class-self-check.php:1030
+#: includes/class-self-check.php:1051
 msgid "Some payment updates in the last 7 days could not be delivered to the store."
 msgstr ""
 
-#: includes/class-self-check.php:1033
+#: includes/class-self-check.php:1054
 msgid "No open problems in the last 7 days."
 msgstr ""
 
-#: includes/class-self-check.php:1036
+#: includes/class-self-check.php:1057
 msgid "OutlinePay recorded problems in the last 7 days that are not resolved yet. Send the diagnostic code to your payment provider."
 msgstr ""
 
-#: includes/class-self-check.php:1037
+#: includes/class-self-check.php:1058
 msgid "OutlinePay recorded problems in the last 7 days that are not resolved yet."
 msgstr ""
 
-#: includes/class-self-check.php:1040
+#: includes/class-self-check.php:1061
 msgid "Passed."
 msgstr ""
 
-#: includes/class-self-check.php:1041
+#: includes/class-self-check.php:1062
 msgid "Failed."
 msgstr ""
 

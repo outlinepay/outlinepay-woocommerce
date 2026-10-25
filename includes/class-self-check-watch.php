@@ -10,14 +10,18 @@
  *   run: stored and sent to OutlinePay like "Run check".
  * - Hourly. The hourly method refresh records the local checks (no extra
  *   call to OutlinePay), so a failure with no event shows within an hour.
- * - Notice. While the last stored run has a failing check, every admin page
- *   but the OutlinePay page says so. It is not dismissable: it goes away
- *   when a later run passes.
+ *   A refresh that worked also counts as OutlinePay reached.
+ * - Notice. While the last stored run has a failing check the merchant can
+ *   fix, every admin page but the OutlinePay page says so (see
+ *   notice_level()). It is not dismissable: it goes away when a later run
+ *   passes.
  *
  * Debounce: the first event in a request asks for a run at the end of the
  * request. Later events in the same request add nothing. At the end, one
  * async action is queued on Action Scheduler, and none when one is already
- * waiting. The run happens there, never in a shopper's request. Only a
+ * waiting, or when a page run already happened after the last change in
+ * this request (such as Fix all). The run happens there, never in a
+ * shopper's request. Only a
  * WooCommerce deactivation runs at the end of its own admin request (see
  * flush()). Events on front-end requests are ignored. The hourly run
  * catches those.
@@ -36,6 +40,15 @@ final class Self_Check_Watch {
 
 	const WC_BASENAME = 'woocommerce/woocommerce.php';
 
+	const NOTICE_HIDDEN  = 'hidden';
+	const NOTICE_PROBLEM = 'problem';
+
+	/**
+	 * Failing rows that take the methods off checkout. methods_fresh only
+	 * when no method is shown (see Self_Check::methods_fresh).
+	 */
+	const HIDING_ROWS = array( 'connection_saved', 'connection_status', 'store_currency', 'not_a_copy' );
+
 	/**
 	 * Whether this request asked for a run.
 	 *
@@ -49,6 +62,13 @@ final class Self_Check_Watch {
 	 * @var bool
 	 */
 	private static $wc_gone = false;
+
+	/**
+	 * Self_Check::page_runs() at the last change in this request.
+	 *
+	 * @var int
+	 */
+	private static $page_runs = 0;
 
 	/**
 	 * Test seam: returns the Self_Check to use. Null uses a new Self_Check.
@@ -129,6 +149,7 @@ final class Self_Check_Watch {
 		if ( $wc_gone ) {
 			self::$wc_gone = true;
 		}
+		self::$page_runs = Self_Check::page_runs();
 		if ( self::$requested ) {
 			return;
 		}
@@ -155,7 +176,13 @@ final class Self_Check_Watch {
 			// This plugin was deactivated in the same request.
 			return;
 		}
-		self::queue();
+		if ( $wc_gone ) {
+			// Waits while WooCommerce is off, runs when it is back.
+			self::queue();
+		} elseif ( Self_Check::page_runs() === self::$page_runs ) {
+			// No page run since the last change saw it.
+			self::queue();
+		}
 		if ( $wc_gone ) {
 			self::engine( array( 'wc' => '' ) )->run( Self_Check::TRIGGER_PAGE );
 		}
@@ -186,20 +213,34 @@ final class Self_Check_Watch {
 
 	/**
 	 * The hourly record: the local checks merged into the stored result.
-	 * No network.
+	 * No network. When the method refresh just reached OutlinePay, its time
+	 * is recorded as api_reachable passing. Otherwise that row stays as stored.
 	 *
+	 * @param int|null $refresh_ms Milliseconds the refresh took, null when it failed.
 	 * @return void
 	 */
-	public static function record_local() {
+	public static function record_local( $refresh_ms = null ) {
 		if ( ! self::watching() ) {
 			return;
 		}
-		self::engine()->run_local( Self_Check::TRIGGER_HOURLY );
+		$extra = array();
+		if ( null !== $refresh_ms ) {
+			$extra[] = Self_Check::check(
+				'api_reachable',
+				true,
+				'store',
+				array(
+					'outcome'    => 'ok',
+					'elapsed_ms' => (string) (int) $refresh_ms,
+				)
+			);
+		}
+		self::engine()->run_local( Self_Check::TRIGGER_HOURLY, $extra );
 	}
 
 	/**
 	 * Admin notice on every admin page but the OutlinePay page, while the
-	 * last run has a failing check.
+	 * last run has a failing check the merchant can fix.
 	 *
 	 * @return void
 	 */
@@ -212,12 +253,44 @@ final class Self_Check_Watch {
 		if ( isset( $_GET['page'] ) && Admin_Page::SLUG === sanitize_key( wp_unslash( $_GET['page'] ) ) ) {
 			return;
 		}
-		$last = Self_Check::last();
-		if ( ! $last || (int) $last['failed_count'] < 1 ) {
+		$last  = Self_Check::last();
+		$level = $last ? self::notice_level( $last ) : '';
+		if ( self::NOTICE_HIDDEN === $level ) {
+			echo '<div class="notice notice-error outlinepay-check-notice"><p>' . esc_html__( 'OutlinePay: payment methods are not showing at checkout.', 'outlinepay-for-woocommerce' );
+		} elseif ( self::NOTICE_PROBLEM === $level ) {
+			echo '<div class="notice notice-warning outlinepay-check-notice"><p>' . esc_html__( 'OutlinePay\'s self-check found a problem.', 'outlinepay-for-woocommerce' );
+		} else {
 			return;
 		}
-		echo '<div class="notice notice-error outlinepay-check-notice"><p>' . esc_html__( 'OutlinePay: payment methods are not showing at checkout.', 'outlinepay-for-woocommerce' );
 		echo ' <a href="' . esc_url( Admin_Page::url() ) . '">' . esc_html__( 'Open the OutlinePay page to fix it.', 'outlinepay-for-woocommerce' ) . '</a></p></div>';
+	}
+
+	/**
+	 * Which notice a result needs. Pure.
+	 *
+	 * hidden: a failing row takes the methods off checkout. problem: some
+	 * other failing row is the store's to fix. '' otherwise: nothing failed,
+	 * or only OutlinePay or the provider can act. The OutlinePay page still
+	 * shows those.
+	 *
+	 * @param array $result Result.
+	 * @return string hidden, problem or ''.
+	 */
+	public static function notice_level( array $result ) {
+		$level = '';
+		foreach ( $result['checks'] as $check ) {
+			if ( ! empty( $check['ok'] ) ) {
+				continue;
+			}
+			$code = isset( $check['code'] ) ? $check['code'] : '';
+			if ( in_array( $code, self::HIDING_ROWS, true ) || ( 'methods_fresh' === $code && isset( $check['detail']['problem'] ) && 'none_shown' === $check['detail']['problem'] ) ) {
+				return self::NOTICE_HIDDEN;
+			}
+			if ( isset( $check['side'] ) && 'store' === $check['side'] ) {
+				$level = self::NOTICE_PROBLEM;
+			}
+		}
+		return $level;
 	}
 
 	/**
@@ -269,5 +342,6 @@ final class Self_Check_Watch {
 		self::$self_check = $factory;
 		self::$requested  = false;
 		self::$wc_gone    = false;
+		self::$page_runs  = 0;
 	}
 }

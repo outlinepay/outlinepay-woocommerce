@@ -82,6 +82,13 @@ final class Self_Check {
 	const SIDE_ORDER = array( 'outlinepay', 'processor', 'store', 'shopper', 'unknown' );
 
 	/**
+	 * Page runs started in this request (see Self_Check_Watch::flush).
+	 *
+	 * @var int
+	 */
+	private static $page_runs = 0;
+
+	/**
 	 * Returns the facts local_checks() reads (see gather_facts()).
 	 *
 	 * @var callable
@@ -125,9 +132,12 @@ final class Self_Check {
 	 */
 	public function run( $trigger ) {
 		$trigger = self::TRIGGER_DAILY === $trigger ? self::TRIGGER_DAILY : self::TRIGGER_PAGE;
-		$facts   = call_user_func( $this->facts_provider );
-		$now     = (int) call_user_func( $this->clock );
-		$checks  = self::local_checks( $facts, $now );
+		if ( self::TRIGGER_PAGE === $trigger ) {
+			++self::$page_runs;
+		}
+		$facts  = call_user_func( $this->facts_provider );
+		$now    = (int) call_user_func( $this->clock );
+		$checks = self::local_checks( $facts, $now );
 
 		// A copy holds the live store's credentials: it never calls OutlinePay.
 		if ( ! $facts['has_installation'] || ! $facts['credentials_readable'] || $facts['is_copy'] ) {
@@ -184,13 +194,14 @@ final class Self_Check {
 	 * trigger hourly. That trigger stays on this site.
 	 *
 	 * @param string $trigger page or hourly.
+	 * @param array  $extra   Fresh checks to merge too, such as api_reachable.
 	 * @return array The stored result.
 	 */
-	public function run_local( $trigger = self::TRIGGER_PAGE ) {
+	public function run_local( $trigger = self::TRIGGER_PAGE, array $extra = array() ) {
 		$trigger = self::TRIGGER_HOURLY === $trigger ? self::TRIGGER_HOURLY : self::TRIGGER_PAGE;
 		$facts   = call_user_func( $this->facts_provider );
 		$now     = (int) call_user_func( $this->clock );
-		$checks  = self::local_checks( $facts, $now );
+		$checks  = array_merge( self::local_checks( $facts, $now ), $extra );
 		$last    = self::last();
 		$result  = $last ? self::merge( $last, $checks, $trigger, $now ) : self::offline( $checks, $trigger, $now );
 		self::store( $result );
@@ -237,7 +248,17 @@ final class Self_Check {
 			$checks[] = $check;
 		}
 		$online = ! empty( $last['online'] );
+		// ran_at becomes $now under the stored chk_ code: server rows may be older than ran_at.
 		return self::result( $online ? (string) $last['code'] : self::offline_code( $checks ), $online, $trigger, $now, $checks );
+	}
+
+	/**
+	 * How many page runs started in this request.
+	 *
+	 * @return int
+	 */
+	public static function page_runs() {
+		return self::$page_runs;
 	}
 
 	/**

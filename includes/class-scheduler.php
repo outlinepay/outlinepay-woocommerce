@@ -161,8 +161,9 @@ final class Scheduler {
 	 * @return void
 	 */
 	public static function hourly() {
-		self::refresh_methods();
-		Self_Check_Watch::record_local();
+		$started   = microtime( true );
+		$refreshed = self::refresh_methods();
+		Self_Check_Watch::record_local( $refreshed ? (int) round( ( microtime( true ) - $started ) * 1000 ) : null );
 	}
 
 	/**
