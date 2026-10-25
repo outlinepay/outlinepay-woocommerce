@@ -161,6 +161,65 @@ class WindowOutcomeTest extends RefundTestCase {
 		$this->assertSame( array(), $this->order->notes );
 	}
 
+	public function test_a_held_order_whose_attempt_fails_keeps_the_status_note() {
+		$this->order->status                        = 'on-hold';
+		$this->order->meta[ Order_Sync::META_HOLD ] = 'mismatch';
+
+		Order_Sync::apply(
+			$this->order,
+			self::payment(
+				array(
+					'status'         => 'failed',
+					'window_outcome' => 'failed',
+				)
+			)
+		);
+
+		$this->assertSame( array( 'OutlinePay payment ppay_mine is failed. The order is waiting for payment.' ), $this->order->notes );
+	}
+
+	public function test_an_order_another_gateway_already_paid_gets_no_window_note() {
+		$this->order->payment_method = 'bacs';
+		$this->order->date_paid      = '2026-10-17T10:00:00+00:00';
+
+		Order_Sync::apply( $this->order, self::open( array( 'window_outcome' => 'cancelled' ) ) );
+		Order_Sync::apply(
+			$this->order,
+			self::payment(
+				array(
+					'status'         => 'failed',
+					'window_outcome' => 'failed',
+				)
+			)
+		);
+
+		$this->assertSame( array(), $this->order->notes );
+	}
+
+	public function test_a_test_attempt_says_test_mode_in_its_window_note() {
+		Order_Sync::apply(
+			$this->order,
+			self::open(
+				array(
+					'mode'           => 'test',
+					'window_outcome' => 'cancelled',
+				)
+			)
+		);
+		Order_Sync::apply(
+			$this->order,
+			self::payment(
+				array(
+					'mode'           => 'test',
+					'status'         => 'failed',
+					'window_outcome' => 'failed',
+				)
+			)
+		);
+
+		$this->assertSame( array( self::CANCELLED_NOTE . ' (test mode)', self::FAILED_NOTE . ' (test mode)' ), $this->order->notes );
+	}
+
 	public function test_the_note_is_written_in_the_site_language() {
 		$locales = array( 'en_US' );
 		Functions\when( 'get_locale' )->justReturn( 'ko_KR' );

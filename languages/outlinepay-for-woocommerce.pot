@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-25T04:11:06+00:00\n"
+"POT-Creation-Date: 2026-10-25T04:21:58+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: outlinepay-for-woocommerce\n"
@@ -745,93 +745,93 @@ msgid "An OutlinePay payment by %1$s could not start (%2$s). The shopper saw an 
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:229
+#: includes/class-order-sync.php:230
 #, php-format
 msgid "OutlinePay payment %s started. Waiting for the shopper."
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:232
+#: includes/class-order-sync.php:233
 #, php-format
 msgid "OutlinePay payment %s expired. The shopper did not finish."
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:235
+#: includes/class-order-sync.php:236
 #, php-format
 msgid "OutlinePay payment %s: the shopper cancelled in the payment window. The order is still waiting for payment."
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:238
+#: includes/class-order-sync.php:239
 #, php-format
 msgid "OutlinePay payment %s: the payment provider refused the payment in its window and did not say why. The order is still waiting for payment."
 msgstr ""
 
-#: includes/class-order-sync.php:445
+#: includes/class-order-sync.php:474
 msgid "(test mode)"
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:480
+#: includes/class-order-sync.php:503
 #, php-format
 msgid "OutlinePay payment %s was paid, but this order was already paid with another payment method. The shopper paid twice. To refund the OutlinePay payment, use your payment provider dashboard."
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:499
+#: includes/class-order-sync.php:522
 #, php-format
 msgid "OutlinePay payment %s is paid."
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:511
+#: includes/class-order-sync.php:534
 #, php-format
 msgid "OutlinePay payment %s was made for this order number from another copy of this store, such as a staging site. It does not pay this order. Check it before shipping."
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:535
+#: includes/class-order-sync.php:558
 #, php-format
 msgid "OutlinePay payment %s reports paid, but the amount or currency does not match this order. Check it before shipping."
 msgstr ""
 
-#: includes/class-order-sync.php:558
+#: includes/class-order-sync.php:581
 msgid "OutlinePay issued a virtual account. Waiting for the deposit."
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:574
+#: includes/class-order-sync.php:597
 #, php-format
 msgid "OutlinePay payment %s expired before the deposit arrived."
 msgstr ""
 
 #. translators: 1: OutlinePay payment id, 2: status such as failed or expired.
-#: includes/class-order-sync.php:589
+#: includes/class-order-sync.php:612
 #, php-format
 msgid "OutlinePay payment %1$s is %2$s. The order is waiting for payment."
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:606
+#: includes/class-order-sync.php:629
 #, php-format
 msgid "OutlinePay payment %s needs review: it was paid for a different amount than ordered. OutlinePay has been alerted. Do not ship until it is settled."
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:621
+#: includes/class-order-sync.php:644
 #, php-format
 msgid "OutlinePay payment %s is probably the shopper's real payment for this order. The earlier payment came from another copy of this store. Check both payments before you refund anything. The order stays on hold."
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:632
+#: includes/class-order-sync.php:655
 #, php-format
 msgid "OutlinePay payment %s was paid after this order was already paid. The shopper paid twice. OutlinePay has been alerted. Refund the second payment in your payment provider dashboard."
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:659
+#: includes/class-order-sync.php:682
 #, php-format
 msgid "The shopper chose another payment method for this order, but then paid OutlinePay payment %s. The payment method is set back to OutlinePay."
 msgstr ""

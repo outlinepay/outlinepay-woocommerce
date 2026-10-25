@@ -212,12 +212,13 @@ final class Order_Sync {
 	 * The private note for an attempt that started or expired, at most once
 	 * per attempt and event. The caller saves the order.
 	 *
-	 * @param \WC_Order $order      Order.
-	 * @param string    $payment_id OutlinePay payment id.
-	 * @param string    $event      started, expired, window_cancelled or window_failed.
+	 * @param \WC_Order  $order      Order.
+	 * @param string     $payment_id OutlinePay payment id.
+	 * @param string     $event      started, expired, window_cancelled or window_failed.
+	 * @param array|null $payment    The payment, when known: a test payment's note says so.
 	 * @return bool True when the note was added.
 	 */
-	public static function note_attempt( $order, $payment_id, $event ) {
+	public static function note_attempt( $order, $payment_id, $event, $payment = null ) {
 		$key   = $payment_id . ':' . $event;
 		$noted = $order->get_meta( self::META_NOTED );
 		$noted = is_array( $noted ) ? $noted : array();
@@ -232,10 +233,10 @@ final class Order_Sync {
 			Notes::write( $order, fn () => sprintf( __( 'OutlinePay payment %s expired. The shopper did not finish.', 'outlinepay-for-woocommerce' ), $payment_id ) );
 		} elseif ( 'window_cancelled' === $event ) {
 			/* translators: %s: OutlinePay payment id. */
-			Notes::write( $order, fn () => sprintf( __( 'OutlinePay payment %s: the shopper cancelled in the payment window. The order is still waiting for payment.', 'outlinepay-for-woocommerce' ), $payment_id ) );
+			Notes::write( $order, fn () => self::note( sprintf( __( 'OutlinePay payment %s: the shopper cancelled in the payment window. The order is still waiting for payment.', 'outlinepay-for-woocommerce' ), $payment_id ), is_array( $payment ) ? $payment : array() ) );
 		} elseif ( 'window_failed' === $event ) {
 			/* translators: %s: OutlinePay payment id. */
-			Notes::write( $order, fn () => sprintf( __( 'OutlinePay payment %s: the payment provider refused the payment in its window and did not say why. The order is still waiting for payment.', 'outlinepay-for-woocommerce' ), $payment_id ) );
+			Notes::write( $order, fn () => self::note( sprintf( __( 'OutlinePay payment %s: the payment provider refused the payment in its window and did not say why. The order is still waiting for payment.', 'outlinepay-for-woocommerce' ), $payment_id ), is_array( $payment ) ? $payment : array() ) );
 		} else {
 			return false;
 		}
@@ -283,11 +284,39 @@ final class Order_Sync {
 	 * @return bool True when the note was added.
 	 */
 	public static function note_window( $order, $payment, $decision ) {
-		$outcome = self::window_outcome( $payment, $decision );
-		if ( null === $outcome || $order->is_paid() || $order->has_status( 'on-hold' ) ) {
+		if ( ! self::window_note_due( $order, $payment, $decision ) ) {
 			return false;
 		}
-		return self::note_attempt( $order, (string) $payment['id'], 'window_' . $outcome );
+		return self::note_attempt( $order, (string) $payment['id'], 'window_' . self::window_outcome( $payment, $decision ), $payment );
+	}
+
+	/**
+	 * True when the payment carries a window outcome and the order is neither
+	 * paid (by the same test as act) nor on hold: the case note_window writes for.
+	 *
+	 * @param \WC_Order   $order    Order.
+	 * @param mixed       $payment  Payment.
+	 * @param string|null $decision Decision for the payment.
+	 * @return bool
+	 */
+	private static function window_note_due( $order, $payment, $decision ) {
+		return null !== self::window_outcome( $payment, $decision ) && ! self::counts_as_paid( $order ) && ! $order->has_status( 'on-hold' );
+	}
+
+	/**
+	 * True when the order is paid, or another gateway took the money already
+	 * (a 3-D Secure redirect that finished, a webhook) without the status
+	 * showing it yet: its paid date or transaction id gives it away.
+	 *
+	 * @param \WC_Order $order Order.
+	 * @return bool
+	 */
+	private static function counts_as_paid( $order ) {
+		if ( $order->is_paid() ) {
+			return true;
+		}
+		$other_gateway = null === Settings::method_for_gateway( $order->get_payment_method() );
+		return $other_gateway && ( $order->get_date_paid() || '' !== (string) $order->get_transaction_id() );
 	}
 
 	/**
@@ -457,15 +486,9 @@ final class Order_Sync {
 	 * @return void
 	 */
 	private static function act( $order, array $payment, $decision, array $context ) {
-		$payment_id = (string) $payment['id'];
-		$paid       = $order->is_paid();
-		// Another gateway may have taken the money already (a 3-D Secure
-		// redirect that finished, a webhook) without the status showing it yet.
-		// Its paid date or transaction id gives it away.
+		$payment_id    = (string) $payment['id'];
+		$paid          = self::counts_as_paid( $order );
 		$other_gateway = null === Settings::method_for_gateway( $order->get_payment_method() );
-		if ( $other_gateway && ! $paid && ( $order->get_date_paid() || '' !== (string) $order->get_transaction_id() ) ) {
-			$paid = true;
-		}
 
 		switch ( $decision ) {
 			case self::COMPLETE:
@@ -578,8 +601,8 @@ final class Order_Sync {
 					);
 					return;
 				}
-				if ( 'failed' === $payment['status'] && null !== self::window_outcome( $payment, $decision ) ) {
-					// The window note (see note_window) says what happened.
+				if ( 'failed' === $payment['status'] && self::window_note_due( $order, $payment, $decision ) ) {
+					// The window note (see note_window, right after this) says what happened.
 					return;
 				}
 				Notes::write(

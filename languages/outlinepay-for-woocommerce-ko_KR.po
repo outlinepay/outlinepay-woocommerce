@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: OutlinePay for WooCommerce 0.5.1\n"
 "Report-Msgid-Bugs-To: https://outlinepay.com\n"
-"POT-Creation-Date: 2026-10-25T04:11:06+00:00\n"
+"POT-Creation-Date: 2026-10-25T04:21:58+00:00\n"
 "PO-Revision-Date: 2026-10-25 00:30-0400\n"
 "Last-Translator: OutlinePay <dev@outlinepay.com>\n"
 "Language-Team: OutlinePay <dev@outlinepay.com>\n"
@@ -777,7 +777,9 @@ msgstr ""
 msgid ""
 "Test payment. This order was paid through the payment provider's test system "
 "and is not a real sale."
-msgstr "테스트 결제입니다. 이 주문은 결제대행사의 테스트 시스템으로 결제되었으며 실제 판매가 아닙니다."
+msgstr ""
+"테스트 결제입니다. 이 주문은 결제대행사의 테스트 시스템으로 결제되었으며 실"
+"제 판매가 아닙니다."
 
 #: includes/class-order-display.php:270 includes/class-order-display.php:302
 #: includes/class-order-display.php:309
@@ -866,40 +868,44 @@ msgstr ""
 "시되었으며 다시 시도할 수 있습니다."
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:229
+#: includes/class-order-sync.php:230
 #, php-format
 msgid "OutlinePay payment %s started. Waiting for the shopper."
 msgstr "OutlinePay 결제 %s가 시작되었습니다. 구매자의 결제를 기다립니다."
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:232
+#: includes/class-order-sync.php:233
 #, php-format
 msgid "OutlinePay payment %s expired. The shopper did not finish."
 msgstr ""
 "OutlinePay 결제 %s가 만료되었습니다. 구매자가 결제를 마치지 않았습니다."
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:235
+#: includes/class-order-sync.php:236
 #, php-format
 msgid ""
 "OutlinePay payment %s: the shopper cancelled in the payment window. The "
 "order is still waiting for payment."
-msgstr "OutlinePay 결제 %s: 구매자가 결제 창에서 결제를 취소했습니다. 주문은 아직 결제를 기다립니다."
+msgstr ""
+"OutlinePay 결제 %s: 구매자가 결제 창에서 결제를 취소했습니다. 주문은 아직 결"
+"제를 기다립니다."
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:238
+#: includes/class-order-sync.php:239
 #, php-format
 msgid ""
 "OutlinePay payment %s: the payment provider refused the payment in its "
 "window and did not say why. The order is still waiting for payment."
-msgstr "OutlinePay 결제 %s: 결제대행사가 결제 창에서 결제를 거절했으며 사유는 알려 주지 않았습니다. 주문은 아직 결제를 기다립니다."
+msgstr ""
+"OutlinePay 결제 %s: 결제대행사가 결제 창에서 결제를 거절했으며 사유는 알려 주"
+"지 않았습니다. 주문은 아직 결제를 기다립니다."
 
-#: includes/class-order-sync.php:445
+#: includes/class-order-sync.php:474
 msgid "(test mode)"
 msgstr "(테스트 모드)"
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:480
+#: includes/class-order-sync.php:503
 #, php-format
 msgid ""
 "OutlinePay payment %s was paid, but this order was already paid with another "
@@ -911,13 +917,13 @@ msgstr ""
 "리 화면을 이용하십시오."
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:499
+#: includes/class-order-sync.php:522
 #, php-format
 msgid "OutlinePay payment %s is paid."
 msgstr "OutlinePay 결제 %s가 완료되었습니다."
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:511
+#: includes/class-order-sync.php:534
 #, php-format
 msgid ""
 "OutlinePay payment %s was made for this order number from another copy of "
@@ -928,7 +934,7 @@ msgstr ""
 "문 번호로 결제되었습니다. 이 주문의 결제가 아닙니다. 발송 전에 확인하십시오."
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:535
+#: includes/class-order-sync.php:558
 #, php-format
 msgid ""
 "OutlinePay payment %s reports paid, but the amount or currency does not "
@@ -937,24 +943,24 @@ msgstr ""
 "OutlinePay 결제 %s가 완료로 보고되었지만 금액이나 통화가 이 주문과 다릅니다. "
 "발송 전에 확인하십시오."
 
-#: includes/class-order-sync.php:558
+#: includes/class-order-sync.php:581
 msgid "OutlinePay issued a virtual account. Waiting for the deposit."
 msgstr "OutlinePay가 가상계좌를 발급했습니다. 입금을 기다립니다."
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:574
+#: includes/class-order-sync.php:597
 #, php-format
 msgid "OutlinePay payment %s expired before the deposit arrived."
 msgstr "OutlinePay 결제 %s가 입금 전에 만료되었습니다."
 
 #. translators: 1: OutlinePay payment id, 2: status such as failed or expired.
-#: includes/class-order-sync.php:589
+#: includes/class-order-sync.php:612
 #, php-format
 msgid "OutlinePay payment %1$s is %2$s. The order is waiting for payment."
 msgstr "OutlinePay 결제 %1$s의 상태는 %2$s입니다. 주문은 결제를 기다립니다."
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:606
+#: includes/class-order-sync.php:629
 #, php-format
 msgid ""
 "OutlinePay payment %s needs review: it was paid for a different amount than "
@@ -964,7 +970,7 @@ msgstr ""
 "다. OutlinePay에 알림이 갔습니다. 해결될 때까지 발송하지 마십시오."
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:621
+#: includes/class-order-sync.php:644
 #, php-format
 msgid ""
 "OutlinePay payment %s is probably the shopper's real payment for this order. "
@@ -976,7 +982,7 @@ msgstr ""
 "확인하십시오. 주문은 보류 상태로 유지됩니다."
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:632
+#: includes/class-order-sync.php:655
 #, php-format
 msgid ""
 "OutlinePay payment %s was paid after this order was already paid. The "
@@ -988,7 +994,7 @@ msgstr ""
 "리 화면에서 환불하십시오."
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:659
+#: includes/class-order-sync.php:682
 #, php-format
 msgid ""
 "The shopper chose another payment method for this order, but then paid "
@@ -1287,7 +1293,8 @@ msgstr "결제를 취소했습니다. 다시 결제하거나 다른 결제수단
 
 #: includes/class-return-handler.php:170
 msgid "The payment was refused. Try another card or payment method."
-msgstr "결제가 거절되었습니다. 다른 카드나 다른 결제수단으로 다시 시도하십시오."
+msgstr ""
+"결제가 거절되었습니다. 다른 카드나 다른 결제수단으로 다시 시도하십시오."
 
 #: includes/class-return-handler.php:172
 msgid "Your payment was not completed. Try again or choose another method."

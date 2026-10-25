@@ -234,7 +234,7 @@ final class Order_Display {
 			return;
 		}
 		if ( $plain_text ) {
-			// Plain text: WooCommerce drops an entity such as &#039; from a plain email, so no HTML escaping here.
+			// Plain text, so no HTML escaping: WooCommerce's plain_search does not decode &#039;, so an apostrophe escaped by esc_html would not come out as an apostrophe.
 			echo wp_strip_all_tags( self::test_payment_notice() ) . "\n\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- plain text email, tags stripped.
 			return;
 		}
