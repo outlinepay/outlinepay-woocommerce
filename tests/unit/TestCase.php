@@ -17,6 +17,12 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase {
 		Monkey\Functions\when( 'get_locale' )->justReturn( 'en_US' );
 		Monkey\Functions\when( 'switch_to_locale' )->justReturn( false );
 		Monkey\Functions\when( 'restore_previous_locale' )->justReturn( false );
+		// The gateway's icon URL. A test that cares expects plugins_url itself.
+		Monkey\Functions\when( 'plugins_url' )->alias(
+			static function ( $path, $plugin ) {
+				return 'https://store.example/wp-content/plugins/' . basename( dirname( $plugin ) ) . '/' . $path;
+			}
+		);
 		$this->log_lines = array();
 		$lines           = &$this->log_lines;
 		Logger::set_sink(

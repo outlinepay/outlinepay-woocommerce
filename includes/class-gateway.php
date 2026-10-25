@@ -43,6 +43,7 @@ class Gateway extends \WC_Payment_Gateway {
 		$this->id                = Settings::gateway_id( $method );
 		$this->has_fields        = false;
 		$this->supports          = self::features( $method );
+		$this->icon              = self::icon_url();
 		$this->set_admin_title( $method );
 
 		$this->init_form_fields();
@@ -85,6 +86,25 @@ class Gateway extends \WC_Payment_Gateway {
 		}
 		$this->method_title       = __( 'OutlinePay (not connected)', 'outlinepay-for-woocommerce' );
 		$this->method_description = __( 'Connect the store on the OutlinePay page to take payments.', 'outlinepay-for-woocommerce' );
+	}
+
+	/**
+	 * The OutlinePay mark, shown next to the row on Settings > Payments.
+	 *
+	 * @return string URL.
+	 */
+	public static function icon_url() {
+		return plugins_url( 'assets/images/icon.svg', OUTLINEPAY_PLUGIN_FILE );
+	}
+
+	/**
+	 * No icon at checkout: the shopper picks a method, not OutlinePay. The
+	 * mark in $this->icon is for the Settings > Payments row only.
+	 *
+	 * @return string
+	 */
+	public function get_icon() {
+		return '';
 	}
 
 	/**
