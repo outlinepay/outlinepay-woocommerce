@@ -462,6 +462,11 @@ final class Admin_Page {
 		check_admin_referer( 'outlinepay_shopper_cancel' );
 		$on       = isset( $_POST['outlinepay_cancel_enabled'] ) && 'yes' === sanitize_key( wp_unslash( $_POST['outlinepay_cancel_enabled'] ) );
 		$statuses = isset( $_POST['outlinepay_cancel_statuses'] ) && is_array( $_POST['outlinepay_cancel_statuses'] ) ? array_map( 'sanitize_key', wp_unslash( $_POST['outlinepay_cancel_statuses'] ) ) : array();
+		if ( ! $on ) {
+			// The status boxes are greyed out while the switch is off, and greyed
+			// boxes do not post. Keep the stored statuses for when it is turned on.
+			$statuses = Settings::shopper_cancel()['statuses'];
+		}
 		Settings::save_shopper_cancel( $on, $statuses );
 		self::back( 'shopper_cancel_saved' );
 	}
@@ -1019,13 +1024,16 @@ final class Admin_Page {
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( 'outlinepay_shopper_cancel' );
 		echo '<input type="hidden" name="action" value="outlinepay_shopper_cancel">';
-		echo '<p><label><input type="checkbox" name="outlinepay_cancel_enabled" value="yes"' . checked( $setting['enabled'], true, false ) . '> ' . esc_html__( 'Let shoppers cancel their own paid orders', 'outlinepay-for-woocommerce' ) . '</label></p>';
+		// The statuses belong to the switch: admin.js greys them out while it is off.
+		echo '<p><label><input type="checkbox" id="outlinepay-cancel-enabled" name="outlinepay_cancel_enabled" value="yes"' . checked( $setting['enabled'], true, false ) . '> ' . esc_html__( 'Let shoppers cancel their own paid orders', 'outlinepay-for-woocommerce' ) . '</label></p>';
+		echo '<div id="outlinepay-cancel-statuses" data-outlinepay-cancel-statuses>';
 		echo '<p>' . esc_html__( 'Shoppers see Cancel in My Account when the order has one of these statuses and nothing was refunded yet. Cancelling refunds the full payment and cancels the order.', 'outlinepay-for-woocommerce' ) . '</p>';
 		echo '<fieldset><legend class="screen-reader-text">' . esc_html__( 'Order statuses shoppers can cancel', 'outlinepay-for-woocommerce' ) . '</legend>';
 		foreach ( Settings::CANCEL_STATUSES as $status ) {
 			echo '<label style="margin-right:16px"><input type="checkbox" name="outlinepay_cancel_statuses[]" value="' . esc_attr( $status ) . '"' . checked( in_array( $status, $setting['statuses'], true ), true, false ) . '> ' . esc_html( $labels[ $status ] ) . '</label>';
 		}
 		echo '</fieldset>';
+		echo '</div>';
 		submit_button( __( 'Save', 'outlinepay-for-woocommerce' ), 'secondary', 'outlinepay_save_cancel' );
 		echo '</form>';
 	}

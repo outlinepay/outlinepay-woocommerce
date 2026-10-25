@@ -60,4 +60,21 @@
 	for ( var i = 0; i < buttons.length; i++ ) {
 		attach( buttons[ i ] );
 	}
+
+	// Shopper cancel: the status boxes belong to the switch above them, so
+	// they are greyed out while it is off.
+	var cancelSwitch = document.getElementById( 'outlinepay-cancel-enabled' );
+	var cancelStatuses = document.querySelector( '[data-outlinepay-cancel-statuses]' );
+	if ( cancelSwitch && cancelStatuses ) {
+		var cancelBoxes = cancelStatuses.querySelectorAll( 'input[type="checkbox"]' );
+		var syncCancel = function () {
+			var off = ! cancelSwitch.checked;
+			for ( var j = 0; j < cancelBoxes.length; j++ ) {
+				cancelBoxes[ j ].disabled = off;
+			}
+			cancelStatuses.style.opacity = off ? '0.5' : '';
+		};
+		cancelSwitch.addEventListener( 'change', syncCancel );
+		syncCancel();
+	}
 } )();
