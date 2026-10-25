@@ -1,9 +1,9 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: OutlinePay for WooCommerce 0.5.1\n"
+"Project-Id-Version: OutlinePay for WooCommerce 0.5.2\n"
 "Report-Msgid-Bugs-To: https://outlinepay.com\n"
-"POT-Creation-Date: 2026-10-25T04:21:58+00:00\n"
-"PO-Revision-Date: 2026-10-25 00:30-0400\n"
+"POT-Creation-Date: 2026-10-25T06:46:08+00:00\n"
+"PO-Revision-Date: 2026-10-25 02:45-0400\n"
 "Last-Translator: OutlinePay <dev@outlinepay.com>\n"
 "Language-Team: OutlinePay <dev@outlinepay.com>\n"
 "Language: ko_KR\n"
@@ -38,7 +38,7 @@ msgstr ""
 #: outlinepay-for-woocommerce.php includes/class-abilities.php:58
 #: includes/class-admin-page.php:94 includes/class-admin-page.php:95
 #: includes/class-admin-page.php:510 includes/class-gateway.php:82
-#: includes/class-self-check.php:932
+#: includes/class-self-check.php:937
 msgid "OutlinePay"
 msgstr "OutlinePay"
 
@@ -1003,7 +1003,7 @@ msgstr ""
 "구매자가 이 주문에 다른 결제수단을 선택한 뒤 OutlinePay 결제 %s를 완료했습니"
 "다. 결제수단을 OutlinePay로 되돌렸습니다."
 
-#: includes/class-plugin.php:100
+#: includes/class-plugin.php:101
 msgid ""
 "OutlinePay for WooCommerce needs WooCommerce to be installed and active."
 msgstr ""
@@ -1309,24 +1309,32 @@ msgstr ""
 "아직 결제를 확인하지 못했습니다. 결제하셨다면 몇 분 안에 주문이 갱신됩니다. "
 "결제하지 않으셨다면 아래에서 다시 결제하십시오."
 
-#: includes/class-self-check.php:928
+#: includes/class-self-check-watch.php:219
+msgid "OutlinePay: payment methods are not showing at checkout."
+msgstr "OutlinePay: 결제 화면에 결제수단이 표시되지 않습니다."
+
+#: includes/class-self-check-watch.php:220
+msgid "Open the OutlinePay page to fix it."
+msgstr "OutlinePay 페이지를 열어 문제를 해결하십시오."
+
+#: includes/class-self-check.php:933
 msgid "You"
 msgstr "스토어 운영자"
 
-#: includes/class-self-check.php:930 includes/class-self-check.php:937
-#: includes/class-self-check.php:1003 includes/class-settings.php:425
+#: includes/class-self-check.php:935 includes/class-self-check.php:942
+#: includes/class-self-check.php:1008 includes/class-settings.php:425
 msgid "Your payment provider"
 msgstr "결제대행사"
 
-#: includes/class-self-check.php:934
+#: includes/class-self-check.php:939
 msgid "Shopper"
 msgstr "구매자"
 
-#: includes/class-self-check.php:954
+#: includes/class-self-check.php:959
 msgid "The connection is saved on this site."
 msgstr "이 사이트에 연결 정보가 저장되어 있습니다."
 
-#: includes/class-self-check.php:955
+#: includes/class-self-check.php:960
 msgid ""
 "The saved connection is missing or can no longer be read. Disconnect, then "
 "connect again with a new code from your payment provider."
@@ -1334,17 +1342,17 @@ msgstr ""
 "저장된 연결 정보가 없거나 더 이상 읽을 수 없습니다. 연결을 해제한 뒤 결제대행"
 "사에서 받은 새 코드로 다시 연결하세요."
 
-#: includes/class-self-check.php:958
+#: includes/class-self-check.php:963
 msgid "The store is connected."
 msgstr "스토어가 연결되어 있습니다."
 
-#: includes/class-self-check.php:961
+#: includes/class-self-check.php:966
 msgid ""
 "This connection was turned off. Ask your payment provider for a new connect "
 "code."
 msgstr "이 연결이 해제되었습니다. 결제대행사에 새 연결 코드를 요청하세요."
 
-#: includes/class-self-check.php:962
+#: includes/class-self-check.php:967
 msgid ""
 "The store is not connected. Connect it with a code from your payment "
 "provider."
@@ -1352,12 +1360,12 @@ msgstr ""
 "스토어가 연결되어 있지 않습니다. 결제대행사에서 받은 코드로 연결하세요."
 
 #. translators: %s: milliseconds, such as 120.
-#: includes/class-self-check.php:967
+#: includes/class-self-check.php:972
 #, php-format
 msgid "OutlinePay answered in %s ms."
 msgstr "OutlinePay가 %s ms 만에 응답했습니다."
 
-#: includes/class-self-check.php:972
+#: includes/class-self-check.php:977
 msgid ""
 "This site could not reach OutlinePay. Check that the server can make "
 "outgoing HTTPS requests."
@@ -1365,7 +1373,7 @@ msgstr ""
 "이 사이트에서 OutlinePay에 연결할 수 없습니다. 서버가 외부로 HTTPS 요청을 보"
 "낼 수 있는지 확인하세요."
 
-#: includes/class-self-check.php:975
+#: includes/class-self-check.php:980
 msgid ""
 "OutlinePay refused this store's connection. Ask your payment provider for a "
 "new connect code."
@@ -1373,15 +1381,15 @@ msgstr ""
 "OutlinePay가 이 스토어의 연결을 거부했습니다. 결제대행사에 새 연결 코드를 요"
 "청하세요."
 
-#: includes/class-self-check.php:977
+#: includes/class-self-check.php:982
 msgid "OutlinePay could not answer the check. Try again in a few minutes."
 msgstr "OutlinePay가 점검에 응답하지 못했습니다. 몇 분 뒤에 다시 시도하세요."
 
-#: includes/class-self-check.php:980
+#: includes/class-self-check.php:985
 msgid "Background payment checks are scheduled."
 msgstr "백그라운드 결제 확인 작업이 예약되어 있습니다."
 
-#: includes/class-self-check.php:981
+#: includes/class-self-check.php:986
 msgid ""
 "Background payment checks are missing or late. Open WooCommerce > Status > "
 "Scheduled Actions and look for failed outlinepay actions."
@@ -1389,11 +1397,11 @@ msgstr ""
 "백그라운드 결제 확인 작업이 없거나 지연되고 있습니다. WooCommerce > 상태 > 예"
 "약된 작업에서 실패한 outlinepay 작업을 확인하세요."
 
-#: includes/class-self-check.php:984
+#: includes/class-self-check.php:989
 msgid "Scheduled tasks are running."
 msgstr "예약 작업이 실행되고 있습니다."
 
-#: includes/class-self-check.php:985
+#: includes/class-self-check.php:990
 msgid ""
 "WP-Cron is turned off and no scheduled task ran in the last 2 hours. Ask "
 "your host to run wp-cron.php from a server cron job."
@@ -1401,13 +1409,13 @@ msgstr ""
 "WP-Cron이 꺼져 있고 지난 2시간 동안 실행된 예약 작업이 없습니다. 호스팅 업체"
 "에 서버 크론으로 wp-cron.php를 실행해 달라고 요청하세요."
 
-#: includes/class-self-check.php:988
+#: includes/class-self-check.php:993
 msgid ""
 "The payment method list is up to date and at least one method shows at "
 "checkout."
 msgstr "결제수단 목록이 최신이며 결제 화면에 결제수단이 하나 이상 표시됩니다."
 
-#: includes/class-self-check.php:991
+#: includes/class-self-check.php:996
 msgid ""
 "No OutlinePay method shows at checkout. Turn one on under Payment methods on "
 "the OutlinePay page, or ask your payment provider to enable one."
@@ -1415,37 +1423,37 @@ msgstr ""
 "결제 화면에 표시되는 OutlinePay 결제수단이 없습니다. OutlinePay 페이지의 결제"
 "수단에서 하나 이상 켜거나, 결제대행사에 결제수단 활성화를 요청하세요."
 
-#: includes/class-self-check.php:992
+#: includes/class-self-check.php:997
 msgid "The payment method list was not refreshed in the last 2 hours."
 msgstr "지난 2시간 동안 결제수단 목록이 갱신되지 않았습니다."
 
 #. translators: %s: currency code such as KRW.
-#: includes/class-self-check.php:997
+#: includes/class-self-check.php:1002
 #, php-format
 msgid "The store currency is %s."
 msgstr "스토어 통화가 %s입니다."
 
 #. translators: 1: store currency code such as USD, 2: payment provider name, 3: currency codes the provider takes, such as KRW.
-#: includes/class-self-check.php:1001
+#: includes/class-self-check.php:1006
 #, php-format
 msgid "The store currency is %1$s. %2$s takes payments in %3$s only."
 msgstr "스토어 통화가 %1$s입니다. %2$s에서는 %3$s 결제만 받습니다."
 
-#: includes/class-self-check.php:1008
+#: includes/class-self-check.php:1013
 msgid "This site is at the address the store was connected at."
 msgstr "이 사이트는 스토어를 연결한 주소에 있습니다."
 
-#: includes/class-self-check.php:1009
+#: includes/class-self-check.php:1014
 msgid "This site looks like a copy of your store. OutlinePay is off here."
 msgstr ""
 "이 사이트는 스토어의 복사본으로 보입니다. 여기서는 OutlinePay가 꺼져 있습니"
 "다."
 
-#: includes/class-self-check.php:1012
+#: includes/class-self-check.php:1017
 msgid "PHP, WordPress and WooCommerce meet this plugin's requirements."
 msgstr "PHP, WordPress, WooCommerce가 이 플러그인의 요구 사항을 충족합니다."
 
-#: includes/class-self-check.php:1013
+#: includes/class-self-check.php:1018
 msgid ""
 "PHP, WordPress or WooCommerce is older than this plugin needs, or "
 "WooCommerce did not register its order storage support."
@@ -1453,11 +1461,11 @@ msgstr ""
 "PHP, WordPress 또는 WooCommerce 버전이 이 플러그인의 요구 사항보다 낮거나, "
 "WooCommerce에 주문 저장소 지원이 등록되지 않았습니다."
 
-#: includes/class-self-check.php:1016
+#: includes/class-self-check.php:1021
 msgid "OutlinePay reached this store's payment update address."
 msgstr "OutlinePay가 이 스토어의 결제 알림 주소에 연결했습니다."
 
-#: includes/class-self-check.php:1017
+#: includes/class-self-check.php:1022
 msgid ""
 "OutlinePay could not reach this store's payment update address. Check that "
 "the site is online and that no firewall or security plugin blocks /wp-json/"
@@ -1467,28 +1475,28 @@ msgstr ""
 "가능한지, 방화벽이나 보안 플러그인이 /wp-json/outlinepay/v1/callback을 막고 "
 "있지 않은지 확인하세요."
 
-#: includes/class-self-check.php:1020
+#: includes/class-self-check.php:1025
 msgid "This store talked to OutlinePay in the last 24 hours."
 msgstr "지난 24시간 안에 이 스토어가 OutlinePay와 통신했습니다."
 
-#: includes/class-self-check.php:1021
+#: includes/class-self-check.php:1026
 msgid "This store has not talked to OutlinePay in the last 24 hours."
 msgstr "지난 24시간 동안 이 스토어가 OutlinePay와 통신하지 않았습니다."
 
-#: includes/class-self-check.php:1024
+#: includes/class-self-check.php:1029
 msgid "Every payment update in the last 7 days reached the store."
 msgstr "지난 7일 동안의 결제 알림이 모두 스토어에 전달되었습니다."
 
-#: includes/class-self-check.php:1025
+#: includes/class-self-check.php:1030
 msgid ""
 "Some payment updates in the last 7 days could not be delivered to the store."
 msgstr "지난 7일 동안 일부 결제 알림을 스토어에 전달하지 못했습니다."
 
-#: includes/class-self-check.php:1028
+#: includes/class-self-check.php:1033
 msgid "No open problems in the last 7 days."
 msgstr "지난 7일 동안 해결되지 않은 문제가 없습니다."
 
-#: includes/class-self-check.php:1031
+#: includes/class-self-check.php:1036
 msgid ""
 "OutlinePay recorded problems in the last 7 days that are not resolved yet. "
 "Send the diagnostic code to your payment provider."
@@ -1496,17 +1504,17 @@ msgstr ""
 "OutlinePay가 지난 7일 동안 기록한 문제 중 아직 해결되지 않은 것이 있습니다. "
 "진단 코드를 결제대행사에 보내십시오."
 
-#: includes/class-self-check.php:1032
+#: includes/class-self-check.php:1037
 msgid ""
 "OutlinePay recorded problems in the last 7 days that are not resolved yet."
 msgstr ""
 "OutlinePay가 지난 7일 동안 기록한 문제 중 아직 해결되지 않은 것이 있습니다."
 
-#: includes/class-self-check.php:1035
+#: includes/class-self-check.php:1040
 msgid "Passed."
 msgstr "통과했습니다."
 
-#: includes/class-self-check.php:1036
+#: includes/class-self-check.php:1041
 msgid "Failed."
 msgstr "실패했습니다."
 

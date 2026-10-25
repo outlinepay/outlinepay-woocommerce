@@ -1,10 +1,10 @@
 <?php
 /**
- * The opt-in email when a daily self-check starts failing.
+ * The email when a daily self-check starts failing.
  *
- * Off by default. When on, the site admin address gets one plain-text email,
- * Korean first and English below, the first time a daily run fails after a
- * daily run that passed. Never more than one email in 24 hours. Sent with
+ * On by default. The merchant can turn it off. When on, the site admin
+ * address gets one plain-text email, Korean first and English below, the
+ * first time a daily run fails after a daily run that passed. Never more than one email in 24 hours. Sent with
  * wp_mail from the store itself: nothing about it goes to OutlinePay.
  *
  * @package OutlinePay\WooCommerce

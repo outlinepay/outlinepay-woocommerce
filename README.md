@@ -25,9 +25,10 @@ OutlinePay is operated by Arandu Payments LLC.
 | `includes/class-order-display.php` | Deposit details, card receipt link and test payment line |
 | `includes/class-return-handler.php` | Shopper return (`?wc-api=outlinepay_return`) |
 | `includes/class-callback-controller.php` | Signed callback (`POST /wp-json/outlinepay/v1/callback`) |
-| `includes/class-scheduler.php` | Action Scheduler jobs: method refresh, reconcile (payments and unconfirmed refunds), daily self-check, version report |
+| `includes/class-scheduler.php` | Action Scheduler jobs: method refresh, reconcile (payments and unconfirmed refunds), daily self-check, self-check after a change, version report |
 | `includes/class-self-check.php` | Self-check engine: local checks, the run against OutlinePay, offline codes, the stored result |
-| `includes/class-self-check-mail.php` | Opt-in email when a daily self-check starts failing |
+| `includes/class-self-check-watch.php` | Self-check after a change (currency, site address, WooCommerce), the hourly local record, the failing-check admin notice |
+| `includes/class-self-check-mail.php` | Email when a daily self-check starts failing |
 | `includes/class-site-health.php` | Site Health test "OutlinePay connection" |
 | `includes/class-abilities.php` | Abilities API (WordPress 6.9+): `outlinepay/run-self-check`, `outlinepay/get-connection-status` |
 | `includes/class-unpaid-guard.php` | Expires open attempts before WooCommerce cancels an unpaid order |

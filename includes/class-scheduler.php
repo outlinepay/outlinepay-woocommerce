@@ -1,7 +1,8 @@
 <?php
 /**
  * Background work on Action Scheduler: method refresh, reconciliation, the
- * daily self-check and the one-time version report after an update.
+ * daily self-check, the self-check after a change (see Self_Check_Watch) and
+ * the one-time version report after an update.
  *
  * @package OutlinePay\WooCommerce
  */
@@ -22,6 +23,7 @@ final class Scheduler {
 	const HOOK_METHODS_NOW  = 'outlinepay_refresh_methods_now';
 	const HOOK_SWITCH_CHECK = 'outlinepay_switch_check';
 	const HOOK_SELF_CHECK   = 'outlinepay_daily_self_check';
+	const HOOK_CHECK_NOW    = 'outlinepay_self_check_now';
 	const OPTION_CURSOR     = 'outlinepay_reconcile_cursor';
 	const OPTION_FAILURES   = 'outlinepay_reconcile_failures';
 	const OPTION_DAILY_AT   = 'outlinepay_self_check_offset';
@@ -41,11 +43,12 @@ final class Scheduler {
 	 * @return void
 	 */
 	public static function register() {
-		add_action( self::HOOK_METHODS, array( self::class, 'refresh_methods' ) );
+		add_action( self::HOOK_METHODS, array( self::class, 'hourly' ) );
 		add_action( self::HOOK_METHODS_NOW, array( self::class, 'refresh_methods' ) );
 		add_action( self::HOOK_RECONCILE, array( self::class, 'reconcile' ) );
 		add_action( self::HOOK_VERSIONS, array( self::class, 'report_versions' ) );
 		add_action( self::HOOK_SELF_CHECK, array( Self_Check::class, 'run_daily' ) );
+		add_action( self::HOOK_CHECK_NOW, array( Self_Check_Watch::class, 'run_now' ) );
 		add_action( 'init', array( self::class, 'maintain' ), 20 );
 	}
 
@@ -136,7 +139,7 @@ final class Scheduler {
 	 * @return string[]
 	 */
 	public static function hooks() {
-		return array( self::HOOK_METHODS, self::HOOK_METHODS_NOW, self::HOOK_RECONCILE, self::HOOK_VERSIONS, self::HOOK_SWITCH_CHECK, self::HOOK_SELF_CHECK );
+		return array( self::HOOK_METHODS, self::HOOK_METHODS_NOW, self::HOOK_RECONCILE, self::HOOK_VERSIONS, self::HOOK_SWITCH_CHECK, self::HOOK_SELF_CHECK, self::HOOK_CHECK_NOW );
 	}
 
 	/**
@@ -148,6 +151,18 @@ final class Scheduler {
 		if ( function_exists( 'as_enqueue_async_action' ) && ! as_has_scheduled_action( self::HOOK_METHODS_NOW, array(), self::GROUP ) ) {
 			as_enqueue_async_action( self::HOOK_METHODS_NOW, array(), self::GROUP );
 		}
+	}
+
+	/**
+	 * The hourly action: the method refresh, then the local checks are
+	 * recorded (see Self_Check_Watch::record_local). No other call to
+	 * OutlinePay.
+	 *
+	 * @return void
+	 */
+	public static function hourly() {
+		self::refresh_methods();
+		Self_Check_Watch::record_local();
 	}
 
 	/**
@@ -449,7 +464,8 @@ final class Scheduler {
 	}
 
 	/**
-	 * Reports host versions once after the plugin version changed.
+	 * Reports host versions once after the plugin version changed. Then
+	 * queues a self-check, since an update can change what checkout shows.
 	 *
 	 * @return void
 	 */
@@ -460,6 +476,7 @@ final class Scheduler {
 		try {
 			( new Api_Client() )->update_installation( array( 'platform_versions' => Settings::platform_versions() ) );
 			update_option( Settings::OPTION_VERSION, OUTLINEPAY_VERSION, false );
+			Self_Check_Watch::queue();
 		} catch ( Api_Error $error ) {
 			// Logged by the client. Retried on the next admin or cron request.
 			return;

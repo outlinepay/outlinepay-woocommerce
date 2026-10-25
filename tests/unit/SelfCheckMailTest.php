@@ -74,9 +74,15 @@ class SelfCheckMailTest extends TestCase {
 	}
 
 	public function test_nothing_is_sent_while_the_option_is_off() {
+		$this->options[ Self_Check::OPTION_EMAIL ] = 'no';
 		$this->assertFalse( Self_Check_Mail::after_daily( self::failed(), self::NOW ) );
 		$this->assertSame( array(), $this->mails );
 		$this->assertFalse( $this->options[ Self_Check::OPTION_DAILY ]['ok'], 'the daily state is kept anyway' );
+	}
+
+	public function test_a_store_that_never_saved_the_setting_gets_the_email() {
+		$this->assertTrue( Self_Check_Mail::after_daily( self::failed(), self::NOW ) );
+		$this->assertCount( 1, $this->mails );
 	}
 
 	public function test_a_daily_failure_after_a_pass_sends_one_email_in_korean_then_english() {

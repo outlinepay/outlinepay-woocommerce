@@ -5,7 +5,7 @@ Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
 WC requires at least: 9.9
-Stable tag: 0.5.1
+Stable tag: 0.5.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -42,8 +42,9 @@ What the plugin does:
 * Shows a "View card receipt" link for card payments on the order screen, the thank-you page, the shopper's order page and the completed-order email.
 * Supports High-Performance Order Storage (HPOS).
 * Walks you through setup after you connect. The OutlinePay page lists each check. Fix all makes the fixes the plugin can make itself. Payment methods show at checkout once every check passes.
-* Checks its own setup. The Self-check on the OutlinePay page shows each check, who needs to act when one fails, a button for the fixes the plugin can make, and a diagnostic code to send to your payment provider. It also runs once a day.
-* Can email the site admin address when a daily check starts failing. Off until you turn on "Email me when a daily check fails".
+* Checks its own setup. The Self-check on the OutlinePay page shows each check, who needs to act when one fails, a button for the fixes the plugin can make, and a diagnostic code to send to your payment provider. It also runs once a day, and again when the store currency, the site address or WooCommerce changes.
+* Shows a notice on every admin page while a check fails, with a link to the OutlinePay page.
+* Emails the site admin address when a daily check starts failing. Turn off "Email me when a daily check fails" to stop it.
 * Adds an "OutlinePay connection" test to Tools > Site Health.
 * On WordPress 6.9 and later, offers two read-only abilities for tools and AI agents that act for a store manager: run the self-check, and read the connection status.
 
@@ -130,8 +131,9 @@ What is sent, and when:
 * When you click Disconnect or delete the plugin: a request to disconnect. A staging copy never sends this, so it cannot switch off your live store.
 * When you click Run check on the OutlinePay page: the results of the store's own checks. Each result is a check name, pass or fail, who needs to act, and short details such as the store currency, the software versions, how many methods are shown and how long OutlinePay took to answer. No shopper or order details. OutlinePay then sends one signed test message to the store's notification address.
 * Once a day: the same check results.
+* When the store currency or the site address changes, when WooCommerce is deactivated or updated, and after this plugin is updated: the same check results.
 
-If you turn on "Email me when a daily check fails", the email goes from your own site to the site admin address. Nothing about it is sent to OutlinePay.
+While "Email me when a daily check fails" is on (the default), the email goes from your own site to the site admin address. Nothing about it is sent to OutlinePay.
 
 OutlinePay terms: https://outlinepay.com/terms
 OutlinePay privacy policy: https://outlinepay.com/privacy
@@ -143,6 +145,12 @@ CookiePay is the payment provider that takes the payment. The shopper clicks Pay
 CookiePay privacy policy: https://www.cookiepayments.com/terms/private
 
 == Changelog ==
+
+= 0.5.2 =
+* The self-check runs again when the store currency or the site address changes, when WooCommerce is deactivated or updated, and after this plugin is updated.
+* The hourly method refresh also checks the store currency, the connection, the methods shown at checkout and the scheduled tasks. A problem shows within an hour.
+* While a check fails, every admin page shows "OutlinePay: payment methods are not showing at checkout." with a link to the OutlinePay page. It goes away when a later check passes.
+* "Email me when a daily check fails" is now on by default. If you turned it off before, it stays off.
 
 = 0.5.1 =
 * The payment window opens larger, at least 900 by 650 pixels when the screen allows. The provider's whole page, with the amount, now fits.

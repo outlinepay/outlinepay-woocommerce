@@ -928,6 +928,21 @@ class AdminPageTest extends TestCase {
 		$this->assertStringContainsString( 'outlinepay_result=setup_done', $result );
 	}
 
+	public function test_the_email_box_is_ticked_until_the_merchant_turns_it_off() {
+		$this->options['admin_email'] = 'owner@shop.example';
+		Functions\when( 'wp_nonce_field' )->justReturn( '' );
+		Functions\when( 'submit_button' )->justReturn( '' );
+		Functions\when( 'checked' )->alias(
+			static function ( $checked, $current ) {
+				return $checked === $current ? ' checked=\'checked\'' : '';
+			}
+		);
+		$box = '/name="outlinepay_self_check_email" value="yes" checked/';
+		$this->assertMatchesRegularExpression( $box, $this->render_private( 'render_self_check' ), 'never saved: on' );
+		$this->options[ Self_Check::OPTION_EMAIL ] = 'no';
+		$this->assertDoesNotMatchRegularExpression( $box, $this->render_private( 'render_self_check' ) );
+	}
+
 	public function test_the_currency_warning_shows_on_the_connected_view() {
 		Admin_Page::finish_connect( array_merge( self::answer(), array( 'currencies' => array( 'KRW' ) ) ) );
 		$this->currency = 'USD';

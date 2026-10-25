@@ -45,6 +45,7 @@ final class Plugin {
 		Launch_Page::register();
 		Callback_Controller::register();
 		Scheduler::register();
+		Self_Check_Watch::register();
 		Unpaid_Guard::register();
 		Switch_Guard::register();
 		Order_Display::register();

@@ -40,8 +40,9 @@ final class Self_Check {
 	const OPTION_EMAIL      = 'outlinepay_self_check_email';
 	const OPTION_EMAILED_AT = 'outlinepay_self_check_emailed_at';
 
-	const TRIGGER_PAGE  = 'page';
-	const TRIGGER_DAILY = 'daily';
+	const TRIGGER_PAGE   = 'page';
+	const TRIGGER_DAILY  = 'daily';
+	const TRIGGER_HOURLY = 'hourly';
 
 	const OFFLINE_PREFIX = 'OP-OFFLINE-';
 
@@ -179,16 +180,19 @@ final class Self_Check {
 	 * Runs the local checks only, no network, and merges them into the stored
 	 * result: api_reachable and the server's rows stay as stored. Cheap
 	 * enough for every page load during setup. With nothing stored, the
-	 * result is made on this site.
+	 * result is made on this site. The hourly record uses it too, with
+	 * trigger hourly. That trigger stays on this site.
 	 *
+	 * @param string $trigger page or hourly.
 	 * @return array The stored result.
 	 */
-	public function run_local() {
-		$facts  = call_user_func( $this->facts_provider );
-		$now    = (int) call_user_func( $this->clock );
-		$checks = self::local_checks( $facts, $now );
-		$last   = self::last();
-		$result = $last ? self::merge( $last, $checks, self::TRIGGER_PAGE, $now ) : self::offline( $checks, self::TRIGGER_PAGE, $now );
+	public function run_local( $trigger = self::TRIGGER_PAGE ) {
+		$trigger = self::TRIGGER_HOURLY === $trigger ? self::TRIGGER_HOURLY : self::TRIGGER_PAGE;
+		$facts   = call_user_func( $this->facts_provider );
+		$now     = (int) call_user_func( $this->clock );
+		$checks  = self::local_checks( $facts, $now );
+		$last    = self::last();
+		$result  = $last ? self::merge( $last, $checks, $trigger, $now ) : self::offline( $checks, $trigger, $now );
 		self::store( $result );
 		return $result;
 	}
@@ -272,7 +276,7 @@ final class Self_Check {
 
 	/**
 	 * The daily run, from Action Scheduler. Posts even when everything passes.
-	 * Then the opt-in email when a check started failing.
+	 * Then the email when a check started failing.
 	 *
 	 * @return void
 	 */
@@ -908,12 +912,13 @@ final class Self_Check {
 	}
 
 	/**
-	 * Whether the merchant asked for an email when a daily check fails.
+	 * Whether to email when a daily check fails. On unless the merchant
+	 * turned it off. A store that never saved the setting gets the email.
 	 *
 	 * @return bool
 	 */
 	public static function email_enabled() {
-		return 'yes' === get_option( self::OPTION_EMAIL, 'no' );
+		return 'no' !== get_option( self::OPTION_EMAIL, 'yes' );
 	}
 
 	/**
