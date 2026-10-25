@@ -5,7 +5,7 @@ Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
 WC requires at least: 9.9
-Stable tag: 0.5.0
+Stable tag: 0.5.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -35,7 +35,7 @@ What the plugin does:
 * Marks an order paid only after OutlinePay confirms the payment, for the exact order total.
 * Puts a virtual account order on hold and shows the bank, account number and deadline on the thank-you page, the shopper's order page and in the order email. The order moves to processing when the deposit arrives.
 * Checks unpaid orders every 15 minutes, so a payment is not missed when the shopper closes the window early.
-* Marks test payments as test payments in order notes and on the order screen.
+* Marks test payments as test payments in order notes, on the order screen, on the shopper's order received page and in the shopper's emails.
 * Refunds from the order screen with WooCommerce's Refund button, once your payment provider turns refunds on for your store. Card, foreign card, bank transfer, KakaoPay and NaverPay payments can be refunded. Partial refunds work for card payments only.
 * Adds refunds made in your payment provider's dashboard to the order, so WooCommerce shows the same refunded total.
 * Can let shoppers cancel their own paid orders from My Account. Cancelling refunds the full payment and cancels the order. Off until you turn on "Let shoppers cancel their own paid orders".
@@ -141,6 +141,13 @@ CookiePay is the payment provider that takes the payment. The shopper clicks Pay
 CookiePay privacy policy: https://www.cookiepayments.com/terms/private
 
 == Changelog ==
+
+= 0.5.1 =
+* The payment window opens larger, at least 900 by 650 pixels when the screen allows. The provider's whole page, with the amount, now fits.
+* The plugin tells your payment provider whether the shopper is on a phone or a computer, so a phone gets the provider's phone page.
+* When the shopper presses Cancel in the payment window, the store says the payment was cancelled. When the provider refuses the payment in its window, the store says it was refused and suggests another card or method. The order gets one private note for each, however often the shopper reloads.
+* An order paid in test mode says so on the shopper's order received page and in the emails the shopper gets.
+* WooCommerce > Settings > Payments shows "Test mode" next to OutlinePay while the store is in test mode.
 
 = 0.5.0 =
 * WooCommerce > Settings > Payments shows one OutlinePay row instead of one row per method. The plugin now needs WooCommerce 9.9 or later.

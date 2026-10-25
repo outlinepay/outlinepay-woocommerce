@@ -133,6 +133,16 @@ class Gateway extends \WC_Payment_Gateway {
 	}
 
 	/**
+	 * Whether the store runs in test mode. WooCommerce's Payments settings
+	 * read this method to show its "Test mode" badge on the gateway's row.
+	 *
+	 * @return bool
+	 */
+	public function is_test_mode() {
+		return Settings::is_test_mode();
+	}
+
+	/**
 	 * Only the show switch lives here. Everything else is on the OutlinePay page.
 	 *
 	 * @return void
@@ -216,6 +226,8 @@ class Gateway extends \WC_Payment_Gateway {
 			'payment_method' => $this->outlinepay_method,
 			'return_url'     => self::return_url( $order ),
 			'buyer'          => self::buyer( $order ),
+			// Some providers serve their desktop page to a phone unless asked for the phone one.
+			'device'         => wp_is_mobile() ? 'mobile' : 'desktop',
 		);
 		if ( '' !== $product_name ) {
 			$fields['product_name'] = $product_name;

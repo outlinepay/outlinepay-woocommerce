@@ -61,6 +61,7 @@ class GatewayLaunchTest extends RefundTestCase {
 			}
 		);
 		Functions\when( 'get_bloginfo' )->justReturn( '쿠키 &amp; 상점' );
+		Functions\when( 'wp_is_mobile' )->justReturn( false );
 		Functions\when( 'add_query_arg' )->alias(
 			static function ( $args, $url ) {
 				return $url . ( false === strpos( $url, '?' ) ? '?' : '&' ) . http_build_query( $args );
@@ -109,6 +110,34 @@ class GatewayLaunchTest extends RefundTestCase {
 				$extra
 			)
 		);
+	}
+
+	public function test_a_computer_asks_for_the_desktop_page() {
+		$this->answers[] = self::opened( array( 'window' => self::form_window() ) );
+
+		$this->gateway->process_payment( 42 );
+
+		$this->assertSame( 'desktop', $this->requests[0]['body']['device'] );
+	}
+
+	public function test_a_phone_asks_for_the_mobile_page() {
+		Functions\when( 'wp_is_mobile' )->justReturn( true );
+		$this->answers[] = self::opened( array( 'window' => self::form_window() ) );
+
+		$this->gateway->process_payment( 42 );
+
+		$this->assertSame( 'mobile', $this->requests[0]['body']['device'] );
+	}
+
+	public function test_the_gateway_reports_test_mode_to_woocommerce() {
+		$this->options['outlinepay_installation']['mode'] = 'test';
+		$this->assertTrue( $this->gateway->is_test_mode() );
+
+		$this->options['outlinepay_installation']['mode'] = 'live';
+		$this->assertFalse( $this->gateway->is_test_mode() );
+
+		unset( $this->options['outlinepay_installation']['mode'] );
+		$this->assertFalse( $this->gateway->is_test_mode(), 'no mode saved reads as live' );
 	}
 
 	public function test_a_form_window_goes_through_the_launch_page() {

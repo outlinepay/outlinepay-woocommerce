@@ -62,6 +62,7 @@ final class Return_Handler {
 		}
 
 		$decision = null;
+		$outcome  = null;
 		if ( Site_Identity::is_copy() ) {
 			// A copy of the store does not call OutlinePay. The live store settles the order.
 			Logger::warning( 'Shopper return on a copy of the store, not applied', array( 'order_id' => $order->get_id() ) );
@@ -70,6 +71,7 @@ final class Return_Handler {
 		try {
 			$payment  = ( new Api_Client() )->get_payment( $pid );
 			$decision = Order_Sync::apply( $order, $payment );
+			$outcome  = Order_Sync::window_outcome( $payment, $decision );
 		} catch ( Api_Error $error ) {
 			Logger::warning(
 				'Return could not read the payment',
@@ -86,7 +88,7 @@ final class Return_Handler {
 			// The shopper is back: this attempt's payment form is not posted again.
 			$order->save();
 		}
-		self::finish( self::destination( $order, $decision ) );
+		self::finish( self::destination( $order, $decision, $outcome ) );
 	}
 
 	/**
@@ -149,18 +151,24 @@ final class Return_Handler {
 	}
 
 	/**
-	 * Thank-you page for a paid or held order, the pay page otherwise.
+	 * Thank-you page for a paid or held order, the pay page otherwise, with a
+	 * notice that says what happened in the window when the payment tells.
 	 *
 	 * @param \WC_Order   $order    Order after the sync.
 	 * @param string|null $decision Sync decision, null when the payment could not be read.
+	 * @param string|null $outcome  Window outcome (see Order_Sync::window_outcome), null when unknown.
 	 * @return string
 	 */
-	private static function destination( $order, $decision ) {
+	public static function destination( $order, $decision, $outcome = null ) {
 		if ( $order->is_paid() || $order->has_status( 'on-hold' ) ) {
 			return $order->get_checkout_order_received_url();
 		}
 
-		if ( Order_Sync::RETRY === $decision ) {
+		if ( 'cancelled' === $outcome ) {
+			self::notice( __( 'You cancelled the payment. Pay again or choose another method.', 'outlinepay-for-woocommerce' ) );
+		} elseif ( 'failed' === $outcome ) {
+			self::notice( __( 'The payment was refused. Try another card or payment method.', 'outlinepay-for-woocommerce' ) );
+		} elseif ( Order_Sync::RETRY === $decision ) {
 			self::notice( __( 'Your payment was not completed. Try again or choose another method.', 'outlinepay-for-woocommerce' ) );
 		} else {
 			self::notice( __( 'We could not confirm your payment yet. If you paid, this order updates in a few minutes. Otherwise, pay again below.', 'outlinepay-for-woocommerce' ) );

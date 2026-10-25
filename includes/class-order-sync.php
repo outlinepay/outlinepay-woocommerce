@@ -44,6 +44,12 @@ final class Order_Sync {
 	const BUSY           = 'busy';
 
 	/**
+	 * What the shopper did in the provider's window, from the payment's
+	 * window_outcome. A hint only: the payment status decides the order.
+	 */
+	const WINDOW_OUTCOMES = array( 'cancelled', 'failed' );
+
+	/**
 	 * Most attempt ids kept per order.
 	 */
 	const MAX_ATTEMPTS = 50;
@@ -208,7 +214,7 @@ final class Order_Sync {
 	 *
 	 * @param \WC_Order $order      Order.
 	 * @param string    $payment_id OutlinePay payment id.
-	 * @param string    $event      started or expired.
+	 * @param string    $event      started, expired, window_cancelled or window_failed.
 	 * @return bool True when the note was added.
 	 */
 	public static function note_attempt( $order, $payment_id, $event ) {
@@ -224,6 +230,12 @@ final class Order_Sync {
 		} elseif ( 'expired' === $event ) {
 			/* translators: %s: OutlinePay payment id. */
 			Notes::write( $order, fn () => sprintf( __( 'OutlinePay payment %s expired. The shopper did not finish.', 'outlinepay-for-woocommerce' ), $payment_id ) );
+		} elseif ( 'window_cancelled' === $event ) {
+			/* translators: %s: OutlinePay payment id. */
+			Notes::write( $order, fn () => sprintf( __( 'OutlinePay payment %s: the shopper cancelled in the payment window. The order is still waiting for payment.', 'outlinepay-for-woocommerce' ), $payment_id ) );
+		} elseif ( 'window_failed' === $event ) {
+			/* translators: %s: OutlinePay payment id. */
+			Notes::write( $order, fn () => sprintf( __( 'OutlinePay payment %s: the payment provider refused the payment in its window and did not say why. The order is still waiting for payment.', 'outlinepay-for-woocommerce' ), $payment_id ) );
 		} else {
 			return false;
 		}
@@ -241,6 +253,41 @@ final class Order_Sync {
 		$noted[] = $key;
 		$order->update_meta_data( self::META_NOTED, array_slice( $noted, -2 * self::MAX_ATTEMPTS ) );
 		return true;
+	}
+
+	/**
+	 * What the shopper did in the provider's window: cancelled, failed, or
+	 * null. Only for a payment of this order that is still open or failed
+	 * (decision WAIT or RETRY). A server that does not send window_outcome,
+	 * or sends a value this plugin does not know, gives null.
+	 *
+	 * @param mixed       $payment  Payment JSON.
+	 * @param string|null $decision Decision for the payment.
+	 * @return string|null
+	 */
+	public static function window_outcome( $payment, $decision ) {
+		if ( ! in_array( $decision, array( self::WAIT, self::RETRY ), true ) || ! is_array( $payment ) || ! isset( $payment['window_outcome'] ) ) {
+			return null;
+		}
+		return in_array( $payment['window_outcome'], self::WINDOW_OUTCOMES, true ) ? $payment['window_outcome'] : null;
+	}
+
+	/**
+	 * The private note for what the shopper did in the provider's window, at
+	 * most once per attempt and outcome: a reload or a second return adds no
+	 * other. None when the order is paid or on hold. The caller saves the order.
+	 *
+	 * @param \WC_Order   $order    Order.
+	 * @param array       $payment  Payment.
+	 * @param string|null $decision Decision for the payment.
+	 * @return bool True when the note was added.
+	 */
+	public static function note_window( $order, $payment, $decision ) {
+		$outcome = self::window_outcome( $payment, $decision );
+		if ( null === $outcome || $order->is_paid() || $order->has_status( 'on-hold' ) ) {
+			return false;
+		}
+		return self::note_attempt( $order, (string) $payment['id'], 'window_' . $outcome );
 	}
 
 	/**
@@ -304,6 +351,9 @@ final class Order_Sync {
 				if ( self::UNKNOWN === $decision || self::MISMATCH === $decision ) {
 					Logger::warning( 'Payment not applied', $context );
 				}
+				if ( self::note_window( $order, $payment, $decision ) ) {
+					$order->save();
+				}
 				return $decision;
 			}
 
@@ -317,6 +367,10 @@ final class Order_Sync {
 				$order->update_meta_data( self::META_APPLIED, array_slice( $applied, -20 ) );
 				$order->save();
 				Logger::info( 'Payment applied', $context );
+			}
+
+			if ( self::note_window( $order, $payment, $decision ) ) {
+				$order->save();
 			}
 
 			// A paid or held order needs no payment form any more.
@@ -522,6 +576,10 @@ final class Order_Sync {
 							)
 						)
 					);
+					return;
+				}
+				if ( 'failed' === $payment['status'] && null !== self::window_outcome( $payment, $decision ) ) {
+					// The window note (see note_window) says what happened.
 					return;
 				}
 				Notes::write(

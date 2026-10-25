@@ -210,7 +210,7 @@ class LaunchPageTest extends TestCase {
 	public function test_the_page_posts_every_field_to_a_named_window() {
 		$html = Launch_Page::render( $this->store_launch(), self::page() );
 
-		$this->assertStringContainsString( '<form id="outlinepay-launch" method="post" action="https://pay.example.test/pay/start" accept-charset="euc-kr" target="outlinepay_pay" data-width="548" data-height="550">', $html );
+		$this->assertStringContainsString( '<form id="outlinepay-launch" method="post" action="https://pay.example.test/pay/start" accept-charset="euc-kr" target="outlinepay_pay" data-width="900" data-height="650">', $html );
 		$this->assertStringContainsString( '<input type="hidden" name="ORDERNO" value="42">', $html );
 		$this->assertStringContainsString( '<input type="hidden" name="AMOUNT" value="25000">', $html );
 		$this->assertStringContainsString( '<input type="hidden" name="PRODUCTNAME" value="쿠키 상점 #42">', $html );
@@ -219,6 +219,27 @@ class LaunchPageTest extends TestCase {
 		$this->assertStringContainsString( 'form.target = "_self"', $html );
 		$this->assertSame( 1, substr_count( $html, '<script' ), 'only the page\'s own inline script' );
 		$this->assertStringNotContainsString( '<script src', $html );
+	}
+
+	public function test_the_window_opens_at_least_900_by_650() {
+		$this->assertSame( array( 900, 650 ), Launch_Page::open_size( 548, 550 ) );
+		$this->assertSame( array( 900, 650 ), Launch_Page::open_size( 900, 650 ) );
+		$this->assertSame( array( 900, 700 ), Launch_Page::open_size( 640, 700 ), 'a taller answer keeps its height' );
+		$this->assertSame( array( 1200, 650 ), Launch_Page::open_size( 1200, 480 ), 'a wider answer keeps its width' );
+	}
+
+	public function test_a_larger_size_from_the_answer_is_kept_on_the_page() {
+		$html = Launch_Page::render( $this->store_launch( array( 'width' => 1200, 'height' => 800 ) ), self::page() );
+
+		$this->assertStringContainsString( 'data-width="1200" data-height="800">', $html );
+	}
+
+	public function test_the_script_caps_the_window_at_the_screen() {
+		$html = Launch_Page::render( $this->store_launch(), self::page() );
+
+		$this->assertStringContainsString( 'return available > 0 ? Math.min(size, available) : size;', $html );
+		$this->assertStringContainsString( '"width=" + fit(form.getAttribute("data-width"), display.availWidth)', $html );
+		$this->assertStringContainsString( '",height=" + fit(form.getAttribute("data-height"), display.availHeight)', $html );
 	}
 
 	public function test_field_names_and_values_are_escaped_exactly() {

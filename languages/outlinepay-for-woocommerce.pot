@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: OutlinePay for WooCommerce 0.5.0\n"
+"Project-Id-Version: OutlinePay for WooCommerce 0.5.1\n"
 "Report-Msgid-Bugs-To: https://outlinepay.com\n"
 "Last-Translator: OutlinePay <dev@outlinepay.com>\n"
 "Language-Team: OutlinePay <dev@outlinepay.com>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-23T16:00:00+00:00\n"
+"POT-Creation-Date: 2026-10-25T04:11:06+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: outlinepay-for-woocommerce\n"
@@ -33,10 +33,11 @@ msgstr ""
 #. Author of the plugin
 #: outlinepay-for-woocommerce.php
 #: includes/class-abilities.php:58
-#: includes/class-admin-page.php:70
-#: includes/class-admin-page.php:71
-#: includes/class-admin-page.php:350
-#: includes/class-self-check.php:842
+#: includes/class-admin-page.php:94
+#: includes/class-admin-page.php:95
+#: includes/class-admin-page.php:510
+#: includes/class-gateway.php:82
+#: includes/class-self-check.php:932
 msgid "OutlinePay"
 msgstr ""
 
@@ -60,535 +61,787 @@ msgstr ""
 msgid "Returns the saved OutlinePay connection (status, mode, payment provider, installation id, connected since) and a summary of the last self-check. Makes no network call."
 msgstr ""
 
-#: includes/class-admin-page.php:98
+#: includes/class-admin-page.php:122
 msgid "Settings"
 msgstr ""
 
-#: includes/class-admin-page.php:209
-#: includes/class-gateway.php:99
+#: includes/class-admin-page.php:248
+msgid "OutlinePay is active. Paste your connect code to start taking payments."
+msgstr ""
+
+#: includes/class-admin-page.php:249
+msgid "Go to OutlinePay"
+msgstr ""
+
+#: includes/class-admin-page.php:268
+#: includes/class-gateway.php:169
 #: includes/class-site-health.php:193
 msgid "Open the OutlinePay page"
 msgstr ""
 
-#: includes/class-admin-page.php:219
+#: includes/class-admin-page.php:278
 msgid "This looks like a copy of your store."
 msgstr ""
 
 #. translators: 1: address the store was connected at, 2: this site's address.
-#: includes/class-admin-page.php:223
+#: includes/class-admin-page.php:282
 #, php-format
 msgid "It was connected at %1$s. This site is %2$s."
 msgstr ""
 
-#: includes/class-admin-page.php:228
+#: includes/class-admin-page.php:287
 msgid "OutlinePay is off here, so this copy cannot take real payments."
 msgstr ""
 
-#: includes/class-admin-page.php:244
+#: includes/class-admin-page.php:303
 msgid "Confirm the move"
 msgstr ""
 
 #. translators: %s: this site's address.
-#: includes/class-admin-page.php:248
+#: includes/class-admin-page.php:307
 #, php-format
 msgid "Only confirm if %s is now your real store."
 msgstr ""
 
-#: includes/class-admin-page.php:252
+#: includes/class-admin-page.php:311
 msgid "Payments turn back on at this address. OutlinePay sends payment updates to this address from now on."
 msgstr ""
 
-#: includes/class-admin-page.php:257
+#: includes/class-admin-page.php:316
 msgid "Yes, my store moved here"
 msgstr ""
 
-#: includes/class-admin-page.php:258
+#: includes/class-admin-page.php:317
 msgid "Cancel"
 msgstr ""
 
-#: includes/class-admin-page.php:263
-#: includes/class-admin-page.php:268
+#: includes/class-admin-page.php:322
+#: includes/class-admin-page.php:327
 msgid "Connect this copy separately"
 msgstr ""
 
-#: includes/class-admin-page.php:264
+#: includes/class-admin-page.php:323
 msgid "This removes the copied connection from this site only. Your live store keeps working. You can then connect this site with its own connect code."
 msgstr ""
 
-#: includes/class-admin-page.php:271
-#: includes/class-admin-page.php:273
+#: includes/class-admin-page.php:330
+#: includes/class-admin-page.php:332
 msgid "I moved my store to this address"
 msgstr ""
 
-#: includes/class-admin-page.php:272
+#: includes/class-admin-page.php:331
 msgid "Choose this if this site is now your real store."
 msgstr ""
 
-#: includes/class-admin-page.php:354
+#: includes/class-admin-page.php:517
 msgid "The saved connection can no longer be read. This happens when the site security keys change. Disconnect, then connect again with a new code."
 msgstr ""
 
-#: includes/class-admin-page.php:388
+#: includes/class-admin-page.php:550
 msgid "OutlinePay no longer accepts this store's connection. Payments are off. Ask your payment provider for a new connect code, then disconnect and connect again."
 msgstr ""
 
-#: includes/class-admin-page.php:432
+#: includes/class-admin-page.php:611
+msgid "Set up OutlinePay"
+msgstr ""
+
+#: includes/class-admin-page.php:612
+msgid "Payment methods show at checkout when every check below passes."
+msgstr ""
+
+#: includes/class-admin-page.php:621
+msgid "Fix all"
+msgstr ""
+
+#: includes/class-admin-page.php:626
+msgid "Check again"
+msgstr ""
+
+#. translators: %d: number of setup checks that have not passed.
+#: includes/class-admin-page.php:663
+#, php-format
+msgid "%d check still needs you. Follow the step in its row."
+msgid_plural "%d checks still need you. Follow the step in each row."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/class-admin-page.php:674
+msgid "Setup is complete. Your payment methods now show at checkout."
+msgstr ""
+
+#: includes/class-admin-page.php:683
 msgid "Connect your store"
 msgstr ""
 
-#: includes/class-admin-page.php:433
+#: includes/class-admin-page.php:684
 msgid "Your payment provider gives you a connect code. Paste it here to start taking payments."
 msgstr ""
 
-#: includes/class-admin-page.php:434
+#: includes/class-admin-page.php:685
 msgid "Connecting sends this store's address, its callback address and its software versions to OutlinePay."
 msgstr ""
 
-#: includes/class-admin-page.php:438
+#: includes/class-admin-page.php:689
 msgid "Connect code"
 msgstr ""
 
-#: includes/class-admin-page.php:440
+#: includes/class-admin-page.php:693
 msgid "Connect"
 msgstr ""
 
-#: includes/class-admin-page.php:453
+#: includes/class-admin-page.php:706
 msgid "Connected"
 msgstr ""
 
-#: includes/class-admin-page.php:454
+#: includes/class-admin-page.php:707
 msgid "Disconnected by OutlinePay"
 msgstr ""
 
-#: includes/class-admin-page.php:455
+#: includes/class-admin-page.php:708
 msgid "Pending"
 msgstr ""
 
-#: includes/class-admin-page.php:457
+#: includes/class-admin-page.php:710
 msgid "Connection"
 msgstr ""
 
-#: includes/class-admin-page.php:459
+#: includes/class-admin-page.php:712
 msgid "Test mode"
 msgstr ""
 
-#: includes/class-admin-page.php:463
+#: includes/class-admin-page.php:716
 msgid "Status"
 msgstr ""
 
-#: includes/class-admin-page.php:464
+#: includes/class-admin-page.php:717
 msgid "Mode"
 msgstr ""
 
-#: includes/class-admin-page.php:464
+#: includes/class-admin-page.php:717
 msgid "Test. Your payment provider reverses test payments. Do not ship goods."
 msgstr ""
 
-#: includes/class-admin-page.php:464
+#: includes/class-admin-page.php:717
 msgid "Live"
 msgstr ""
 
-#: includes/class-admin-page.php:465
+#: includes/class-admin-page.php:718
 msgid "Payment provider"
 msgstr ""
 
-#: includes/class-admin-page.php:466
+#: includes/class-admin-page.php:719
 msgid "Installation"
 msgstr ""
 
-#: includes/class-admin-page.php:467
+#: includes/class-admin-page.php:720
 msgid "Refunds"
 msgstr ""
 
-#: includes/class-admin-page.php:467
+#: includes/class-admin-page.php:720
 msgid "On"
 msgstr ""
 
-#: includes/class-admin-page.php:467
+#: includes/class-admin-page.php:720
 msgid "Off"
 msgstr ""
 
-#: includes/class-admin-page.php:469
+#: includes/class-admin-page.php:722
 msgid "Connected since"
 msgstr ""
 
-#: includes/class-admin-page.php:485
+#: includes/class-admin-page.php:736
 msgid "Self-check"
 msgstr ""
 
-#: includes/class-admin-page.php:486
+#: includes/class-admin-page.php:737
 msgid "Checks the connection between this store, OutlinePay and your payment provider. No shopper or order details are checked or sent."
 msgstr ""
 
-#: includes/class-admin-page.php:489
+#: includes/class-admin-page.php:744
+msgid "No check has run yet."
+msgstr ""
+
+#: includes/class-admin-page.php:750
+msgid "Run check"
+msgstr ""
+
+#. translators: %s: the site admin email address.
+#: includes/class-admin-page.php:760
+#, php-format
+msgid "Email me when a daily check fails (to the site admin address, %s)"
+msgstr ""
+
+#: includes/class-admin-page.php:764
+#: includes/class-admin-page.php:1029
+msgid "Save"
+msgstr ""
+
+#: includes/class-admin-page.php:777
 msgid "A check ran less than a minute ago."
 msgstr ""
 
-#: includes/class-admin-page.php:494
-msgid "Diagnostic code"
+#: includes/class-admin-page.php:793
+msgid "Still stuck?"
 msgstr ""
 
-#: includes/class-admin-page.php:496
+#. translators: %s: payment provider name, such as CookiePay.
+#: includes/class-admin-page.php:796
+#, php-format
+msgid "Contact %s support."
+msgstr ""
+
+#: includes/class-admin-page.php:797
+msgid "Contact your payment provider."
+msgstr ""
+
+#: includes/class-admin-page.php:803
+msgid "Give them this code:"
+msgstr ""
+
+#: includes/class-admin-page.php:805
+#: includes/class-admin-page.php:826
+#: includes/class-admin-page.php:892
 msgid "Copied"
 msgstr ""
 
-#: includes/class-admin-page.php:496
+#: includes/class-admin-page.php:805
+#: includes/class-admin-page.php:826
+#: includes/class-admin-page.php:892
 msgid "Selected. Press Ctrl+C to copy."
 msgstr ""
 
-#: includes/class-admin-page.php:496
+#: includes/class-admin-page.php:805
+#: includes/class-admin-page.php:826
 msgid "Copy"
 msgstr ""
 
-#: includes/class-admin-page.php:498
-msgid "Send this code to your payment provider if you need help."
-msgstr ""
-
 #. translators: %s: date and time of the last check.
-#: includes/class-admin-page.php:502
-#, php-format
-msgid "Last run %s (daily check)."
-msgstr ""
-
-#. translators: %s: date and time of the last check.
-#: includes/class-admin-page.php:502
+#: includes/class-admin-page.php:810
+#: includes/class-admin-page.php:832
 #, php-format
 msgid "Last run %s."
 msgstr ""
 
-#: includes/class-admin-page.php:507
+#: includes/class-admin-page.php:824
+msgid "Diagnostic code"
+msgstr ""
+
+#: includes/class-admin-page.php:828
+msgid "Send this code to your payment provider if you need help."
+msgstr ""
+
+#. translators: %s: date and time of the last check.
+#: includes/class-admin-page.php:832
+#, php-format
+msgid "Last run %s (daily check)."
+msgstr ""
+
+#: includes/class-admin-page.php:837
 msgid "OutlinePay was not reached, so this code was made on this site."
 msgstr ""
 
-#: includes/class-admin-page.php:512
+#: includes/class-admin-page.php:852
 msgid "Result"
 msgstr ""
 
-#: includes/class-admin-page.php:513
+#: includes/class-admin-page.php:853
 msgid "Check"
 msgstr ""
 
-#: includes/class-admin-page.php:514
+#: includes/class-admin-page.php:854
 msgid "Who acts next"
 msgstr ""
 
-#: includes/class-admin-page.php:520
+#: includes/class-admin-page.php:860
 msgid "Pass"
 msgstr ""
 
-#: includes/class-admin-page.php:521
+#: includes/class-admin-page.php:861
 msgid "Fail"
 msgstr ""
 
-#: includes/class-admin-page.php:528
-msgid "No check has run yet."
+#: includes/class-admin-page.php:892
+msgid "Copy code"
 msgstr ""
 
-#: includes/class-admin-page.php:534
-msgid "Run check"
+#. translators: %s: currency code such as KRW.
+#: includes/class-admin-page.php:901
+#, php-format
+msgid "Fix all sets the store currency to %s."
 msgstr ""
 
-#: includes/class-admin-page.php:548
-#: includes/class-admin-page.php:592
-msgid "Save"
+#: includes/class-admin-page.php:914
+msgid "Use this address"
 msgstr ""
 
-#: includes/class-admin-page.php:573
+#: includes/class-admin-page.php:920
+msgid "Run now"
+msgstr ""
+
+#. translators: 1: store currency code such as USD, 2: payment provider name, 3: currency codes the provider takes, such as KRW.
+#: includes/class-admin-page.php:939
+#, php-format
+msgid "Your store currency is %1$s. %2$s takes payments in %3$s only."
+msgstr ""
+
+#: includes/class-admin-page.php:955
+msgid "Prices keep their numbers. Check your product prices after switching."
+msgstr ""
+
+#. translators: %s: currency code such as KRW.
+#: includes/class-admin-page.php:968
+#, php-format
+msgid "Set store currency to %s"
+msgstr ""
+
+#: includes/class-admin-page.php:1010
 msgid "Processing"
 msgstr ""
 
-#: includes/class-admin-page.php:574
+#: includes/class-admin-page.php:1011
 msgid "On hold"
 msgstr ""
 
-#: includes/class-admin-page.php:576
+#: includes/class-admin-page.php:1013
 msgid "Refunds and cancellations"
 msgstr ""
 
-#: includes/class-admin-page.php:578
+#: includes/class-admin-page.php:1015
 msgid "Refund card, foreign card, bank transfer, KakaoPay and NaverPay payments from the order screen with the Refund button. Partial refunds work for card payments only. Refund other payments in your payment provider's dashboard."
 msgstr ""
 
-#: includes/class-admin-page.php:580
+#: includes/class-admin-page.php:1017
 msgid "Your payment provider has not turned on refunds for this store. Refund payments in your payment provider's dashboard. Shoppers cannot cancel paid orders until refunds are on."
 msgstr ""
 
-#: includes/class-admin-page.php:585
+#: includes/class-admin-page.php:1022
 msgid "Let shoppers cancel their own paid orders"
 msgstr ""
 
-#: includes/class-admin-page.php:586
+#: includes/class-admin-page.php:1023
 msgid "Shoppers see Cancel in My Account when the order has one of these statuses and nothing was refunded yet. Cancelling refunds the full payment and cancels the order."
 msgstr ""
 
-#: includes/class-admin-page.php:587
+#: includes/class-admin-page.php:1024
 msgid "Order statuses shoppers can cancel"
 msgstr ""
 
-#: includes/class-admin-page.php:603
+#: includes/class-admin-page.php:1040
 msgid "Payment methods"
 msgstr ""
 
-#: includes/class-admin-page.php:605
+#: includes/class-admin-page.php:1042
 msgid "Your payment provider has no methods enabled for this store yet. Reload this page later."
 msgstr ""
 
-#: includes/class-admin-page.php:608
+#: includes/class-admin-page.php:1045
 msgid "These are the methods your payment provider has enabled for your store. You can hide any of them. To add a method, ask your payment provider."
 msgstr ""
 
-#: includes/class-admin-page.php:612
+#: includes/class-admin-page.php:1049
 msgid "Method"
 msgstr ""
 
-#: includes/class-admin-page.php:612
-#: includes/class-gateway.php:83
+#: includes/class-admin-page.php:1049
+#: includes/class-gateway.php:153
 msgid "Show at checkout"
 msgstr ""
 
-#: includes/class-admin-page.php:619
+#: includes/class-admin-page.php:1056
 msgid "Save methods"
 msgstr ""
 
-#: includes/class-admin-page.php:633
-#: includes/class-admin-page.php:638
+#: includes/class-admin-page.php:1070
+#: includes/class-admin-page.php:1075
 msgid "Disconnect"
 msgstr ""
 
-#: includes/class-admin-page.php:634
+#: includes/class-admin-page.php:1071
 msgid "Disconnecting turns off OutlinePay payments in this store. Reconnecting needs a new connect code from your payment provider."
 msgstr ""
 
-#: includes/class-admin-page.php:635
+#: includes/class-admin-page.php:1072
 msgid "Disconnect this store from OutlinePay?"
 msgstr ""
 
-#: includes/class-admin-page.php:672
+#: includes/class-admin-page.php:1100
+msgid "Your store is connected. Finish setup below."
+msgstr ""
+
+#: includes/class-admin-page.php:1100
 msgid "Your store is connected."
 msgstr ""
 
-#: includes/class-admin-page.php:673
+#: includes/class-admin-page.php:1101
 msgid "Your store is disconnected."
 msgstr ""
 
-#: includes/class-admin-page.php:674
+#: includes/class-admin-page.php:1102
 msgid "Payment methods saved."
 msgstr ""
 
-#: includes/class-admin-page.php:675
+#: includes/class-admin-page.php:1103
 msgid "Enter the connect code from your payment provider."
 msgstr ""
 
-#: includes/class-admin-page.php:676
+#: includes/class-admin-page.php:1104
 msgid "This connect code is not valid. It may have expired or already been used. Ask your payment provider for a new code."
 msgstr ""
 
-#: includes/class-admin-page.php:677
+#: includes/class-admin-page.php:1105
 msgid "OutlinePay could not accept this store's address. The store must be reachable over HTTPS from the internet."
 msgstr ""
 
-#: includes/class-admin-page.php:678
+#: includes/class-admin-page.php:1106
 msgid "Too many connect attempts. Wait a minute and try again."
 msgstr ""
 
-#: includes/class-admin-page.php:679
+#: includes/class-admin-page.php:1107
 msgid "OutlinePay could not be reached. Check that this server can make outgoing HTTPS requests, then try again."
 msgstr ""
 
-#: includes/class-admin-page.php:680
+#: includes/class-admin-page.php:1108
 msgid "The store could not be connected. Try again in a moment."
 msgstr ""
 
-#: includes/class-admin-page.php:681
+#: includes/class-admin-page.php:1109
 msgid "The copied connection is removed from this site. Your live store keeps working."
 msgstr ""
 
-#: includes/class-admin-page.php:682
+#: includes/class-admin-page.php:1110
 msgid "This site no longer looks like a copy. Nothing changed."
 msgstr ""
 
-#: includes/class-admin-page.php:683
+#: includes/class-admin-page.php:1111
 msgid "This address is saved as your store. Payments are back on."
 msgstr ""
 
-#: includes/class-admin-page.php:684
+#: includes/class-admin-page.php:1112
 msgid "This address is saved as your store and payments are back on. OutlinePay could not be told the new address yet. Open this page again later to retry."
 msgstr ""
 
-#: includes/class-admin-page.php:685
+#: includes/class-admin-page.php:1113
 msgid "The check finished. The results are below."
 msgstr ""
 
-#: includes/class-admin-page.php:686
+#: includes/class-admin-page.php:1114
 msgid "Email setting saved."
 msgstr ""
 
-#: includes/class-admin-page.php:687
+#: includes/class-admin-page.php:1115
 msgid "Cancellation setting saved."
 msgstr ""
 
-#: includes/class-admin-page.php:724
+#: includes/class-admin-page.php:1116
+msgid "The payment check and the method refresh ran now."
+msgstr ""
+
+#: includes/class-admin-page.php:1117
+msgid "The payment check ran now. The method list could not be refreshed. Try again in a few minutes."
+msgstr ""
+
+#: includes/class-admin-page.php:1118
+msgid "The store is not connected. Nothing ran."
+msgstr ""
+
+#. translators: %s: currency code such as KRW.
+#: includes/class-admin-page.php:1120
+#, php-format
+msgid "Store currency set to %s. Prices kept their numbers. Check your product prices."
+msgstr ""
+
+#: includes/class-admin-page.php:1121
+#: includes/class-admin-page.php:1122
+msgid "The store is not connected. Nothing changed."
+msgstr ""
+
+#: includes/class-admin-page.php:1161
 msgid "You do not have permission to change OutlinePay settings."
 msgstr ""
 
+#: includes/class-gateway.php:66
+msgid "Takes payment through your payment provider, connected by OutlinePay. Connect the store and choose which methods to show on the OutlinePay page."
+msgstr ""
+
 #. translators: %s: payment method name, such as Credit or debit card.
-#: includes/class-gateway.php:36
+#: includes/class-gateway.php:70
 #, php-format
 msgid "OutlinePay: %s"
 msgstr ""
 
-#: includes/class-gateway.php:39
-msgid "Takes payment through your payment provider, connected by OutlinePay. Connect the store and choose which methods to show on the OutlinePay page."
+#: includes/class-gateway.php:86
+msgid "OutlinePay (not connected)"
 msgstr ""
 
-#: includes/class-gateway.php:85
+#: includes/class-gateway.php:87
+msgid "Connect the store on the OutlinePay page to take payments."
+msgstr ""
+
+#: includes/class-gateway.php:155
 msgid "Show this method at checkout when your provider has it enabled"
 msgstr ""
 
-#: includes/class-gateway.php:133
+#: includes/class-gateway.php:204
 #: includes/class-refunds.php:106
 msgid "This order could not be found."
 msgstr ""
 
-#: includes/class-gateway.php:137
-#: includes/class-gateway.php:281
+#: includes/class-gateway.php:208
+#: includes/class-gateway.php:430
 msgid "This payment method is not available right now. Choose another method."
 msgstr ""
 
-#: includes/class-gateway.php:144
+#. translators: %s: currency codes, such as KRW.
+#: includes/class-gateway.php:212
+#, php-format
+msgid "This payment method takes %s only."
+msgstr ""
+
+#: includes/class-gateway.php:217
 msgid "The order total must be a whole number of won. Contact the store."
 msgstr ""
 
-#: includes/class-gateway.php:167
-#: includes/class-gateway.php:284
+#: includes/class-gateway.php:245
+#: includes/class-gateway.php:261
+#: includes/class-gateway.php:270
+#: includes/class-gateway.php:434
 msgid "The payment could not be started. Try again in a moment."
 msgstr ""
 
-#: includes/class-gateway.php:267
+#: includes/class-gateway.php:415
 msgid "This order cannot be paid right now. Contact the store."
 msgstr ""
 
-#: includes/class-gateway.php:274
+#: includes/class-gateway.php:422
 #: includes/class-switch-guard.php:138
 msgid "A payment for this order is being reviewed. The store will contact you. Do not pay again."
 msgstr ""
 
-#: includes/class-gateway.php:277
+#: includes/class-gateway.php:425
 msgid "A payment for this order is already being opened. Wait a moment and try again."
 msgstr ""
 
-#: includes/class-order-display.php:85
-#: includes/class-order-display.php:135
+#: includes/class-launch-page.php:365
+#: includes/class-return-handler.php:198
+msgid "This payment link is not valid."
+msgstr ""
+
+#: includes/class-launch-page.php:366
+#: includes/class-launch-page.php:444
+#: includes/class-return-handler.php:129
+#: includes/class-return-handler.php:199
+msgid "Payment"
+msgstr ""
+
+#: includes/class-launch-page.php:429
+msgid "Order"
+msgstr ""
+
+#: includes/class-launch-page.php:430
+msgid "Total"
+msgstr ""
+
+#: includes/class-launch-page.php:432
+msgid "Payment method"
+msgstr ""
+
+#: includes/class-launch-page.php:469
+msgid "Finish the payment in the window"
+msgstr ""
+
+#: includes/class-launch-page.php:469
+msgid "Pay"
+msgstr ""
+
+#: includes/class-launch-page.php:471
+#: includes/class-launch-page.php:473
+msgid "Back to the order"
+msgstr ""
+
+#: includes/class-launch-page.php:472
+msgid "A payment window opens. Finish there and this page continues."
+msgstr ""
+
+#: includes/class-launch-page.php:473
+msgid "The payment window was closed. Pay again or go back."
+msgstr ""
+
+#: includes/class-order-display.php:87
+#: includes/class-order-display.php:137
 msgid "View card receipt"
 msgstr ""
 
-#: includes/class-order-display.php:209
+#: includes/class-order-display.php:211
 msgid "Test payment"
 msgstr ""
 
-#: includes/class-order-display.php:209
+#: includes/class-order-display.php:211
 msgid "OutlinePay took this payment in test mode. Your payment provider reverses it. Do not ship goods."
 msgstr ""
 
-#: includes/class-order-display.php:235
-#: includes/class-order-display.php:267
-#: includes/class-order-display.php:274
+#: includes/class-order-display.php:221
+msgid "Test payment. This order was paid through the payment provider's test system and is not a real sale."
+msgstr ""
+
+#: includes/class-order-display.php:270
+#: includes/class-order-display.php:302
+#: includes/class-order-display.php:309
 msgid "Deposit details"
 msgstr ""
 
-#: includes/class-order-display.php:236
+#: includes/class-order-display.php:271
 msgid "Your order ships after the deposit arrives. Deposit the exact order total to this account."
 msgstr ""
 
-#: includes/class-order-display.php:238
-#: includes/class-order-display.php:262
+#: includes/class-order-display.php:273
+#: includes/class-order-display.php:297
 msgid "Bank"
 msgstr ""
 
-#: includes/class-order-display.php:239
-#: includes/class-order-display.php:263
+#: includes/class-order-display.php:274
+#: includes/class-order-display.php:298
 msgid "Account number"
 msgstr ""
 
-#: includes/class-order-display.php:240
-#: includes/class-order-display.php:264
+#: includes/class-order-display.php:275
+#: includes/class-order-display.php:299
 msgid "Deposit by"
 msgstr ""
 
-#: includes/class-order-sync.php:288
+#. translators: 1: payment method name, 2: payment provider name such as CookiePay.
+#: includes/class-order-sync.php:182
+#, php-format
+msgid "An OutlinePay payment by %1$s could not start: %2$s returned an error. The shopper saw an error and can try again."
+msgstr ""
+
+#. translators: %s: payment method name.
+#: includes/class-order-sync.php:186
+#, php-format
+msgid "An OutlinePay payment by %s could not start: this site could not reach OutlinePay. The shopper saw an error and can try again."
+msgstr ""
+
+#. translators: 1: payment method name, 2: payment provider name such as CookiePay.
+#: includes/class-order-sync.php:190
+#, php-format
+msgid "An OutlinePay payment by %1$s could not start: %2$s has not enabled this method for the store. The shopper was asked to choose another method."
+msgstr ""
+
+#. translators: %s: payment method name.
+#: includes/class-order-sync.php:194
+#, php-format
+msgid "An OutlinePay payment by %s could not start: OutlinePay's answer could not be used. The shopper saw an error and can try again."
+msgstr ""
+
+#. translators: %s: payment method name.
+#: includes/class-order-sync.php:198
+#, php-format
+msgid "An OutlinePay payment by %s could not start: the order total is not a whole number of won. Check the product prices."
+msgstr ""
+
+#. translators: 1: payment method name, 2: OutlinePay error code.
+#: includes/class-order-sync.php:202
+#, php-format
+msgid "An OutlinePay payment by %1$s could not start (%2$s). The shopper saw an error and can try again."
+msgstr ""
+
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:229
+#, php-format
+msgid "OutlinePay payment %s started. Waiting for the shopper."
+msgstr ""
+
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:232
+#, php-format
+msgid "OutlinePay payment %s expired. The shopper did not finish."
+msgstr ""
+
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:235
+#, php-format
+msgid "OutlinePay payment %s: the shopper cancelled in the payment window. The order is still waiting for payment."
+msgstr ""
+
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:238
+#, php-format
+msgid "OutlinePay payment %s: the payment provider refused the payment in its window and did not say why. The order is still waiting for payment."
+msgstr ""
+
+#: includes/class-order-sync.php:445
 msgid "(test mode)"
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:322
+#: includes/class-order-sync.php:480
 #, php-format
 msgid "OutlinePay payment %s was paid, but this order was already paid with another payment method. The shopper paid twice. To refund the OutlinePay payment, use your payment provider dashboard."
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:339
+#: includes/class-order-sync.php:499
 #, php-format
 msgid "OutlinePay payment %s is paid."
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:348
+#: includes/class-order-sync.php:511
 #, php-format
 msgid "OutlinePay payment %s was made for this order number from another copy of this store, such as a staging site. It does not pay this order. Check it before shipping."
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:369
+#: includes/class-order-sync.php:535
 #, php-format
 msgid "OutlinePay payment %s reports paid, but the amount or currency does not match this order. Check it before shipping."
 msgstr ""
 
-#: includes/class-order-sync.php:389
+#: includes/class-order-sync.php:558
 msgid "OutlinePay issued a virtual account. Waiting for the deposit."
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:403
+#: includes/class-order-sync.php:574
 #, php-format
 msgid "OutlinePay payment %s expired before the deposit arrived."
 msgstr ""
 
 #. translators: 1: OutlinePay payment id, 2: status such as failed or expired.
-#: includes/class-order-sync.php:410
+#: includes/class-order-sync.php:589
 #, php-format
 msgid "OutlinePay payment %1$s is %2$s. The order is waiting for payment."
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:425
+#: includes/class-order-sync.php:606
 #, php-format
 msgid "OutlinePay payment %s needs review: it was paid for a different amount than ordered. OutlinePay has been alerted. Do not ship until it is settled."
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:436
+#: includes/class-order-sync.php:621
 #, php-format
 msgid "OutlinePay payment %s is probably the shopper's real payment for this order. The earlier payment came from another copy of this store. Check both payments before you refund anything. The order stays on hold."
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:446
+#: includes/class-order-sync.php:632
 #, php-format
 msgid "OutlinePay payment %s was paid after this order was already paid. The shopper paid twice. OutlinePay has been alerted. Refund the second payment in your payment provider dashboard."
 msgstr ""
 
 #. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:472
+#: includes/class-order-sync.php:659
 #, php-format
 msgid "The shopper chose another payment method for this order, but then paid OutlinePay payment %s. The payment method is set back to OutlinePay."
 msgstr ""
 
-#: includes/class-plugin.php:90
+#: includes/class-plugin.php:100
 msgid "OutlinePay for WooCommerce needs WooCommerce to be installed and active."
 msgstr ""
 
 #: includes/class-refunds.php:109
-#: includes/class-refunds.php:321
+#: includes/class-refunds.php:335
 msgid "This store is not connected to OutlinePay. Refund this payment in your payment provider's dashboard."
 msgstr ""
 
@@ -601,7 +854,7 @@ msgid "This order has no OutlinePay payment that can be refunded here. Refund it
 msgstr ""
 
 #: includes/class-refunds.php:120
-#: includes/class-shopper-cancel.php:219
+#: includes/class-shopper-cancel.php:248
 msgid "This order is being updated. Try again in a moment."
 msgstr ""
 
@@ -622,339 +875,404 @@ msgid "This refund is already on this order. Reload the order to see it."
 msgstr ""
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay refund id.
-#: includes/class-refunds.php:179
+#: includes/class-refunds.php:180
 #, php-format
 msgid "Refunded %1$s through OutlinePay (refund %2$s)."
 msgstr ""
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay refund id.
-#: includes/class-refunds.php:191
+#: includes/class-refunds.php:193
 #, php-format
 msgid "The payment provider refused a refund of %1$s (refund %2$s). Nothing was refunded."
 msgstr ""
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay refund id.
-#: includes/class-refunds.php:205
+#: includes/class-refunds.php:208
 #, php-format
 msgid "OutlinePay is confirming a refund of %1$s with the payment provider (refund %2$s). It will be added to this order once confirmed."
 msgstr ""
 
-#: includes/class-refunds.php:210
+#: includes/class-refunds.php:213
 msgid "OutlinePay is confirming this refund with the payment provider. It will appear on this order automatically once confirmed."
 msgstr ""
 
+#. translators: 1: amount such as 5,000 won, 2: why OutlinePay refused, one sentence.
+#: includes/class-refunds.php:273
+#, php-format
+msgid "Refund of %1$s was refused: %2$s"
+msgstr ""
+
 #. translators: %s: amount such as 5,000 won.
-#: includes/class-refunds.php:284
+#: includes/class-refunds.php:298
 #, php-format
 msgid "OutlinePay did not answer a refund of %s. It may or may not have gone through. Do not refund this amount in your payment provider's dashboard. If it went through, it will appear on this order automatically, usually within a few minutes. Reload this order to check. Refunding the same amount again is safe: OutlinePay will not refund twice."
 msgstr ""
 
-#: includes/class-refunds.php:298
+#: includes/class-refunds.php:312
 msgid "OutlinePay did not answer. The refund may or may not have gone through. Wait a minute and check the order notes. To try again, refund the same amount."
 msgstr ""
 
-#: includes/class-refunds.php:302
+#: includes/class-refunds.php:316
 msgid "Refunds are paused for this store right now. Try again later, or refund in your payment provider's dashboard."
 msgstr ""
 
-#: includes/class-refunds.php:304
+#: includes/class-refunds.php:318
 msgid "OutlinePay cannot refund this payment. Refund it in your payment provider's dashboard."
 msgstr ""
 
-#: includes/class-refunds.php:306
+#: includes/class-refunds.php:320
 msgid "This payment method cannot be refunded from WooCommerce. Refund it in your payment provider's dashboard."
 msgstr ""
 
-#: includes/class-refunds.php:308
+#: includes/class-refunds.php:322
 msgid "Partial refunds work for card payments only. Refund the full amount, or refund the rest in your payment provider's dashboard."
 msgstr ""
 
-#: includes/class-refunds.php:310
+#: includes/class-refunds.php:324
 msgid "This is more than what is left to refund."
 msgstr ""
 
-#: includes/class-refunds.php:312
+#: includes/class-refunds.php:326
 msgid "Today's refund limit for this store is reached. Ask your payment provider."
 msgstr ""
 
-#: includes/class-refunds.php:314
+#: includes/class-refunds.php:328
 msgid "A shopper cancel must refund everything that is left on the payment."
 msgstr ""
 
-#: includes/class-refunds.php:316
+#: includes/class-refunds.php:330
 msgid "OutlinePay already has a different refund with this refund's number. Reload the order and check its refunds before you try again."
 msgstr ""
 
-#: includes/class-refunds.php:318
+#: includes/class-refunds.php:332
 msgid "Your payment provider has not turned on refunds for this store. Refund it in your payment provider's dashboard."
 msgstr ""
 
-#: includes/class-refunds.php:323
+#: includes/class-refunds.php:337
 msgid "OutlinePay does not know this payment. Refund it in your payment provider's dashboard."
 msgstr ""
 
-#: includes/class-refunds.php:325
+#: includes/class-refunds.php:339
 msgid "OutlinePay could not accept this refund. Refund a whole number of won."
 msgstr ""
 
-#: includes/class-refunds.php:327
+#: includes/class-refunds.php:341
 msgid "OutlinePay did not accept this refund. Nothing was refunded. Refund it in your payment provider's dashboard."
 msgstr ""
 
-#: includes/class-refunds.php:339
+#: includes/class-refunds.php:353
 msgid "The payment provider did not accept this amount. Nothing was refunded."
 msgstr ""
 
-#: includes/class-refunds.php:341
+#: includes/class-refunds.php:355
 msgid "The payment provider refused this refund. Nothing was refunded. Refund it in your payment provider's dashboard."
 msgstr ""
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay refund id.
-#: includes/class-refunds.php:379
+#: includes/class-refunds.php:394
 #, php-format
 msgid "The payment provider did not complete the refund of %1$s (refund %2$s). Nothing was refunded."
 msgstr ""
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay payment id.
-#: includes/class-refunds.php:400
+#: includes/class-refunds.php:416
 #, php-format
 msgid "OutlinePay cancelled the duplicate payment %2$s automatically. %1$s went back to the shopper. This order's own payment is unchanged."
 msgstr ""
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay payment id.
-#: includes/class-refunds.php:402
+#: includes/class-refunds.php:418
 #, php-format
 msgid "%1$s of OutlinePay payment %2$s was refunded. That payment did not pay this order, so no refund is added to it."
 msgstr ""
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay refund id.
-#: includes/class-refunds.php:466
+#: includes/class-refunds.php:483
 #, php-format
 msgid "OutlinePay confirmed a refund of %1$s (refund %2$s), but WooCommerce could not add it to this order. The order may already show this refund. Check the order's refunds."
 msgstr ""
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay refund id, 3: reason.
-#: includes/class-refunds.php:494
+#: includes/class-refunds.php:512
 #, php-format
 msgid "OutlinePay confirmed a refund of %1$s (refund %2$s): %3$s."
 msgstr ""
 
-#: includes/class-refunds.php:903
-#: includes/class-shopper-cancel.php:259
+#: includes/class-refunds.php:921
+#: includes/class-shopper-cancel.php:288
 msgid "Cancelled by the shopper"
 msgstr ""
 
-#: includes/class-refunds.php:907
+#: includes/class-refunds.php:925
 msgid "Refunded in the payment provider's dashboard"
 msgstr ""
 
-#: includes/class-refunds.php:909
+#: includes/class-refunds.php:927
 msgid "Duplicate payment cancelled automatically"
 msgstr ""
 
-#: includes/class-refunds.php:911
+#: includes/class-refunds.php:929
 msgid "Refund confirmed by the payment provider"
 msgstr ""
 
 #. translators: %s: amount in Korean won, such as 5,000.
-#: includes/class-refunds.php:934
+#: includes/class-refunds.php:952
 #, php-format
 msgid "%s won"
 msgstr ""
 
-#: includes/class-return-handler.php:103
+#: includes/class-return-handler.php:133
+msgid "Continue to the store"
+msgstr ""
+
+#: includes/class-return-handler.php:168
+msgid "You cancelled the payment. Pay again or choose another method."
+msgstr ""
+
+#: includes/class-return-handler.php:170
+msgid "The payment was refused. Try another card or payment method."
+msgstr ""
+
+#: includes/class-return-handler.php:172
 msgid "Your payment was not completed. Try again or choose another method."
 msgstr ""
 
-#: includes/class-return-handler.php:105
+#: includes/class-return-handler.php:174
 msgid "We could not confirm your payment yet. If you paid, this order updates in a few minutes. Otherwise, pay again below."
 msgstr ""
 
-#: includes/class-return-handler.php:129
-msgid "This payment link is not valid."
-msgstr ""
-
-#: includes/class-return-handler.php:130
-msgid "Payment"
-msgstr ""
-
-#: includes/class-self-check.php:838
+#: includes/class-self-check.php:928
 msgid "You"
 msgstr ""
 
-#: includes/class-self-check.php:840
+#: includes/class-self-check.php:930
+#: includes/class-self-check.php:937
+#: includes/class-self-check.php:1003
+#: includes/class-settings.php:425
 msgid "Your payment provider"
 msgstr ""
 
-#: includes/class-self-check.php:844
+#: includes/class-self-check.php:934
 msgid "Shopper"
 msgstr ""
 
-#: includes/class-self-check.php:863
+#: includes/class-self-check.php:954
 msgid "The connection is saved on this site."
 msgstr ""
 
-#: includes/class-self-check.php:864
+#: includes/class-self-check.php:955
 msgid "The saved connection is missing or can no longer be read. Disconnect, then connect again with a new code from your payment provider."
 msgstr ""
 
-#: includes/class-self-check.php:867
+#: includes/class-self-check.php:958
 msgid "The store is connected."
 msgstr ""
 
-#: includes/class-self-check.php:870
+#: includes/class-self-check.php:961
 msgid "This connection was turned off. Ask your payment provider for a new connect code."
 msgstr ""
 
-#: includes/class-self-check.php:871
+#: includes/class-self-check.php:962
 msgid "The store is not connected. Connect it with a code from your payment provider."
 msgstr ""
 
 #. translators: %s: milliseconds, such as 120.
-#: includes/class-self-check.php:876
+#: includes/class-self-check.php:967
 #, php-format
 msgid "OutlinePay answered in %s ms."
 msgstr ""
 
-#: includes/class-self-check.php:881
+#: includes/class-self-check.php:972
 msgid "This site could not reach OutlinePay. Check that the server can make outgoing HTTPS requests."
 msgstr ""
 
-#: includes/class-self-check.php:884
+#: includes/class-self-check.php:975
 msgid "OutlinePay refused this store's connection. Ask your payment provider for a new connect code."
 msgstr ""
 
-#: includes/class-self-check.php:886
+#: includes/class-self-check.php:977
 msgid "OutlinePay could not answer the check. Try again in a few minutes."
 msgstr ""
 
-#: includes/class-self-check.php:889
+#: includes/class-self-check.php:980
 msgid "Background payment checks are scheduled."
 msgstr ""
 
-#: includes/class-self-check.php:890
+#: includes/class-self-check.php:981
 msgid "Background payment checks are missing or late. Open WooCommerce > Status > Scheduled Actions and look for failed outlinepay actions."
 msgstr ""
 
-#: includes/class-self-check.php:893
+#: includes/class-self-check.php:984
 msgid "Scheduled tasks are running."
 msgstr ""
 
-#: includes/class-self-check.php:894
+#: includes/class-self-check.php:985
 msgid "WP-Cron is turned off and no scheduled task ran in the last 2 hours. Ask your host to run wp-cron.php from a server cron job."
 msgstr ""
 
-#: includes/class-self-check.php:897
+#: includes/class-self-check.php:988
 msgid "The payment method list is up to date and at least one method shows at checkout."
 msgstr ""
 
-#: includes/class-self-check.php:900
+#: includes/class-self-check.php:991
 msgid "No OutlinePay method shows at checkout. Turn one on under Payment methods on the OutlinePay page, or ask your payment provider to enable one."
 msgstr ""
 
-#: includes/class-self-check.php:901
+#: includes/class-self-check.php:992
 msgid "The payment method list was not refreshed in the last 2 hours."
 msgstr ""
 
-#: includes/class-self-check.php:913
+#. translators: %s: currency code such as KRW.
+#: includes/class-self-check.php:997
+#, php-format
+msgid "The store currency is %s."
+msgstr ""
+
+#. translators: 1: store currency code such as USD, 2: payment provider name, 3: currency codes the provider takes, such as KRW.
+#: includes/class-self-check.php:1001
+#, php-format
+msgid "The store currency is %1$s. %2$s takes payments in %3$s only."
+msgstr ""
+
+#: includes/class-self-check.php:1008
 msgid "This site is at the address the store was connected at."
 msgstr ""
 
-#: includes/class-self-check.php:914
+#: includes/class-self-check.php:1009
 msgid "This site looks like a copy of your store. OutlinePay is off here."
 msgstr ""
 
-#: includes/class-self-check.php:917
+#: includes/class-self-check.php:1012
 msgid "PHP, WordPress and WooCommerce meet this plugin's requirements."
 msgstr ""
 
-#: includes/class-self-check.php:918
+#: includes/class-self-check.php:1013
 msgid "PHP, WordPress or WooCommerce is older than this plugin needs, or WooCommerce did not register its order storage support."
 msgstr ""
 
-#: includes/class-self-check.php:921
+#: includes/class-self-check.php:1016
 msgid "OutlinePay reached this store's payment update address."
 msgstr ""
 
-#: includes/class-self-check.php:922
+#: includes/class-self-check.php:1017
 msgid "OutlinePay could not reach this store's payment update address. Check that the site is online and that no firewall or security plugin blocks /wp-json/outlinepay/v1/callback."
 msgstr ""
 
-#: includes/class-self-check.php:925
+#: includes/class-self-check.php:1020
 msgid "This store talked to OutlinePay in the last 24 hours."
 msgstr ""
 
-#: includes/class-self-check.php:926
+#: includes/class-self-check.php:1021
 msgid "This store has not talked to OutlinePay in the last 24 hours."
 msgstr ""
 
-#: includes/class-self-check.php:929
+#: includes/class-self-check.php:1024
 msgid "Every payment update in the last 7 days reached the store."
 msgstr ""
 
-#: includes/class-self-check.php:930
+#: includes/class-self-check.php:1025
 msgid "Some payment updates in the last 7 days could not be delivered to the store."
 msgstr ""
 
-#: includes/class-self-check.php:933
+#: includes/class-self-check.php:1028
 msgid "No open problems in the last 7 days."
 msgstr ""
 
-#: includes/class-self-check.php:934
+#: includes/class-self-check.php:1031
+msgid "OutlinePay recorded problems in the last 7 days that are not resolved yet. Send the diagnostic code to your payment provider."
+msgstr ""
+
+#: includes/class-self-check.php:1032
 msgid "OutlinePay recorded problems in the last 7 days that are not resolved yet."
 msgstr ""
 
-#: includes/class-self-check.php:937
+#: includes/class-self-check.php:1035
 msgid "Passed."
 msgstr ""
 
-#: includes/class-self-check.php:938
+#: includes/class-self-check.php:1036
 msgid "Failed."
 msgstr ""
 
-#: includes/class-shopper-cancel.php:167
+#: includes/class-settings.php:294
+msgid "Credit or debit card"
+msgstr ""
+
+#: includes/class-settings.php:296
+msgid "International card (KRW)"
+msgstr ""
+
+#: includes/class-settings.php:298
+msgid "Bank transfer"
+msgstr ""
+
+#: includes/class-settings.php:300
+msgid "Virtual account"
+msgstr ""
+
+#: includes/class-settings.php:302
+msgid "KakaoPay"
+msgstr ""
+
+#: includes/class-settings.php:304
+msgid "Naver Pay"
+msgstr ""
+
+#: includes/class-settings.php:306
+msgid "Mobile carrier billing"
+msgstr ""
+
+#: includes/class-settings.php:320
+msgid "CookiePay"
+msgstr ""
+
+#: includes/class-shopper-cancel.php:190
+msgid "Cancellation is not available for this order. Contact the store."
+msgstr ""
+
+#: includes/class-shopper-cancel.php:196
 msgid "Cancel this order? The full payment goes back to your card or account."
 msgstr ""
 
-#: includes/class-shopper-cancel.php:211
+#: includes/class-shopper-cancel.php:240
 msgid "This order cannot be cancelled online. Contact the store."
 msgstr ""
 
-#: includes/class-shopper-cancel.php:213
+#: includes/class-shopper-cancel.php:242
 msgid "This page has expired. Reload it and try again."
 msgstr ""
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay refund id.
-#: includes/class-shopper-cancel.php:263
+#: includes/class-shopper-cancel.php:292
 #, php-format
 msgid "%1$s refunded through OutlinePay (refund %2$s)."
 msgstr ""
 
-#: includes/class-shopper-cancel.php:268
+#: includes/class-shopper-cancel.php:297
 msgid "Your order is cancelled. The full payment goes back to your card or account."
 msgstr ""
 
 #. translators: %s: OutlinePay refund id.
-#: includes/class-shopper-cancel.php:275
+#: includes/class-shopper-cancel.php:305
 #, php-format
 msgid "The shopper tried to cancel this order, but the payment provider refused the refund (refund %s). Nothing was refunded. The order is unchanged."
 msgstr ""
 
 #. translators: %s: OutlinePay refund id.
-#: includes/class-shopper-cancel.php:288
+#: includes/class-shopper-cancel.php:319
 #, php-format
 msgid "The refund is being confirmed with the payment provider (refund %s)."
 msgstr ""
 
-#: includes/class-shopper-cancel.php:295
+#: includes/class-shopper-cancel.php:326
 msgid "Your cancellation is being confirmed. We will email you."
 msgstr ""
 
-#: includes/class-shopper-cancel.php:313
+#: includes/class-shopper-cancel.php:344
 msgid "The shopper asked to cancel, but OutlinePay's answer was lost. If the refund went through, this order will be cancelled automatically. Do not ship it until then."
 msgstr ""
 
-#: includes/class-shopper-cancel.php:315
+#: includes/class-shopper-cancel.php:346
 msgid "We could not confirm your cancellation yet. We will email you."
 msgstr ""
 
@@ -1014,281 +1332,4 @@ msgstr ""
 
 #: includes/class-switch-guard.php:140
 msgid "This order is already paid. You do not need to pay again."
-msgstr ""
-
-#: includes/class-launch-page.php:361
-msgid "Order"
-msgstr ""
-
-#: includes/class-launch-page.php:362
-msgid "Total"
-msgstr ""
-
-#: includes/class-launch-page.php:364
-msgid "Payment method"
-msgstr ""
-
-#: includes/class-launch-page.php:399
-msgid "Pay"
-msgstr ""
-
-#: includes/class-launch-page.php:401
-msgid "A payment window opens. Finish there and this page continues."
-msgstr ""
-
-#: includes/class-launch-page.php:402
-msgid "The payment window was closed. Pay again or go back."
-msgstr ""
-
-#: includes/class-return-handler.php:131
-msgid "Continue to the store"
-msgstr ""
-
-#: includes/class-settings.php:254
-msgid "Credit or debit card"
-msgstr ""
-
-#: includes/class-settings.php:256
-msgid "International card (KRW)"
-msgstr ""
-
-#: includes/class-settings.php:258
-msgid "Bank transfer"
-msgstr ""
-
-#: includes/class-settings.php:260
-msgid "Virtual account"
-msgstr ""
-
-#: includes/class-settings.php:262
-msgid "KakaoPay"
-msgstr ""
-
-#: includes/class-settings.php:264
-msgid "Naver Pay"
-msgstr ""
-
-#: includes/class-settings.php:266
-msgid "Mobile carrier billing"
-msgstr ""
-
-#: includes/class-settings.php:281
-msgid "CookiePay"
-msgstr ""
-
-#: includes/class-launch-page.php:453
-#: includes/class-launch-page.php:455
-msgid "Back to the order"
-msgstr ""
-
-#: includes/class-shopper-cancel.php:190
-msgid "Cancellation is not available for this order. Contact the store."
-msgstr ""
-
-#: includes/class-gateway.php:87
-msgid "Connect the store on the OutlinePay page to take payments."
-msgstr ""
-
-#: includes/class-admin-page.php:651
-msgid "Copy code"
-msgstr ""
-
-#. translators: %s: the site admin email address.
-#: includes/class-admin-page.php:628
-#, php-format
-msgid "Email me when a daily check fails (to the site admin address, %s)"
-msgstr ""
-
-#: includes/class-launch-page.php:451
-msgid "Finish the payment in the window"
-msgstr ""
-
-#: includes/class-admin-page.php:233
-msgid "Go to OutlinePay"
-msgstr ""
-
-#: includes/class-gateway.php:86
-msgid "OutlinePay (not connected)"
-msgstr ""
-
-#: includes/class-admin-page.php:232
-msgid "OutlinePay is active. Paste your connect code to start taking payments."
-msgstr ""
-
-#. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:171
-#, php-format
-msgid "OutlinePay payment %s expired. The shopper did not finish."
-msgstr ""
-
-#. translators: %s: OutlinePay payment id.
-#: includes/class-order-sync.php:168
-#, php-format
-msgid "OutlinePay payment %s started. Waiting for the shopper."
-msgstr ""
-
-#: includes/class-self-check.php:964
-msgid "OutlinePay recorded problems in the last 7 days that are not resolved yet. Send the diagnostic code to your payment provider."
-msgstr ""
-
-#. translators: 1: amount such as 5,000 won, 2: why OutlinePay refused, one sentence.
-#: includes/class-refunds.php:273
-#, php-format
-msgid "Refund of %1$s was refused: %2$s"
-msgstr ""
-
-#: includes/class-admin-page.php:666
-msgid "Run now"
-msgstr ""
-
-#: includes/class-admin-page.php:660
-msgid "Use this address"
-msgstr ""
-
-#: includes/class-admin-page.php:815
-msgid "The payment check and the method refresh ran now."
-msgstr ""
-
-#: includes/class-admin-page.php:816
-msgid "The payment check ran now. The method list could not be refreshed. Try again in a few minutes."
-msgstr ""
-
-#: includes/class-admin-page.php:817
-msgid "The store is not connected. Nothing ran."
-msgstr ""
-
-#. translators: %s: currency code such as KRW.
-#: includes/class-admin-page.php:688
-#, php-format
-msgid "Set store currency to %s"
-msgstr ""
-
-#. translators: 1: store currency code such as USD, 2: payment provider name, 3: currency codes the provider takes, such as KRW.
-#: includes/class-self-check.php:923
-#, php-format
-msgid "The store currency is %1$s. %2$s takes payments in %3$s only."
-msgstr ""
-
-#. translators: %s: currency code such as KRW.
-#: includes/class-self-check.php:919
-#, php-format
-msgid "The store currency is %s."
-msgstr ""
-
-#: includes/class-admin-page.php:840
-msgid "The store is not connected. Nothing changed."
-msgstr ""
-
-#. translators: %s: currency codes, such as KRW.
-#: includes/class-gateway.php:201
-#, php-format
-msgid "This payment method takes %s only."
-msgstr ""
-
-#. translators: 1: store currency code such as USD, 2: payment provider name, 3: currency codes the provider takes, such as KRW.
-#: includes/class-admin-page.php:669
-#, php-format
-msgid "Your store currency is %1$s. %2$s takes payments in %3$s only."
-msgstr ""
-
-#: includes/class-admin-page.php:685
-msgid "Prices keep their numbers. Check your product prices after switching."
-msgstr ""
-
-#. translators: %s: currency code such as KRW.
-#: includes/class-admin-page.php:849
-#, php-format
-msgid "Store currency set to %s. Prices kept their numbers. Check your product prices."
-msgstr ""
-
-#: includes/class-admin-page.php:1043
-msgid "Your store is connected. Finish setup below."
-msgstr ""
-
-#: includes/class-admin-page.php:605
-msgid "Set up OutlinePay"
-msgstr ""
-
-#: includes/class-admin-page.php:606
-msgid "Payment methods show at checkout when every check below passes."
-msgstr ""
-
-#: includes/class-admin-page.php:615
-msgid "Fix all"
-msgstr ""
-
-#: includes/class-admin-page.php:620
-msgid "Check again"
-msgstr ""
-
-#. translators: %s: currency code such as KRW.
-#: includes/class-admin-page.php:844
-#, php-format
-msgid "Fix all sets the store currency to %s."
-msgstr ""
-
-#: includes/class-admin-page.php:653
-msgid "Setup is complete. Your payment methods now show at checkout."
-msgstr ""
-
-#. translators: %d: number of setup checks that have not passed.
-#: includes/class-admin-page.php:660
-#, php-format
-msgid "%d check still needs you. Follow the step in its row."
-msgid_plural "%d checks still need you. Follow the step in each row."
-msgstr[0] ""
-msgstr[1] ""
-
-#: includes/class-admin-page.php:788
-msgid "Still stuck?"
-msgstr ""
-
-#. translators: %s: payment provider name, such as CookiePay.
-#: includes/class-admin-page.php:788
-#, php-format
-msgid "Contact %s support."
-msgstr ""
-
-#: includes/class-admin-page.php:788
-msgid "Contact your payment provider."
-msgstr ""
-
-#: includes/class-admin-page.php:788
-msgid "Give them this code:"
-msgstr ""
-
-#. translators: 1: payment method name, 2: payment provider name such as CookiePay.
-#: includes/class-order-sync.php:174
-#, php-format
-msgid "An OutlinePay payment by %1$s could not start: %2$s returned an error. The shopper saw an error and can try again."
-msgstr ""
-
-#. translators: %s: payment method name.
-#: includes/class-order-sync.php:178
-#, php-format
-msgid "An OutlinePay payment by %s could not start: this site could not reach OutlinePay. The shopper saw an error and can try again."
-msgstr ""
-
-#. translators: 1: payment method name, 2: payment provider name such as CookiePay.
-#: includes/class-order-sync.php:182
-#, php-format
-msgid "An OutlinePay payment by %1$s could not start: %2$s has not enabled this method for the store. The shopper was asked to choose another method."
-msgstr ""
-
-#. translators: %s: payment method name.
-#: includes/class-order-sync.php:186
-#, php-format
-msgid "An OutlinePay payment by %s could not start: OutlinePay's answer could not be used. The shopper saw an error and can try again."
-msgstr ""
-
-#. translators: %s: payment method name.
-#: includes/class-order-sync.php:190
-#, php-format
-msgid "An OutlinePay payment by %s could not start: the order total is not a whole number of won. Check the product prices."
-msgstr ""
-
-#. translators: 1: payment method name, 2: OutlinePay error code.
-#: includes/class-order-sync.php:194
-#, php-format
-msgid "An OutlinePay payment by %1$s could not start (%2$s). The shopper saw an error and can try again."
 msgstr ""

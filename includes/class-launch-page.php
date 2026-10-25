@@ -24,6 +24,8 @@ final class Launch_Page {
 	const WINDOW_NAME    = 'outlinepay_pay';
 	const DEFAULT_WIDTH  = 548;
 	const DEFAULT_HEIGHT = 550;
+	const OPEN_WIDTH     = 900;
+	const OPEN_HEIGHT    = 650;
 	const MIN_SIZE       = 100;
 	const MAX_SIZE       = 2000;
 	const MAX_FIELDS     = 200;
@@ -231,6 +233,20 @@ final class Launch_Page {
 	}
 
 	/**
+	 * The size the window opens at: at least OPEN_WIDTH by OPEN_HEIGHT, since
+	 * some providers' desktop pages cut off their amount panel in a smaller
+	 * window. A larger size from the answer is kept. The page's script caps
+	 * both at the screen.
+	 *
+	 * @param int $width  Width from the launch record.
+	 * @param int $height Height from the launch record.
+	 * @return int[] array( width, height ).
+	 */
+	public static function open_size( $width, $height ) {
+		return array( max( (int) $width, self::OPEN_WIDTH ), max( (int) $height, self::OPEN_HEIGHT ) );
+	}
+
+	/**
 	 * Drops the order's launch record. The caller saves the order.
 	 *
 	 * @param \WC_Order $order Order.
@@ -417,6 +433,8 @@ final class Launch_Page {
 		}
 		$details .= '</dl>';
 
+		list( $width, $height ) = self::open_size( $launch['width'], $launch['height'] );
+
 		return '<!DOCTYPE html>
 <html lang="' . esc_attr( $lang ) . '">
 <head>
@@ -447,7 +465,7 @@ a{color:inherit}
 <div class="card">
 <h1>' . esc_html( $page['store'] ) . '</h1>
 ' . $details . '
-<form id="outlinepay-launch" method="post" action="' . esc_url( $launch['action'], array( 'https' ) ) . '"' . $charset . ' target="' . esc_attr( self::WINDOW_NAME ) . '" data-width="' . esc_attr( (string) (int) $launch['width'] ) . '" data-height="' . esc_attr( (string) (int) $launch['height'] ) . '">
+<form id="outlinepay-launch" method="post" action="' . esc_url( $launch['action'], array( 'https' ) ) . '"' . $charset . ' target="' . esc_attr( self::WINDOW_NAME ) . '" data-width="' . esc_attr( (string) $width ) . '" data-height="' . esc_attr( (string) $height ) . '">
 ' . $inputs . '<button type="submit" id="outlinepay-pay" data-busy="' . esc_attr__( 'Finish the payment in the window', 'outlinepay-for-woocommerce' ) . '">' . esc_html__( 'Pay', 'outlinepay-for-woocommerce' ) . '</button>
 </form>
 <p><a href="' . esc_url( $page['back_url'] ) . '">' . esc_html__( 'Back to the order', 'outlinepay-for-woocommerce' ) . '</a></p>
@@ -462,8 +480,14 @@ a{color:inherit}
 	var closed = document.getElementById("outlinepay-closed");
 	var label = button.textContent;
 	var timer = null;
+	// The size the store asks for, no larger than the screen.
+	function fit(size, available) {
+		size = parseInt(size, 10);
+		return available > 0 ? Math.min(size, available) : size;
+	}
 	form.addEventListener("submit", function () {
-		var features = "width=" + form.getAttribute("data-width") + ",height=" + form.getAttribute("data-height");
+		var display = window.screen || {};
+		var features = "width=" + fit(form.getAttribute("data-width"), display.availWidth) + ",height=" + fit(form.getAttribute("data-height"), display.availHeight);
 		var popup = window.open("", "' . self::WINDOW_NAME . '", features);
 		if (!popup) {
 			form.target = "_self";

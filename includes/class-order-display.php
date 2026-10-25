@@ -1,8 +1,9 @@
 <?php
 /**
  * Shows virtual account details and the card receipt link on the thank-you
- * page, the My Account order page and in customer emails, and the receipt
- * and test mode lines in the admin order screen.
+ * page, the My Account order page and in customer emails, a test payment
+ * notice on the thank-you page and in customer emails, and the receipt and
+ * test mode lines in the admin order screen.
  *
  * @package OutlinePay\WooCommerce
  */
@@ -26,6 +27,7 @@ final class Order_Display {
 			add_action( 'woocommerce_thankyou_' . $gateway_id, array( self::class, 'thankyou' ) );
 		}
 		add_action( 'woocommerce_view_order', array( self::class, 'view_order' ), 5 );
+		add_action( 'woocommerce_email_before_order_table', array( self::class, 'email_test_payment' ), 5, 3 );
 		add_action( 'woocommerce_email_before_order_table', array( self::class, 'email' ), 10, 3 );
 		add_action( 'woocommerce_email_after_order_table', array( self::class, 'email_receipt' ), 10, 4 );
 		add_action( 'woocommerce_admin_order_data_after_order_details', array( self::class, 'admin_test_mode' ) );
@@ -210,13 +212,46 @@ final class Order_Display {
 	}
 
 	/**
+	 * The shopper's notice for a test payment. It never says no money moved:
+	 * a provider's test system may still charge the card.
+	 *
+	 * @return string
+	 */
+	public static function test_payment_notice() {
+		return __( 'Test payment. This order was paid through the payment provider\'s test system and is not a real sale.', 'outlinepay-for-woocommerce' );
+	}
+
+	/**
+	 * The test payment notice in customer emails.
+	 *
+	 * @param \WC_Order $order         Order.
+	 * @param bool      $sent_to_admin Whether the email goes to the admin.
+	 * @param bool      $plain_text    Plain text email.
+	 * @return void
+	 */
+	public static function email_test_payment( $order, $sent_to_admin = false, $plain_text = false ) {
+		if ( $sent_to_admin || ! self::is_test_payment( $order ) ) {
+			return;
+		}
+		if ( $plain_text ) {
+			// Plain text: WooCommerce drops an entity such as &#039; from a plain email, so no HTML escaping here.
+			echo wp_strip_all_tags( self::test_payment_notice() ) . "\n\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- plain text email, tags stripped.
+			return;
+		}
+		echo '<p class="outlinepay-test-payment"><strong>' . esc_html( self::test_payment_notice() ) . '</strong></p>';
+	}
+
+	/**
 	 * Thank-you page block.
 	 *
 	 * @param int $order_id Order id.
 	 * @return void
 	 */
 	public static function thankyou( $order_id ) {
-		$order   = wc_get_order( $order_id );
+		$order = wc_get_order( $order_id );
+		if ( self::is_test_payment( $order ) ) {
+			echo '<p class="woocommerce-info outlinepay-test-payment">' . esc_html( self::test_payment_notice() ) . '</p>';
+		}
 		$account = self::account( $order );
 		if ( $account ) {
 			self::render_deposit( $account );
