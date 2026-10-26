@@ -414,8 +414,8 @@ final class Refunds {
 						'duplicate' === self::field( $refund, 'source' )
 							/* translators: 1: amount such as 5,000 won, 2: OutlinePay payment id. */
 							? sprintf( __( 'OutlinePay cancelled the duplicate payment %2$s automatically. %1$s went back to the shopper. This order\'s own payment is unchanged.', 'outlinepay-for-woocommerce' ), self::won( $amount ), $payment['id'] )
-							/* translators: 1: amount such as 5,000 won, 2: OutlinePay payment id. */
-							: sprintf( __( '%1$s of OutlinePay payment %2$s was refunded. That payment did not pay this order, so no refund is added to it.', 'outlinepay-for-woocommerce' ), self::won( $amount ), $payment['id'] ),
+							/* translators: 1: amount such as 5,000 won, 2: payment provider name such as CookiePay, 3: payment id. */
+							: sprintf( __( '%1$s of %2$s payment %3$s was refunded. That payment did not pay this order, so no refund is added to it.', 'outlinepay-for-woocommerce' ), self::won( $amount ), Brand::site_name(), $payment['id'] ),
 						$refund
 					)
 				);

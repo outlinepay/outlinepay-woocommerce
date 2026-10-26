@@ -520,7 +520,7 @@ final class Admin_Page {
 		}
 
 		echo '<div class="wrap outlinepay-admin">';
-		echo '<h1>' . esc_html__( 'OutlinePay', 'outlinepay-for-woocommerce' ) . '</h1>';
+		self::render_header();
 		self::render_notice( $in_setup );
 		if ( $finished_now ) {
 			echo '<div class="notice notice-' . ( self::advisory_failed_now() > 0 ? 'warning' : 'success' ) . ' is-dismissible"><p>' . esc_html( self::setup_done_message() ) . '</p></div>';
@@ -753,6 +753,39 @@ final class Admin_Page {
 	}
 
 	/**
+	 * The page heading. Before connect: OutlinePay. Once connected: the
+	 * provider's logo, or its name as a word mark, and one line that says
+	 * OutlinePay runs the plugin. The accent, when set, colors this page's
+	 * primary buttons only.
+	 *
+	 * @return void
+	 */
+	public static function render_header() {
+		if ( ! Brand::connected() ) {
+			echo '<h1>' . esc_html__( 'OutlinePay', 'outlinepay-for-woocommerce' ) . '</h1>';
+			return;
+		}
+		$name   = Brand::user_name();
+		$logo   = Brand::logo_url();
+		$accent = Brand::accent();
+		if ( null !== $accent ) {
+			// Validated #rrggbb (see Brand::accent), scoped to this page.
+			echo '<style>.outlinepay-admin .button-primary{background:' . esc_attr( $accent ) . ';border-color:' . esc_attr( $accent ) . ';color:#fff}.outlinepay-admin .button-primary:hover,.outlinepay-admin .button-primary:focus{background:' . esc_attr( $accent ) . ';border-color:' . esc_attr( $accent ) . ';color:#fff;filter:brightness(.92)}</style>';
+		}
+		echo '<h1 class="outlinepay-brand">';
+		if ( null !== $logo ) {
+			echo '<img src="' . esc_url( $logo ) . '" alt="' . esc_attr( $name ) . '" style="max-height:32px;width:auto;vertical-align:middle">';
+		} else {
+			echo '<span class="outlinepay-wordmark" style="font-weight:700;font-size:1.15em">' . esc_html( $name ) . '</span>';
+		}
+		echo '</h1>';
+		// English on every site: it names the software, like the plugin list does.
+		echo '<p class="outlinepay-powered" style="margin:2px 0 12px;color:#646970;font-size:12px">Powered by OutlinePay</p>';
+		// WordPress moves admin notices here, below the powered-by line.
+		echo '<hr class="wp-header-end">';
+	}
+
+	/**
 	 * The status table.
 	 *
 	 * @param array $installation Installation summary.
@@ -773,7 +806,9 @@ final class Admin_Page {
 		echo '<table class="widefat striped" style="max-width:640px"><tbody>';
 		self::row( __( 'Status', 'outlinepay-for-woocommerce' ), isset( $labels[ $status ] ) ? $labels[ $status ] : $status );
 		self::row( __( 'Mode', 'outlinepay-for-woocommerce' ), Settings::is_test_mode() ? __( 'Test. Your payment provider reverses test payments. Do not ship goods.', 'outlinepay-for-woocommerce' ) : __( 'Live', 'outlinepay-for-woocommerce' ) );
-		self::row( __( 'Payment provider', 'outlinepay-for-woocommerce' ), Settings::provider_name( isset( $installation['provider'] ) ? (string) $installation['provider'] : '' ) );
+		self::row( __( 'Payment provider', 'outlinepay-for-woocommerce' ), Brand::connected() ? Brand::user_name() : Settings::provider_name( isset( $installation['provider'] ) ? (string) $installation['provider'] : '' ) );
+		// The software's name, untranslated, as the plugin list shows it.
+		self::row( __( 'Plugin', 'outlinepay-for-woocommerce' ), 'OutlinePay for WooCommerce ' . OUTLINEPAY_VERSION );
 		self::row( __( 'Installation', 'outlinepay-for-woocommerce' ), isset( $installation['id'] ) ? (string) $installation['id'] : '' );
 		self::row( __( 'Refunds', 'outlinepay-for-woocommerce' ), self::refunds_on( $installation ) ? __( 'On', 'outlinepay-for-woocommerce' ) : __( 'Off', 'outlinepay-for-woocommerce' ) );
 		if ( ! empty( $installation['connected_at'] ) ) {
@@ -844,9 +879,9 @@ final class Admin_Page {
 	 * @return void
 	 */
 	private static function render_support_line( array $last ) {
-		$url          = Settings::provider_support_url();
+		$url          = Brand::support_url();
 		$installation = Settings::installation();
-		$name         = isset( $installation['provider'] ) ? Settings::provider_name( (string) $installation['provider'] ) : '';
+		$name         = Brand::connected() ? Brand::user_name() : ( isset( $installation['provider'] ) ? Settings::provider_name( (string) $installation['provider'] ) : '' );
 		echo '<p class="outlinepay-support-line" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:16px 0 4px">';
 		echo esc_html__( 'Still stuck?', 'outlinepay-for-woocommerce' ) . ' ';
 		$label = '' !== $name

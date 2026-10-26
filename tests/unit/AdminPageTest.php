@@ -1082,6 +1082,9 @@ class AdminPageTest extends TestCase {
 		$this->assertStringContainsString( 'Self-check</h2>', $html );
 		$this->assertStringContainsString( 'Payment methods</h2>', $html );
 		$this->assertStringContainsString( 'Refunds and cancellations', $html );
+		$this->assertStringContainsString( '<th scope="row" style="width:200px">Payment provider</th><td>CookiePay</td>', $html );
+		$this->assertStringContainsString( '<th scope="row" style="width:200px">Plugin</th><td>OutlinePay for WooCommerce ' . OUTLINEPAY_VERSION . '</td>', $html );
+		$this->assertStringContainsString( 'outlinepay-wordmark', $html );
 		$this->assertSame( array(), preg_grep( '#/self_checks$#', $this->requests ), 'no run on a plain visit' );
 	}
 

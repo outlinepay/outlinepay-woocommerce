@@ -5,7 +5,7 @@ Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
 WC requires at least: 9.9
-Stable tag: 0.5.3
+Stable tag: 0.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -145,6 +145,12 @@ CookiePay is the payment provider that takes the payment. The shopper clicks Pay
 CookiePay privacy policy: https://www.cookiepayments.com/terms/private
 
 == Changelog ==
+
+= 0.6.0 =
+* Inside the plugin, the page carries your payment provider's name and logo once the store is connected.
+* Order notes and the admin notices use your payment provider's name, for example "CookiePay payment ... is paid." A line under the heading says "Powered by OutlinePay".
+* The Connection table names the plugin and its version.
+* The row on WooCommerce > Settings > Payments says "Get paid through your preferred local payment providers." and names the connected provider.
 
 = 0.5.3 =
 * After a cancel or a refusal in the payment window, the pay page always says what happened. The message no longer goes missing on the first load. It shows once per attempt.

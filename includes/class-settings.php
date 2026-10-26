@@ -27,7 +27,7 @@ final class Settings {
 	/**
 	 * Installation fields kept locally. Never credentials.
 	 */
-	const INSTALLATION_FIELDS = array( 'id', 'mode', 'status', 'provider', 'permissions', 'refunds_enabled', 'refund_daily_cap', 'connected_at', 'token_last4', 'currencies' );
+	const INSTALLATION_FIELDS = array( 'id', 'mode', 'status', 'provider', 'permissions', 'refunds_enabled', 'refund_daily_cap', 'connected_at', 'token_last4', 'currencies', 'brand' );
 
 	/**
 	 * The permission a store token needs to refund.
@@ -329,18 +329,18 @@ final class Settings {
 	);
 
 	/**
-	 * The payment provider's support page: the installation record's
-	 * support_url when it is an https address, else the known page for the
-	 * provider, else an empty string.
+	 * The payment provider's support page: the brand's support_url, then
+	 * the installation record's, when it is an https address, else the
+	 * known page for the provider, else an empty string.
 	 *
 	 * @return string
 	 */
 	public static function provider_support_url() {
 		$installation = self::installation();
-		if ( isset( $installation['support_url'] ) && is_string( $installation['support_url'] ) ) {
-			$url = $installation['support_url'];
-			if ( 0 === strpos( $url, 'https://' ) && false !== filter_var( $url, FILTER_VALIDATE_URL ) ) {
-				return $url;
+		$brand        = isset( $installation['brand'] ) && is_array( $installation['brand'] ) ? $installation['brand'] : array();
+		foreach ( array( $brand, $installation ) as $record ) {
+			if ( isset( $record['support_url'] ) && Brand::https_url( $record['support_url'] ) ) {
+				return $record['support_url'];
 			}
 		}
 		$provider = isset( $installation['provider'] ) ? (string) $installation['provider'] : '';
@@ -416,10 +416,14 @@ final class Settings {
 
 	/**
 	 * The provider's name for the merchant, or "Your payment provider".
+	 * The brand's name while connected (see Brand).
 	 *
 	 * @return string
 	 */
 	public static function provider_display_name() {
+		if ( Brand::connected() ) {
+			return Brand::site_name();
+		}
 		$installation = self::installation();
 		$name         = isset( $installation['provider'] ) ? self::provider_name( (string) $installation['provider'] ) : '';
 		return '' !== $name ? $name : __( 'Your payment provider', 'outlinepay-for-woocommerce' );

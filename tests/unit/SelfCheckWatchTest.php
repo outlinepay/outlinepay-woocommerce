@@ -414,6 +414,19 @@ class SelfCheckWatchTest extends TestCase {
 		$this->assertSame( '', $this->notice(), 'cleared by a passing run' );
 	}
 
+	public function test_the_notices_carry_the_provider_name_once_it_is_known() {
+		$this->options[ Settings::OPTION_INSTALLATION ]['provider'] = 'cookiepay';
+		$this->options[ Settings::OPTION_INSTALLATION ]['brand']    = array( 'name' => 'CookiePay<b>' );
+		$this->facts['currency'] = 'USD';
+		Self_Check_Watch::record_local();
+		$html = $this->notice();
+		$this->assertStringContainsString( 'CookiePay&lt;b&gt;: a check needed to take payments is failing.', $html );
+		$this->assertStringContainsString( 'Open the OutlinePay page to see what to do.', $html, 'the menu entry is still OutlinePay' );
+
+		$this->options[ Self_Check::OPTION_LAST ] = Self_Check::offline( array( Self_Check::check( 'methods_fresh', false, 'store', array( 'problem' => 'stale' ) ) ), 'page', self::NOW );
+		$this->assertStringContainsString( 'CookiePay&lt;b&gt;: the self-check found a problem.', $this->notice() );
+	}
+
 	public function test_the_notice_is_not_shown_on_the_outlinepay_page() {
 		$this->facts['currency'] = 'USD';
 		Self_Check_Watch::record_local();

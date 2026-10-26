@@ -22,6 +22,12 @@ class LaunchPageTest extends TestCase {
 		Functions\stubEscapeFunctions();
 		Functions\when( 'wp_parse_url' )->alias( 'parse_url' );
 		Functions\when( 'wp_kses_post' )->returnArg();
+		// No connection: notes name OutlinePay (see Brand).
+		Functions\when( 'get_option' )->alias(
+			static function ( $name, $fallback = false ) {
+				return $fallback;
+			}
+		);
 
 		$this->order = new \WC_Order( 42 );
 		$order       = $this->order;

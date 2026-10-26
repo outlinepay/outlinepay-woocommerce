@@ -33,6 +33,7 @@ OutlinePay is operated by Arandu Payments LLC.
 | `includes/class-abilities.php` | Abilities API (WordPress 6.9+): `outlinepay/run-self-check`, `outlinepay/get-connection-status` |
 | `includes/class-unpaid-guard.php` | Expires open attempts before WooCommerce cancels an unpaid order |
 | `includes/class-setup.php` | The one-time setup gate: checkout waits for the first run where checks A to I all pass |
+| `includes/class-brand.php` | The payment provider's name, logo and accent from the stored installation record, OutlinePay before connect |
 | `includes/class-admin-page.php` | WooCommerce > OutlinePay: the setup screen with Fix all, then the connected view with the Self-check section |
 | `assets/js/admin.js` | Copy buttons for the diagnostic code, no build step |
 | `includes/class-blocks-method.php`, `assets/js/blocks.js` | Checkout block integration, no build step |

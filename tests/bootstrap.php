@@ -5,7 +5,7 @@
  */
 
 define( 'ABSPATH', __DIR__ . '/' );
-define( 'OUTLINEPAY_VERSION', '0.5.3' );
+define( 'OUTLINEPAY_VERSION', '0.6.0' );
 define( 'OUTLINEPAY_PLUGIN_FILE', dirname( __DIR__ ) . '/outlinepay-for-woocommerce.php' );
 
 require dirname( __DIR__ ) . '/vendor/autoload.php';

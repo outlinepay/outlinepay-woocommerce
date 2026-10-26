@@ -46,7 +46,7 @@ class NotesTest extends RefundTestCase {
 			'%s won'                                          => '%s원',
 			'Credit or debit card'                            => '신용카드',
 			'Your payment provider'                           => '결제대행사',
-			'An OutlinePay payment by %1$s could not start: %2$s returned an error. The shopper saw an error and can try again.' => '%1$s(으)로 OutlinePay 결제를 시작하지 못했습니다. %2$s에서 오류를 반환했습니다. 구매자에게 오류가 표시되었으며 다시 시도할 수 있습니다.',
+			'%1$s payment by %2$s could not start: %3$s returned an error. The shopper saw an error and can try again.' => '%2$s(으)로 %1$s 결제를 시작하지 못했습니다. %3$s에서 오류를 반환했습니다. 구매자에게 오류가 표시되었으며 다시 시도할 수 있습니다.',
 		);
 		Functions\when( '__' )->alias(
 			static function ( $text ) use ( &$locales, $korean ) {

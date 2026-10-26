@@ -64,7 +64,11 @@ class Gateway extends \WC_Payment_Gateway {
 	 * @return void
 	 */
 	private function set_admin_title( $method ) {
-		$description = __( 'Takes payment through your payment provider, connected by OutlinePay. Connect the store and choose which methods to show on the OutlinePay page.', 'outlinepay-for-woocommerce' );
+		$description = __( 'Get paid through your preferred local payment providers.', 'outlinepay-for-woocommerce' );
+		if ( Brand::connected() ) {
+			/* translators: %s: payment provider name, such as CookiePay. */
+			$description .= ' ' . sprintf( __( 'Connected to %s.', 'outlinepay-for-woocommerce' ), Brand::user_name() );
+		}
 		if ( ! Settings::collapse_payments_tab() ) {
 			$this->method_title = sprintf(
 				/* translators: %s: payment method name, such as Credit or debit card. */

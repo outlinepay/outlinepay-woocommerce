@@ -3,7 +3,7 @@
  * Plugin Name:          OutlinePay for WooCommerce
  * Plugin URI:           https://outlinepay.com
  * Description:          Accept Korean payment methods (cards, bank transfer, virtual accounts, wallets) through your payment provider, connected by OutlinePay.
- * Version:              0.5.3
+ * Version:              0.6.0
  * Requires at least:    6.2
  * Requires PHP:         7.4
  * Requires Plugins:     woocommerce
@@ -28,7 +28,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'OUTLINEPAY_VERSION', '0.5.3' );
+define( 'OUTLINEPAY_VERSION', '0.6.0' );
 define( 'OUTLINEPAY_PLUGIN_FILE', __FILE__ );
 define( 'OUTLINEPAY_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
