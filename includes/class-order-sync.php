@@ -29,6 +29,7 @@ final class Order_Sync {
 	const META_RECEIPT    = '_outlinepay_receipt_url';
 	const META_LAUNCH     = '_outlinepay_launch';
 	const META_NOTED      = '_outlinepay_attempt_notes';
+	const META_TELL       = '_outlinepay_shopper_notice';
 
 	const COMPLETE       = 'complete';
 	const HOLD_MISMATCH  = 'hold_mismatch';
@@ -276,7 +277,10 @@ final class Order_Sync {
 	/**
 	 * The private note for what the shopper did in the provider's window, at
 	 * most once per attempt and outcome: a reload or a second return adds no
-	 * other. None when the order is paid or on hold. The caller saves the order.
+	 * other. None when the order is paid or on hold. With the note, the
+	 * order keeps the outcome for the shopper's pay page (see
+	 * Return_Handler::pay_page_notice), until the page shows it once. The
+	 * caller saves the order.
 	 *
 	 * @param \WC_Order   $order    Order.
 	 * @param array       $payment  Payment.
@@ -287,7 +291,18 @@ final class Order_Sync {
 		if ( ! self::window_note_due( $order, $payment, $decision ) ) {
 			return false;
 		}
-		return self::note_attempt( $order, (string) $payment['id'], 'window_' . self::window_outcome( $payment, $decision ), $payment );
+		$outcome = self::window_outcome( $payment, $decision );
+		if ( ! self::note_attempt( $order, (string) $payment['id'], 'window_' . $outcome, $payment ) ) {
+			return false;
+		}
+		$order->update_meta_data(
+			self::META_TELL,
+			array(
+				'payment_id' => (string) $payment['id'],
+				'outcome'    => $outcome,
+			)
+		);
+		return true;
 	}
 
 	/**

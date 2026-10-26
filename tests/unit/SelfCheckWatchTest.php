@@ -384,7 +384,7 @@ class SelfCheckWatchTest extends TestCase {
 
 		$this->assertSame( array(), $this->requests );
 		$this->assertSame( 'OP-OFFLINE-B', Self_Check::last()['code'] );
-		$this->assertStringContainsString( 'payment methods are not showing at checkout', $this->notice() );
+		$this->assertStringContainsString( 'a check needed to take payments is failing', $this->notice() );
 	}
 
 	public function test_the_hourly_record_keeps_the_stored_online_code() {
@@ -403,8 +403,8 @@ class SelfCheckWatchTest extends TestCase {
 		$this->facts['currency'] = 'USD';
 		Self_Check_Watch::record_local();
 		$html = $this->notice();
-		$this->assertStringContainsString( 'OutlinePay: payment methods are not showing at checkout.', $html );
-		$this->assertStringContainsString( 'Open the OutlinePay page to fix it.', $html );
+		$this->assertStringContainsString( 'OutlinePay: a check needed to take payments is failing.', $html );
+		$this->assertStringContainsString( 'Open the OutlinePay page to see what to do.', $html );
 		$this->assertStringContainsString( 'href="https://shop.example.com/wp-admin/admin.php?page=outlinepay"', $html );
 		$this->assertStringNotContainsString( 'is-dismissible', $html );
 
@@ -420,7 +420,7 @@ class SelfCheckWatchTest extends TestCase {
 		$_GET['page'] = 'outlinepay';
 		$this->assertSame( '', $this->notice() );
 		$_GET['page'] = 'wc-settings';
-		$this->assertStringContainsString( 'not showing at checkout', $this->notice() );
+		$this->assertStringContainsString( 'needed to take payments', $this->notice() );
 	}
 
 	public function test_the_notice_needs_the_capability() {
@@ -486,21 +486,28 @@ class SelfCheckWatchTest extends TestCase {
 		$this->server_rows = array_merge( $this->server_rows, $rows );
 	}
 
-	public function test_notice_level_reads_the_rows() {
+	public function test_notice_level_reads_the_severity() {
 		$level = static function ( array $checks ) {
 			return Self_Check_Watch::notice_level( Self_Check::offline( $checks, 'page', self::NOW ) );
 		};
-		foreach ( array( 'connection_saved', 'connection_status', 'store_currency', 'not_a_copy' ) as $code ) {
-			$this->assertSame( 'hidden', $level( array( Self_Check::check( $code, false, 'store', array() ) ) ), $code );
+		foreach ( array( 'connection_saved', 'connection_status', 'api_reachable', 'scheduler_jobs', 'wp_cron', 'store_currency', 'not_a_copy', 'versions' ) as $code ) {
+			$this->assertSame( 'blocking', $level( array( Self_Check::check( $code, false, 'store', array() ) ) ), $code );
 		}
-		$this->assertSame( 'hidden', $level( array( Self_Check::check( 'connection_status', false, 'processor', array( 'status' => 'revoked' ) ) ) ), 'revoked hides, whoever acts' );
-		$this->assertSame( 'hidden', $level( array( Self_Check::check( 'methods_fresh', false, 'store', array( 'problem' => 'none_shown' ) ) ) ) );
+		$this->assertSame( 'blocking', $level( array( Self_Check::check( 'connection_status', false, 'processor', array( 'status' => 'revoked' ) ) ) ), 'whoever acts' );
+		$this->assertSame( 'blocking', $level( array( Self_Check::check( 'api_reachable', false, 'outlinepay', array( 'outcome' => 'server_error' ) ) ) ), 'payments cannot start' );
+		$this->assertSame( 'blocking', $level( array( Self_Check::check( 'methods_fresh', false, 'store', array( 'problem' => 'none_shown' ) ) ) ) );
 		$this->assertSame( 'problem', $level( array( Self_Check::check( 'methods_fresh', false, 'store', array( 'problem' => 'stale' ) ) ) ), 'the cached list still shows' );
-		foreach ( array( 'scheduler_jobs', 'wp_cron', 'versions' ) as $code ) {
-			$this->assertSame( 'problem', $level( array( Self_Check::check( $code, false, 'store', array() ) ) ), $code );
-		}
-		$this->assertSame( '', $level( array( Self_Check::check( 'api_reachable', false, 'outlinepay', array( 'outcome' => 'server_error' ) ) ) ) );
 		$this->assertSame( '', $level( array( Self_Check::check( 'versions', true, 'store', array() ) ) ), 'nothing failed' );
+	}
+
+	public function test_advisory_rows_give_the_soft_notice_only_when_the_store_acts() {
+		$level = static function ( array $row ) {
+			return Self_Check_Watch::notice_level( Self_Check::from_server( array( 'id' => 'chk_Lv1', 'checks' => array( $row ) ), 'page', self::NOW ) );
+		};
+		$this->assertSame( 'problem', $level( array( 'code' => 'callback_reachable', 'ok' => false, 'side' => 'store', 'severity' => 'advisory' ) ) );
+		$this->assertSame( 'problem', $level( array( 'code' => 'callback_reachable', 'ok' => false, 'side' => 'store' ) ), 'no severity: advisory' );
+		$this->assertSame( '', $level( array( 'code' => 'open_problems_7d', 'ok' => false, 'side' => 'processor', 'severity' => 'advisory' ) ) );
+		$this->assertSame( 'blocking', $level( array( 'code' => 'future_gate', 'ok' => false, 'side' => 'outlinepay', 'severity' => 'blocking' ) ), 'a row OutlinePay marks blocking' );
 	}
 
 	public function test_a_server_row_the_store_fixes_gets_the_soft_notice() {
@@ -518,7 +525,7 @@ class SelfCheckWatchTest extends TestCase {
 		$this->assertStringContainsString( 'self-check found a problem.', $html );
 		$this->assertStringContainsString( 'notice-warning', $html );
 		$this->assertStringContainsString( 'Open the OutlinePay page to fix it.', $html );
-		$this->assertStringNotContainsString( 'not showing at checkout', $html );
+		$this->assertStringNotContainsString( 'needed to take payments', $html );
 	}
 
 	public function test_server_rows_only_outlinepay_or_the_provider_can_fix_show_no_notice() {
@@ -541,7 +548,7 @@ class SelfCheckWatchTest extends TestCase {
 		$this->assertSame( '', $this->notice() );
 	}
 
-	public function test_an_api_reachable_failure_alone_shows_no_notice() {
+	public function test_an_api_reachable_failure_alone_shows_the_strong_notice() {
 		$this->options[ Self_Check::OPTION_LAST ] = Self_Check::offline(
 			array_merge(
 				array( Self_Check::check( 'api_reachable', false, 'outlinepay', array( 'outcome' => 'server_error' ) ) ),
@@ -551,7 +558,9 @@ class SelfCheckWatchTest extends TestCase {
 			self::NOW
 		);
 		$this->assertSame( 1, Self_Check::last()['failed_count'] );
-		$this->assertSame( '', $this->notice() );
+		$html = $this->notice();
+		$this->assertStringContainsString( 'notice-error', $html, 'payments cannot start, whoever acts' );
+		$this->assertStringContainsString( 'Open the OutlinePay page to see what to do.', $html );
 	}
 
 	public function test_a_hourly_refresh_that_worked_records_outlinepay_reached() {

@@ -336,6 +336,13 @@ final class Admin_Page {
 	 * "Run check": runs the self-check with trigger page and comes back to
 	 * the page, which shows the stored result.
 	 *
+	 * OutlinePay takes one run a minute. Another run may have just happened
+	 * without the merchant: a run queued by a change (see Self_Check_Watch)
+	 * runs on the admin page load that shows this button. Then the click
+	 * still gets fresh local rows and OutlinePay's rows from under a minute
+	 * ago, the same as a new run: the page says the check finished. It says
+	 * a check ran less than a minute ago only when no such rows are there.
+	 *
 	 * @return void
 	 */
 	public static function self_check() {
@@ -346,7 +353,8 @@ final class Admin_Page {
 		if ( ! $was_done ) {
 			self::back( Setup::is_done() ? 'setup_done' : 'setup_pending' );
 		}
-		self::back( $outcome['rate_limited'] ? 'self_check_rate_limited' : 'self_check_done' );
+		$fresh = ! $outcome['rate_limited'] || Self_Check::answered_recently( $outcome['result'], (int) $outcome['result']['ran_at'] );
+		self::back( $fresh ? 'self_check_done' : 'self_check_rate_limited' );
 	}
 
 	/**
@@ -515,7 +523,7 @@ final class Admin_Page {
 		echo '<h1>' . esc_html__( 'OutlinePay', 'outlinepay-for-woocommerce' ) . '</h1>';
 		self::render_notice( $in_setup );
 		if ( $finished_now ) {
-			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html( self::setup_done_message() ) . '</p></div>';
+			echo '<div class="notice notice-' . ( self::advisory_failed_now() > 0 ? 'warning' : 'success' ) . ' is-dismissible"><p>' . esc_html( self::setup_done_message() ) . '</p></div>';
 		}
 
 		if ( Credentials::unreadable() ) {
@@ -614,7 +622,7 @@ final class Admin_Page {
 	private static function render_setup() {
 		$last = Self_Check::last();
 		echo '<h2 id="outlinepay-setup">' . esc_html__( 'Set up OutlinePay', 'outlinepay-for-woocommerce' ) . '</h2>';
-		echo '<p>' . esc_html__( 'Payment methods show at checkout when every check below passes.', 'outlinepay-for-woocommerce' ) . '</p>';
+		echo '<p>' . esc_html__( 'Payment methods show at checkout when every check needed to take payments passes.', 'outlinepay-for-woocommerce' ) . '</p>';
 		self::render_rate_limited_notice();
 		if ( $last ) {
 			self::render_check_table( $last, true );
@@ -671,12 +679,57 @@ final class Admin_Page {
 	}
 
 	/**
-	 * The notice when setup finishes.
+	 * The notice when setup finishes. When an advisory check still fails, it
+	 * says how many.
 	 *
 	 * @return string
 	 */
 	private static function setup_done_message() {
-		return __( 'Setup is complete. Your payment methods now show at checkout.', 'outlinepay-for-woocommerce' );
+		$advisory = self::advisory_failed_now();
+		return $advisory > 0
+			? self::advisory_message( $advisory )
+			: __( 'Setup is complete. Your payment methods now show at checkout.', 'outlinepay-for-woocommerce' );
+	}
+
+	/**
+	 * The notice after a check. When every blocking check passes and an
+	 * advisory one fails, it says how many.
+	 *
+	 * @return string
+	 */
+	private static function check_done_message() {
+		$advisory = self::advisory_failed_now();
+		return $advisory > 0
+			? self::advisory_message( $advisory )
+			: __( 'The check finished. The results are below.', 'outlinepay-for-woocommerce' );
+	}
+
+	/**
+	 * How many advisory checks fail in the stored result, 0 when a blocking
+	 * check fails too or nothing is stored.
+	 *
+	 * @return int
+	 */
+	private static function advisory_failed_now() {
+		$last = Self_Check::last();
+		if ( ! $last || ! Setup::complete( $last ) ) {
+			return 0;
+		}
+		return Self_Check::advisory_failed( $last );
+	}
+
+	/**
+	 * Setup is complete, with the number of advisory checks that fail.
+	 *
+	 * @param int $count Failing advisory checks.
+	 * @return string
+	 */
+	private static function advisory_message( $count ) {
+		return sprintf(
+			/* translators: %d: number of recommended checks that fail. */
+			_n( 'Setup is complete and your payment methods show at checkout. %d recommended check needs attention.', 'Setup is complete and your payment methods show at checkout. %d recommended checks need attention.', $count, 'outlinepay-for-woocommerce' ),
+			$count
+		);
 	}
 
 	/**
@@ -845,20 +898,45 @@ final class Admin_Page {
 	}
 
 	/**
-	 * The rows of a result: pass or fail, the sentence, the fix, who acts
-	 * next. The setup screen and the self-check share it.
+	 * The rows of a result in two groups, blocking first (see
+	 * Self_Check::severity), each in result order: pass or fail, the
+	 * sentence, the fix, who acts next. A group with no rows is left out.
+	 * The setup screen and the self-check share it.
 	 *
 	 * @param array $last  Stored result.
 	 * @param bool  $setup True on the setup screen, where Fix all replaces the per-row fixes it covers.
 	 * @return void
 	 */
 	private static function render_check_table( array $last, $setup ) {
-		echo '<table class="widefat striped outlinepay-checks" style="max-width:640px"><thead><tr>';
+		$groups = Self_Check::groups( $last['checks'] );
+		$titles = array(
+			Self_Check::BLOCKING => __( 'Needed to take payments', 'outlinepay-for-woocommerce' ),
+			Self_Check::ADVISORY => __( 'Keeps things running smoothly', 'outlinepay-for-woocommerce' ),
+		);
+		foreach ( $titles as $severity => $title ) {
+			if ( empty( $groups[ $severity ] ) ) {
+				continue;
+			}
+			echo '<h3 class="outlinepay-check-group" style="margin:16px 0 8px;font-size:14px">' . esc_html( $title ) . '</h3>';
+			self::render_check_rows( $groups[ $severity ], $severity, $setup );
+		}
+	}
+
+	/**
+	 * One group's table.
+	 *
+	 * @param array  $checks   Checks of the group.
+	 * @param string $severity blocking or advisory.
+	 * @param bool   $setup    True on the setup screen.
+	 * @return void
+	 */
+	private static function render_check_rows( array $checks, $severity, $setup ) {
+		echo '<table class="widefat striped outlinepay-checks" data-severity="' . esc_attr( $severity ) . '" style="max-width:640px"><thead><tr>';
 		echo '<th scope="col" style="width:70px">' . esc_html__( 'Result', 'outlinepay-for-woocommerce' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Check', 'outlinepay-for-woocommerce' ) . '</th>';
 		echo '<th scope="col" style="width:150px">' . esc_html__( 'Who acts next', 'outlinepay-for-woocommerce' ) . '</th>';
 		echo '</tr></thead><tbody>';
-		foreach ( $last['checks'] as $check ) {
+		foreach ( $checks as $check ) {
 			$ok = ! empty( $check['ok'] );
 			echo '<tr class="' . ( $ok ? 'outlinepay-check-ok' : 'outlinepay-check-failed' ) . '">';
 			echo '<td>' . ( $ok
@@ -1118,7 +1196,7 @@ final class Admin_Page {
 			'copy_none'               => array( 'error', __( 'This site no longer looks like a copy. Nothing changed.', 'outlinepay-for-woocommerce' ) ),
 			'moved'                   => array( 'success', __( 'This address is saved as your store. Payments are back on.', 'outlinepay-for-woocommerce' ) ),
 			'moved_callback_failed'   => array( 'warning', __( 'This address is saved as your store and payments are back on. OutlinePay could not be told the new address yet. Open this page again later to retry.', 'outlinepay-for-woocommerce' ) ),
-			'self_check_done'         => array( 'success', __( 'The check finished. The results are below.', 'outlinepay-for-woocommerce' ) ),
+			'self_check_done'         => array( self::advisory_failed_now() > 0 ? 'warning' : 'success', self::check_done_message() ),
 			'self_check_email_saved'  => array( 'success', __( 'Email setting saved.', 'outlinepay-for-woocommerce' ) ),
 			'shopper_cancel_saved'    => array( 'success', __( 'Cancellation setting saved.', 'outlinepay-for-woocommerce' ) ),
 			'jobs_ran'                => array( 'success', __( 'The payment check and the method refresh ran now.', 'outlinepay-for-woocommerce' ) ),
@@ -1129,7 +1207,7 @@ final class Admin_Page {
 			'currency_not_connected'  => array( 'error', __( 'The store is not connected. Nothing changed.', 'outlinepay-for-woocommerce' ) ),
 			'fix_not_connected'       => array( 'error', __( 'The store is not connected. Nothing changed.', 'outlinepay-for-woocommerce' ) ),
 			'setup_pending'           => array( 'warning', self::setup_pending_message() ),
-			'setup_done'              => array( 'success', self::setup_done_message() ),
+			'setup_done'              => array( self::advisory_failed_now() > 0 ? 'warning' : 'success', self::setup_done_message() ),
 		);
 		if ( ! isset( $messages[ $result ] ) ) {
 			return;

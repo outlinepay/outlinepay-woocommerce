@@ -11,10 +11,10 @@
  * - Hourly. The hourly method refresh records the local checks (no extra
  *   call to OutlinePay), so a failure with no event shows within an hour.
  *   A refresh that worked also counts as OutlinePay reached.
- * - Notice. While the last stored run has a failing check the merchant can
- *   fix, every admin page but the OutlinePay page says so (see
- *   notice_level()). It is not dismissable: it goes away when a later run
- *   passes.
+ * - Notice. While the last stored run has a failing check needed to take
+ *   payments, or another failing check the merchant can fix, every admin
+ *   page but the OutlinePay page says so (see notice_level()). It is not
+ *   dismissable: it goes away when a later run passes.
  *
  * Debounce: the first event in a request asks for a run at the end of the
  * request. Later events in the same request add nothing. At the end, one
@@ -40,14 +40,8 @@ final class Self_Check_Watch {
 
 	const WC_BASENAME = 'woocommerce/woocommerce.php';
 
-	const NOTICE_HIDDEN  = 'hidden';
-	const NOTICE_PROBLEM = 'problem';
-
-	/**
-	 * Failing rows that take the methods off checkout. methods_fresh only
-	 * when no method is shown (see Self_Check::methods_fresh).
-	 */
-	const HIDING_ROWS = array( 'connection_saved', 'connection_status', 'store_currency', 'not_a_copy' );
+	const NOTICE_BLOCKING = 'blocking';
+	const NOTICE_PROBLEM  = 'problem';
 
 	/**
 	 * Whether this request asked for a run.
@@ -240,7 +234,8 @@ final class Self_Check_Watch {
 
 	/**
 	 * Admin notice on every admin page but the OutlinePay page, while the
-	 * last run has a failing check the merchant can fix.
+	 * last run has a failing blocking check, or another failing check the
+	 * merchant can fix.
 	 *
 	 * @return void
 	 */
@@ -255,26 +250,31 @@ final class Self_Check_Watch {
 		}
 		$last  = Self_Check::last();
 		$level = $last ? self::notice_level( $last ) : '';
-		if ( self::NOTICE_HIDDEN === $level ) {
-			echo '<div class="notice notice-error outlinepay-check-notice"><p>' . esc_html__( 'OutlinePay: payment methods are not showing at checkout.', 'outlinepay-for-woocommerce' );
+		if ( self::NOTICE_BLOCKING === $level ) {
+			// Whoever acts next: the page says who.
+			echo '<div class="notice notice-error outlinepay-check-notice"><p>' . esc_html__( 'OutlinePay: a check needed to take payments is failing.', 'outlinepay-for-woocommerce' );
+			$link = __( 'Open the OutlinePay page to see what to do.', 'outlinepay-for-woocommerce' );
 		} elseif ( self::NOTICE_PROBLEM === $level ) {
 			echo '<div class="notice notice-warning outlinepay-check-notice"><p>' . esc_html__( 'OutlinePay\'s self-check found a problem.', 'outlinepay-for-woocommerce' );
+			$link = __( 'Open the OutlinePay page to fix it.', 'outlinepay-for-woocommerce' );
 		} else {
 			return;
 		}
-		echo ' <a href="' . esc_url( Admin_Page::url() ) . '">' . esc_html__( 'Open the OutlinePay page to fix it.', 'outlinepay-for-woocommerce' ) . '</a></p></div>';
+		echo ' <a href="' . esc_url( Admin_Page::url() ) . '">' . esc_html( $link ) . '</a></p></div>';
 	}
 
 	/**
 	 * Which notice a result needs. Pure.
 	 *
-	 * hidden: a failing row takes the methods off checkout. problem: some
-	 * other failing row is the store's to fix. '' otherwise: nothing failed,
-	 * or only OutlinePay or the provider can act. The OutlinePay page still
+	 * blocking: a blocking row failed (see Self_Check::severity), whoever
+	 * acts next. methods_fresh counts only when no method is shown: a stale
+	 * list still shows at checkout. problem: some other failing row is the
+	 * store's to fix. '' otherwise: nothing failed, or only OutlinePay or
+	 * the provider can act on an advisory row. The OutlinePay page still
 	 * shows those.
 	 *
 	 * @param array $result Result.
-	 * @return string hidden, problem or ''.
+	 * @return string blocking, problem or ''.
 	 */
 	public static function notice_level( array $result ) {
 		$level = '';
@@ -282,9 +282,10 @@ final class Self_Check_Watch {
 			if ( ! empty( $check['ok'] ) ) {
 				continue;
 			}
-			$code = isset( $check['code'] ) ? $check['code'] : '';
-			if ( in_array( $code, self::HIDING_ROWS, true ) || ( 'methods_fresh' === $code && isset( $check['detail']['problem'] ) && 'none_shown' === $check['detail']['problem'] ) ) {
-				return self::NOTICE_HIDDEN;
+			$code  = isset( $check['code'] ) ? $check['code'] : '';
+			$stale = 'methods_fresh' === $code && ! ( isset( $check['detail']['problem'] ) && 'none_shown' === $check['detail']['problem'] );
+			if ( Self_Check::BLOCKING === Self_Check::severity( $check ) && ! $stale ) {
+				return self::NOTICE_BLOCKING;
 			}
 			if ( isset( $check['side'] ) && 'store' === $check['side'] ) {
 				$level = self::NOTICE_PROBLEM;

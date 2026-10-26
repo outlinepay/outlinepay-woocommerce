@@ -796,6 +796,185 @@ class AdminPageTest extends TestCase {
 		$this->assertContains( 'callback_reachable', array_column( $last['checks'], 'code' ) );
 	}
 
+	/** A stored online result: every local row passed, plus $extra server rows, answered at $at. */
+	private function stored_online( array $extra, $at ) {
+		$this->options['outlinepay_self_check_last'] = Self_Check::from_server(
+			array(
+				'id'     => 'chk_First',
+				'checks' => array_merge(
+					Self_Check::wire( Self_Check::local_checks( self::healthy_facts( 'KRW' ), $at ) ),
+					array( array( 'code' => 'api_reachable', 'ok' => true, 'side' => 'store', 'detail' => array( 'elapsed_ms' => '80' ) ) ),
+					$extra
+				),
+			),
+			'page',
+			$at
+		);
+	}
+
+	// ---- Run check and the rate limit ----
+
+	public function test_run_check_says_it_finished_when_it_ran() {
+		$this->connected_store();
+		$this->server_echoes();
+		$this->options[ Setup::OPTION_DONE ] = self::NOW;
+
+		$result = $this->post( 'self_check', 'outlinepay_self_check' );
+
+		$this->assertStringContainsString( 'outlinepay_result=self_check_done', $result );
+		$this->assertSame( 'The check finished. The results are below.', $this->notice_for( 'self_check_done' ) );
+	}
+
+	public function test_run_check_right_after_a_queued_run_says_it_finished() {
+		// A run queued by a change ran on the page load 20 seconds ago.
+		$this->connected_store();
+		$this->options[ Setup::OPTION_DONE ] = self::NOW;
+		$this->stored_online( array(), self::NOW - 20 );
+		$this->self_check_answer = new Api_Error( 429, 'rate_limited' );
+
+		$result = $this->post( 'self_check', 'outlinepay_self_check' );
+
+		$this->assertStringContainsString( 'outlinepay_result=self_check_done', $result, 'the results are a minute fresh' );
+		$this->assertSame( self::NOW, Self_Check::last()['ran_at'], 'the local rows ran now' );
+		$this->assertSame( self::NOW - 20, Self_Check::last()['answered_at'], 'the server rows keep their time' );
+	}
+
+	public function test_run_check_without_fresh_server_rows_says_a_check_ran_less_than_a_minute_ago() {
+		$this->connected_store();
+		$this->options[ Setup::OPTION_DONE ] = self::NOW;
+		$this->self_check_answer = new Api_Error( 429, 'rate_limited' );
+
+		// The other run is still going: what is stored is older.
+		$this->stored_online( array(), self::NOW - 600 );
+		$this->assertStringContainsString( 'outlinepay_result=self_check_rate_limited', $this->post( 'self_check', 'outlinepay_self_check' ) );
+
+		// Nothing stored at all.
+		unset( $this->options['outlinepay_self_check_last'] );
+		$this->assertStringContainsString( 'outlinepay_result=self_check_rate_limited', $this->post( 'self_check', 'outlinepay_self_check' ) );
+
+		Functions\when( 'sanitize_key' )->returnArg();
+		Functions\when( 'wp_unslash' )->returnArg();
+		$_GET['outlinepay_result'] = 'self_check_rate_limited';
+		$html                      = $this->render_private( 'render_rate_limited_notice' );
+		unset( $_GET['outlinepay_result'] );
+		$this->assertStringContainsString( 'A check ran less than a minute ago.', $html );
+	}
+
+	public function test_an_hourly_record_keeps_the_time_outlinepay_answered() {
+		$this->stored_online( array(), self::NOW - 3600 );
+		$merged = Self_Check::merge( Self_Check::last(), Self_Check::local_checks( self::healthy_facts( 'KRW' ), self::NOW ), 'hourly', self::NOW );
+		$this->assertSame( self::NOW - 3600, $merged['answered_at'] );
+		$this->assertFalse( Self_Check::answered_recently( $merged, self::NOW ) );
+		$offline = Self_Check::offline( Self_Check::local_checks( self::healthy_facts( 'KRW' ), self::NOW ), 'page', self::NOW );
+		$this->assertFalse( Self_Check::answered_recently( $offline, self::NOW ) );
+	}
+
+	// ---- blocking and advisory checks ----
+
+	public function test_the_check_table_has_a_blocking_group_and_an_advisory_group() {
+		$this->stored_online(
+			array(
+				array( 'code' => 'callback_reachable', 'ok' => false, 'side' => 'store', 'severity' => 'advisory' ),
+				array( 'code' => 'open_problems_7d', 'ok' => true, 'side' => 'store' ),
+			),
+			self::NOW
+		);
+		Functions\when( 'wp_date' )->justReturn( '2026-10-23 10:00' );
+		Functions\when( 'checked' )->justReturn( '' );
+		Functions\when( 'wp_nonce_field' )->justReturn( '' );
+		Functions\when( 'submit_button' )->justReturn( '' );
+
+		$html = $this->render_private( 'render_self_check' );
+
+		$blocking = strpos( $html, 'Needed to take payments</h3>' );
+		$advisory = strpos( $html, 'Keeps things running smoothly</h3>' );
+		$this->assertNotFalse( $blocking );
+		$this->assertGreaterThan( $blocking, $advisory, 'blocking first' );
+		$this->assertSame( 2, substr_count( $html, 'Who acts next' ), 'each group keeps the columns' );
+		list( $top, $bottom ) = explode( 'Keeps things running smoothly', $html );
+		$this->assertSame( 9, substr_count( $top, '<tr class="outlinepay-check-' ), 'the nine local rows' );
+		$this->assertSame( 2, substr_count( $bottom, '<tr class="outlinepay-check-' ) );
+		$this->assertLessThan( strpos( $top, 'The store currency is KRW.' ), strpos( $top, 'The store is connected.' ), 'result order inside a group' );
+		$this->assertStringContainsString( 'Until this passes, orders paid by shoppers who close the window update within 15 minutes instead of right away.', $bottom );
+		$this->assertLessThan( strpos( $bottom, 'No open problems' ), strpos( $bottom, 'payment update address' ), 'result order inside a group' );
+	}
+
+	public function test_a_result_with_only_local_rows_shows_one_group() {
+		$this->options['outlinepay_self_check_last'] = Self_Check::offline( Self_Check::local_checks( self::healthy_facts( 'KRW' ), self::NOW ), 'page', self::NOW );
+		Functions\when( 'wp_date' )->justReturn( '2026-10-23 10:00' );
+		Functions\when( 'checked' )->justReturn( '' );
+		Functions\when( 'wp_nonce_field' )->justReturn( '' );
+		Functions\when( 'submit_button' )->justReturn( '' );
+
+		$html = $this->render_private( 'render_self_check' );
+
+		$this->assertStringContainsString( 'Needed to take payments</h3>', $html );
+		$this->assertStringNotContainsString( 'Keeps things running smoothly', $html );
+	}
+
+	public function test_setup_with_a_failing_advisory_check_says_how_many_need_attention() {
+		$this->connected_store();
+		$this->server_echoes(
+			array(
+				array( 'code' => 'callback_reachable', 'ok' => false, 'side' => 'store', 'severity' => 'advisory' ),
+			)
+		);
+
+		$result = $this->post( 'fix_all', 'outlinepay_fix_all' );
+
+		$this->assertStringContainsString( 'outlinepay_result=setup_done', $result, 'advisory rows never block setup' );
+		$this->assertTrue( Setup::is_done() );
+		$this->assertSame( 'Setup is complete and your payment methods show at checkout. 1 recommended check needs attention.', $this->notice_for( 'setup_done' ) );
+		$this->assertStringContainsString( 'notice-warning', $this->notice_html( 'setup_done' ) );
+	}
+
+	public function test_the_summary_counts_failing_advisory_checks_in_the_plural() {
+		$this->connected_store();
+		$this->server_echoes(
+			array(
+				array( 'code' => 'callback_reachable', 'ok' => false, 'side' => 'store' ),
+				array( 'code' => 'deliveries_gave_up_7d', 'ok' => false, 'side' => 'outlinepay', 'severity' => 'advisory' ),
+			)
+		);
+		$this->options[ Setup::OPTION_DONE ] = self::NOW;
+
+		$result = $this->post( 'self_check', 'outlinepay_self_check' );
+
+		$this->assertStringContainsString( 'outlinepay_result=self_check_done', $result );
+		$this->assertSame( 'Setup is complete and your payment methods show at checkout. 2 recommended checks need attention.', $this->notice_for( 'self_check_done' ) );
+	}
+
+	public function test_a_failing_blocking_check_keeps_the_usual_summary() {
+		$this->connected_store();
+		$this->server_echoes(
+			array(
+				array( 'code' => 'callback_reachable', 'ok' => false, 'side' => 'store', 'severity' => 'advisory' ),
+			)
+		);
+		$this->options[ Setup::OPTION_DONE ] = self::NOW;
+		$this->facts = array( 'cron_disabled' => true, 'as_ran_recently' => false );
+
+		$this->post( 'self_check', 'outlinepay_self_check' );
+
+		$this->assertSame( 'The check finished. The results are below.', $this->notice_for( 'self_check_done' ) );
+		$this->assertStringContainsString( 'notice-success', $this->notice_html( 'self_check_done' ) );
+	}
+
+	public function test_a_failing_blocking_check_during_setup_keeps_the_count_of_blocking_checks() {
+		$this->connected_store();
+		$this->server_echoes(
+			array(
+				array( 'code' => 'callback_reachable', 'ok' => false, 'side' => 'store', 'severity' => 'advisory' ),
+			)
+		);
+		$this->facts = array( 'cron_disabled' => true, 'as_ran_recently' => false );
+
+		$result = $this->post( 'fix_all', 'outlinepay_fix_all' );
+
+		$this->assertStringContainsString( 'outlinepay_result=setup_pending', $result );
+		$this->assertSame( '1 check still needs you. Follow the step in its row.', $this->notice_for( 'setup_pending' ), 'the advisory row is not counted' );
+	}
+
 	/** Renders the whole page with the stubs a page view needs. */
 	private function render_page( $provider = 'cookiepay' ) {
 		Functions\when( 'sanitize_key' )->returnArg();
@@ -841,6 +1020,7 @@ class AdminPageTest extends TestCase {
 		$this->assertStringContainsString( 'value="Fix all"', $html );
 		$this->assertStringContainsString( 'value="Check again"', $html );
 		$this->assertSame( 9, substr_count( $html, '<tr class="outlinepay-check-' ), 'all nine rows' );
+		$this->assertStringContainsString( 'Payment methods show at checkout when every check needed to take payments passes.', $html );
 		$this->assertStringContainsString( 'The store currency is USD. CookiePay takes payments in KRW only. Fix all sets the store currency to KRW. Prices keep their numbers.', $html );
 		$this->assertStringContainsString( 'Still stuck?', $html );
 		$this->assertStringContainsString( 'href="https://www.cookiepayments.com/iroboard/list?bId=contact"', $html );

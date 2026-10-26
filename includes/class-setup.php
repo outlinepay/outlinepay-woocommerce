@@ -1,15 +1,17 @@
 <?php
 /**
- * Setup after connect: the store takes payments only once every local
- * self-check row (A to I, see Self_Check) has passed in one run.
+ * Setup after connect: the store takes payments only once every blocking
+ * self-check row has passed in one run (see Self_Check::severity): the
+ * nine local rows A to I, each present and passed.
  *
  * The gate is one-time. The first all-green run saves OPTION_DONE. From then
  * on later failures show on the OutlinePay page but never hide checkout
  * again. Disconnect deletes the flag (Settings::clear_connection), so a
  * reconnect goes through setup again.
  *
- * Only the nine local rows decide. Rows OutlinePay adds (such as
- * open_problems_7d) show on the page but never block setup.
+ * Rows OutlinePay adds (such as callback_reachable) are advisory unless
+ * OutlinePay marks one blocking. An advisory row shows on the page but
+ * never blocks setup.
  *
  * Upgrade rule (see upgrade()): a store that was already connected when it
  * updated from a version before 0.5.0 gets the flag outright, on the first
@@ -68,7 +70,7 @@ final class Setup {
 	}
 
 	/**
-	 * True when every local row is in the result and passed.
+	 * True when every blocking row is in the result and passed.
 	 *
 	 * @param array $result Self-check result.
 	 * @return bool
@@ -78,20 +80,25 @@ final class Setup {
 	}
 
 	/**
-	 * How many of the local rows have not passed in the result: failed, or
-	 * missing from it.
+	 * How many blocking rows have not passed in the result: a local row
+	 * failed or missing from it, or another row marked blocking that failed.
 	 *
 	 * @param array $result Self-check result.
 	 * @return int
 	 */
 	public static function remaining( array $result ) {
 		$passed = array();
+		$count  = 0;
 		foreach ( isset( $result['checks'] ) && is_array( $result['checks'] ) ? $result['checks'] : array() as $check ) {
-			if ( isset( $check['code'] ) && ! empty( $check['ok'] ) ) {
+			if ( ! isset( $check['code'] ) ) {
+				continue;
+			}
+			if ( ! empty( $check['ok'] ) ) {
 				$passed[ $check['code'] ] = true;
+			} elseif ( ! array_key_exists( $check['code'], Self_Check::LETTERS ) && Self_Check::BLOCKING === Self_Check::severity( $check ) ) {
+				++$count;
 			}
 		}
-		$count = 0;
 		foreach ( array_keys( Self_Check::LETTERS ) as $code ) {
 			if ( ! isset( $passed[ $code ] ) ) {
 				++$count;

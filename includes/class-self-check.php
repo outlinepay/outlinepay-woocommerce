@@ -23,6 +23,12 @@
  *   H  not_a_copy         this site is the address the store was connected at
  *   I  versions           PHP, WordPress, WooCommerce at or above the plugin's minimums, HPOS declared
  *
+ * Every check has a severity. blocking: needed to take payments. These nine
+ * local checks are blocking, and setup is done when all of them pass (see
+ * Setup). advisory: keeps things running smoothly, a failure only degrades.
+ * Rows OutlinePay adds carry their own severity. A row without one (an
+ * older server) is advisory.
+ *
  * @package OutlinePay\WooCommerce
  */
 
@@ -45,6 +51,14 @@ final class Self_Check {
 	const TRIGGER_HOURLY = 'hourly';
 
 	const OFFLINE_PREFIX = 'OP-OFFLINE-';
+
+	const BLOCKING = 'blocking';
+	const ADVISORY = 'advisory';
+
+	/**
+	 * Seconds OutlinePay refuses another run after one (POST /self_checks).
+	 */
+	const SERVER_GAP = 60;
 
 	/**
 	 * Seconds to wait for GET /installation.
@@ -249,7 +263,8 @@ final class Self_Check {
 		}
 		$online = ! empty( $last['online'] );
 		// ran_at becomes $now under the stored chk_ code: server rows may be older than ran_at.
-		return self::result( $online ? (string) $last['code'] : self::offline_code( $checks ), $online, $trigger, $now, $checks );
+		// answered_at stays: it is when OutlinePay last answered (see answered_recently()).
+		return self::result( $online ? (string) $last['code'] : self::offline_code( $checks ), $online, $trigger, $now, $checks, $online && isset( $last['answered_at'] ) ? (int) $last['answered_at'] : 0 );
 	}
 
 	/**
@@ -814,25 +829,30 @@ final class Self_Check {
 			if ( ! is_array( $row ) || ! isset( $row['code'], $row['ok'] ) || ! is_string( $row['code'] ) || ! preg_match( '/^[a-z0-9_]{1,40}$/', $row['code'] ) || ! is_bool( $row['ok'] ) ) {
 				continue;
 			}
-			$checks[] = self::check( $row['code'], $row['ok'], isset( $row['side'] ) && is_string( $row['side'] ) ? $row['side'] : 'unknown', isset( $row['detail'] ) && is_array( $row['detail'] ) ? $row['detail'] : array() );
+			$check = self::check( $row['code'], $row['ok'], isset( $row['side'] ) && is_string( $row['side'] ) ? $row['side'] : 'unknown', isset( $row['detail'] ) && is_array( $row['detail'] ) ? $row['detail'] : array() );
+			if ( isset( $row['severity'] ) && in_array( $row['severity'], array( self::BLOCKING, self::ADVISORY ), true ) ) {
+				$check['severity'] = $row['severity'];
+			}
+			$checks[] = $check;
 		}
 		if ( empty( $checks ) ) {
 			return null;
 		}
-		return self::result( $run['id'], true, $trigger, $now, $checks );
+		return self::result( $run['id'], true, $trigger, $now, $checks, $now );
 	}
 
 	/**
 	 * Result shape.
 	 *
-	 * @param string $code    Diagnostic code.
-	 * @param bool   $online  Whether OutlinePay answered the run.
-	 * @param string $trigger Trigger.
-	 * @param int    $now     Unix time.
-	 * @param array  $checks  Checks.
+	 * @param string $code        Diagnostic code.
+	 * @param bool   $online      Whether OutlinePay answered the run.
+	 * @param string $trigger     Trigger.
+	 * @param int    $now         Unix time.
+	 * @param array  $checks      Checks.
+	 * @param int    $answered_at Unix time OutlinePay answered the server rows, 0 when it did not.
 	 * @return array
 	 */
-	private static function result( $code, $online, $trigger, $now, array $checks ) {
+	private static function result( $code, $online, $trigger, $now, array $checks, $answered_at = 0 ) {
 		$failed = 0;
 		foreach ( $checks as $check ) {
 			if ( ! $check['ok'] ) {
@@ -846,8 +866,70 @@ final class Self_Check {
 			'ran_at'       => (int) $now,
 			'failed_count' => $failed,
 			'worst_side'   => self::worst_side( $checks ),
+			'answered_at'  => (int) $answered_at,
 			'checks'       => array_values( $checks ),
 		);
+	}
+
+	/**
+	 * Whether OutlinePay answered the result's server rows less than a
+	 * minute ago: they are as fresh as a new run would make them.
+	 *
+	 * @param array $result Result.
+	 * @param int   $now    Unix time.
+	 * @return bool
+	 */
+	public static function answered_recently( array $result, $now ) {
+		$at = isset( $result['answered_at'] ) ? (int) $result['answered_at'] : 0;
+		return ! empty( $result['online'] ) && $at > 0 && $at >= $now - self::SERVER_GAP;
+	}
+
+	/**
+	 * The severity of a check: blocking or advisory. The nine local checks
+	 * are always blocking. Other rows keep what OutlinePay sent, advisory
+	 * when it sent nothing.
+	 *
+	 * @param array $check Check.
+	 * @return string
+	 */
+	public static function severity( array $check ) {
+		if ( isset( $check['code'] ) && is_string( $check['code'] ) && array_key_exists( $check['code'], self::LETTERS ) ) {
+			return self::BLOCKING;
+		}
+		return isset( $check['severity'] ) && self::BLOCKING === $check['severity'] ? self::BLOCKING : self::ADVISORY;
+	}
+
+	/**
+	 * The checks split by severity, each group in result order.
+	 *
+	 * @param array $checks Checks.
+	 * @return array array( 'blocking' => checks, 'advisory' => checks ).
+	 */
+	public static function groups( array $checks ) {
+		$groups = array(
+			self::BLOCKING => array(),
+			self::ADVISORY => array(),
+		);
+		foreach ( $checks as $check ) {
+			$groups[ self::severity( $check ) ][] = $check;
+		}
+		return $groups;
+	}
+
+	/**
+	 * How many advisory checks failed in the result.
+	 *
+	 * @param array $result Result.
+	 * @return int
+	 */
+	public static function advisory_failed( array $result ) {
+		$count = 0;
+		foreach ( self::groups( isset( $result['checks'] ) && is_array( $result['checks'] ) ? $result['checks'] : array() )[ self::ADVISORY ] as $check ) {
+			if ( empty( $check['ok'] ) ) {
+				++$count;
+			}
+		}
+		return $count;
 	}
 
 	/**
@@ -1040,7 +1122,7 @@ final class Self_Check {
 			case 'callback_reachable':
 				return $ok
 					? __( 'OutlinePay reached this store\'s payment update address.', 'outlinepay-for-woocommerce' )
-					: __( 'OutlinePay could not reach this store\'s payment update address. Check that the site is online and that no firewall or security plugin blocks /wp-json/outlinepay/v1/callback.', 'outlinepay-for-woocommerce' );
+					: __( 'OutlinePay could not reach this store\'s payment update address. Check that the site is online and that no firewall or security plugin blocks /wp-json/outlinepay/v1/callback.', 'outlinepay-for-woocommerce' ) . ' ' . __( 'Until this passes, orders paid by shoppers who close the window update within 15 minutes instead of right away.', 'outlinepay-for-woocommerce' );
 			case 'token_used_recently':
 				return $ok
 					? __( 'This store talked to OutlinePay in the last 24 hours.', 'outlinepay-for-woocommerce' )

@@ -249,18 +249,84 @@ class WindowOutcomeTest extends RefundTestCase {
 
 	// ---- the shopper's notice ----
 
-	public function test_a_cancel_tells_the_shopper_they_cancelled() {
-		$url = Return_Handler::destination( $this->order, Order_Sync::WAIT, 'cancelled' );
-
-		$this->assertSame( $this->order->get_checkout_payment_url(), $url );
-		$this->assertSame( array( 'You cancelled the payment. Pay again or choose another method.' ), $this->notices );
+	public function test_a_cancel_or_refusal_goes_to_the_pay_page_without_a_session_notice() {
+		$this->assertSame( $this->order->get_checkout_payment_url(), Return_Handler::destination( $this->order, Order_Sync::WAIT, 'cancelled' ) );
+		$this->assertSame( $this->order->get_checkout_payment_url(), Return_Handler::destination( $this->order, Order_Sync::RETRY, 'failed' ) );
+		$this->assertSame( array(), $this->notices, 'the pay page tells it from the order' );
 	}
 
-	public function test_a_refusal_tells_the_shopper_to_try_another_card() {
-		$url = Return_Handler::destination( $this->order, Order_Sync::RETRY, 'failed' );
+	// ---- the pay page tells the shopper, from the order ----
 
-		$this->assertSame( $this->order->get_checkout_payment_url(), $url );
-		$this->assertSame( array( 'The payment was refused. Try another card or payment method.' ), $this->notices );
+	/** @var string[] Notices the pay page printed. */
+	private $printed = array();
+
+	/** Prints what the pay page shows for the order, with no shopper session. */
+	private function pay_page() {
+		$printed = &$this->printed;
+		Functions\when( 'WC' )->justReturn( (object) array( 'session' => null ) );
+		Functions\when( 'wc_print_notice' )->alias(
+			static function ( $message, $type ) use ( &$printed ) {
+				$printed[] = $type . ': ' . $message;
+			}
+		);
+		Return_Handler::pay_page_notice( $this->order );
+		return $this->printed;
+	}
+
+	public function test_the_pay_page_tells_a_cancel_from_the_order_with_no_session() {
+		Order_Sync::apply( $this->order, self::open( array( 'window_outcome' => 'cancelled' ) ) );
+
+		$this->assertSame( array( 'error: You cancelled the payment. Pay again or choose another method.' ), $this->pay_page() );
+	}
+
+	public function test_the_pay_page_tells_a_refusal_from_the_order() {
+		Order_Sync::apply( $this->order, self::payment( array( 'status' => 'failed', 'window_outcome' => 'failed' ) ) );
+
+		$this->assertSame( array( 'error: The payment was refused. Try another card or payment method.' ), $this->pay_page() );
+	}
+
+	public function test_the_pay_page_tells_it_once() {
+		$payment = self::open( array( 'window_outcome' => 'cancelled' ) );
+		Order_Sync::apply( $this->order, $payment );
+		$this->pay_page();
+		$this->pay_page();
+		// A second return or a late payment update for the same attempt.
+		Order_Sync::apply( $this->order, $payment );
+		$this->pay_page();
+
+		$this->assertCount( 1, $this->printed );
+		$this->assertArrayNotHasKey( Order_Sync::META_TELL, $this->order->meta );
+	}
+
+	public function test_the_pay_page_says_nothing_once_a_newer_attempt_started() {
+		Order_Sync::apply( $this->order, self::open( array( 'window_outcome' => 'cancelled' ) ) );
+		$this->order->meta[ Order_Sync::META_ATTEMPTS ][] = 'ppay_next';
+
+		$this->assertSame( array(), $this->pay_page() );
+	}
+
+	public function test_a_newer_attempt_gets_its_own_message() {
+		$this->order->meta[ Order_Sync::META_ATTEMPTS ] = array( 'ppay_mine', 'ppay_next' );
+		Order_Sync::apply( $this->order, self::open( array( 'window_outcome' => 'cancelled' ) ) );
+		$this->assertSame( array(), $this->pay_page(), 'ppay_mine is not the latest attempt' );
+
+		Order_Sync::apply( $this->order, self::open( array( 'id' => 'ppay_next', 'window_outcome' => 'failed' ) ) );
+		$this->assertSame( array( 'error: The payment was refused. Try another card or payment method.' ), $this->pay_page() );
+	}
+
+	public function test_the_pay_page_says_nothing_when_the_order_is_paid() {
+		Order_Sync::apply( $this->order, self::open( array( 'window_outcome' => 'cancelled' ) ) );
+		$this->order->status = 'processing';
+
+		$this->assertSame( array(), $this->pay_page() );
+	}
+
+	public function test_the_pay_page_says_nothing_without_an_outcome() {
+		Order_Sync::apply( $this->order, self::open() );
+		$saves = $this->order->saves;
+
+		$this->assertSame( array(), $this->pay_page() );
+		$this->assertSame( $saves, $this->order->saves, 'nothing to clear: no save' );
 	}
 
 	public function test_without_an_outcome_the_notices_stay_as_before() {

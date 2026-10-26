@@ -62,6 +62,93 @@ class SetupTest extends RefundTestCase {
 		return $gateway;
 	}
 
+	/** The 0.5.2 gate: local rows not present and passed. */
+	private static function gate_052( array $result ) {
+		$passed = array();
+		foreach ( $result['checks'] as $check ) {
+			if ( ! empty( $check['ok'] ) ) {
+				$passed[ $check['code'] ] = true;
+			}
+		}
+		$count = 0;
+		foreach ( array_keys( Self_Check::LETTERS ) as $code ) {
+			$count += isset( $passed[ $code ] ) ? 0 : 1;
+		}
+		return $count;
+	}
+
+	public function test_the_blocking_gate_matches_the_0_5_2_gate_for_rows_marked_advisory_or_not_at_all() {
+		$codes  = array_keys( Self_Check::LETTERS );
+		$server = array( 'callback_reachable', 'token_used_recently', 'deliveries_gave_up_7d', 'open_problems_7d' );
+		mt_srand( 53 );
+		for ( $i = 0; $i < 500; $i++ ) {
+			$rows = array();
+			foreach ( $codes as $code ) {
+				$roll = mt_rand( 0, 9 );
+				if ( 0 === $roll ) {
+					continue; // Missing from the result.
+				}
+				$rows[] = Self_Check::check( $code, $roll > 3, 'store', array() );
+			}
+			foreach ( $server as $code ) {
+				$row = Self_Check::check( $code, 0 === mt_rand( 0, 1 ), 'store', array() );
+				if ( mt_rand( 0, 1 ) ) {
+					$row['severity'] = 'advisory';
+				}
+				$rows[] = $row;
+			}
+			shuffle( $rows );
+			$result = self::result();
+			$result['checks'] = $rows;
+			$this->assertSame( self::gate_052( $result ), Setup::remaining( $result ), 'run ' . $i );
+		}
+	}
+
+	public function test_local_rows_are_blocking_whatever_the_server_says() {
+		foreach ( array_keys( Self_Check::LETTERS ) as $code ) {
+			$row             = Self_Check::check( $code, false, 'store', array() );
+			$row['severity'] = 'advisory';
+			$this->assertSame( 'blocking', Self_Check::severity( $row ), $code );
+		}
+	}
+
+	public function test_server_rows_without_a_severity_never_block_setup() {
+		$result = Self_Check::from_server(
+			array(
+				'id'     => 'chk_Old1',
+				'checks' => array_merge(
+					Self_Check::wire( self::result()['checks'] ),
+					array( array( 'code' => 'callback_reachable', 'ok' => false, 'side' => 'store' ) )
+				),
+			),
+			'page',
+			1790000000
+		);
+		$this->assertSame( 'advisory', Self_Check::severity( end( $result['checks'] ) ) );
+		$this->assertTrue( Setup::complete( $result ) );
+		$this->assertSame( 1, Self_Check::advisory_failed( $result ) );
+	}
+
+	public function test_a_server_row_marked_blocking_holds_setup() {
+		$result = Self_Check::from_server(
+			array(
+				'id'     => 'chk_New1',
+				'checks' => array_merge(
+					Self_Check::wire( self::result()['checks'] ),
+					array(
+						array( 'code' => 'callback_reachable', 'ok' => false, 'side' => 'store', 'severity' => 'advisory' ),
+						array( 'code' => 'future_gate', 'ok' => false, 'side' => 'outlinepay', 'severity' => 'blocking' ),
+						array( 'code' => 'odd_value', 'ok' => false, 'side' => 'store', 'severity' => 'urgent' ),
+					)
+				),
+			),
+			'page',
+			1790000000
+		);
+		$this->assertSame( 1, Setup::remaining( $result ) );
+		$this->assertSame( 2, Self_Check::advisory_failed( $result ), 'an unknown value is advisory' );
+	}
+
 	public function test_a_run_with_a_failed_row_does_not_finish_setup() {
 		Self_Check::store( self::result( array( 'wp_cron' => false ) ) );
 		$this->assertArrayNotHasKey( Setup::OPTION_DONE, $this->options );

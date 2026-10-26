@@ -24,6 +24,7 @@ final class Return_Handler {
 	 */
 	public static function register() {
 		add_action( 'woocommerce_api_outlinepay_return', array( self::class, 'handle' ) );
+		add_action( 'before_woocommerce_pay_form', array( self::class, 'pay_page_notice' ), 10, 1 );
 	}
 
 	/**
@@ -154,6 +155,12 @@ final class Return_Handler {
 	 * Thank-you page for a paid or held order, the pay page otherwise, with a
 	 * notice that says what happened in the window when the payment tells.
 	 *
+	 * A cancel or a refusal is told by the pay page itself, from the order
+	 * (see pay_page_notice): a session notice can miss the page, since
+	 * WooCommerce saves the session after this request ends, and the window
+	 * may already have sent the store's tab on. The other notices stay
+	 * session notices.
+	 *
 	 * @param \WC_Order   $order    Order after the sync.
 	 * @param string|null $decision Sync decision, null when the payment could not be read.
 	 * @param string|null $outcome  Window outcome (see Order_Sync::window_outcome), null when unknown.
@@ -164,16 +171,73 @@ final class Return_Handler {
 			return $order->get_checkout_order_received_url();
 		}
 
-		if ( 'cancelled' === $outcome ) {
-			self::notice( __( 'You cancelled the payment. Pay again or choose another method.', 'outlinepay-for-woocommerce' ) );
-		} elseif ( 'failed' === $outcome ) {
-			self::notice( __( 'The payment was refused. Try another card or payment method.', 'outlinepay-for-woocommerce' ) );
-		} elseif ( Order_Sync::RETRY === $decision ) {
+		if ( in_array( $outcome, Order_Sync::WINDOW_OUTCOMES, true ) ) {
+			// The pay page tells it (see pay_page_notice).
+			return $order->get_checkout_payment_url();
+		}
+		if ( Order_Sync::RETRY === $decision ) {
 			self::notice( __( 'Your payment was not completed. Try again or choose another method.', 'outlinepay-for-woocommerce' ) );
 		} else {
 			self::notice( __( 'We could not confirm your payment yet. If you paid, this order updates in a few minutes. Otherwise, pay again below.', 'outlinepay-for-woocommerce' ) );
 		}
 		return $order->get_checkout_payment_url();
+	}
+
+	/**
+	 * The shopper's message for a window outcome.
+	 *
+	 * @param string $outcome cancelled or failed.
+	 * @return string
+	 */
+	public static function outcome_message( $outcome ) {
+		return 'cancelled' === $outcome
+			? __( 'You cancelled the payment. Pay again or choose another method.', 'outlinepay-for-woocommerce' )
+			: __( 'The payment was refused. Try another card or payment method.', 'outlinepay-for-woocommerce' );
+	}
+
+	/**
+	 * The message the pay page owes the shopper, or null: the order's latest
+	 * attempt ended cancelled or failed in the window (see
+	 * Order_Sync::note_window) and the page has not shown it yet. Never for
+	 * a paid or held order, or once a newer attempt started.
+	 *
+	 * @param \WC_Order $order Order.
+	 * @return string|null
+	 */
+	public static function owed_message( $order ) {
+		$tell = $order->get_meta( Order_Sync::META_TELL );
+		if ( ! is_array( $tell ) || ! isset( $tell['payment_id'], $tell['outcome'] ) || ! in_array( $tell['outcome'], Order_Sync::WINDOW_OUTCOMES, true ) ) {
+			return null;
+		}
+		if ( $order->is_paid() || $order->has_status( 'on-hold' ) ) {
+			return null;
+		}
+		$attempts = Order_Sync::attempts( $order );
+		if ( end( $attempts ) !== $tell['payment_id'] ) {
+			return null;
+		}
+		return self::outcome_message( $tell['outcome'] );
+	}
+
+	/**
+	 * On the pay page (before_woocommerce_pay_form, after WooCommerce checked
+	 * the order key and that the order needs payment): shows the message the
+	 * order owes the shopper, once. Showing it removes it from the order, so
+	 * a reload or a later Pay click does not repeat it. No session needed.
+	 *
+	 * @param mixed $order Order being paid.
+	 * @return void
+	 */
+	public static function pay_page_notice( $order ) {
+		if ( ! $order instanceof \WC_Order || '' === $order->get_meta( Order_Sync::META_TELL ) ) {
+			return;
+		}
+		$message = self::owed_message( $order );
+		$order->delete_meta_data( Order_Sync::META_TELL );
+		$order->save();
+		if ( null !== $message && function_exists( 'wc_print_notice' ) ) {
+			wc_print_notice( $message, 'error' );
+		}
 	}
 
 	/**

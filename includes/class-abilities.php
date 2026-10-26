@@ -148,6 +148,7 @@ final class Abilities {
 				'code'     => (string) $check['code'],
 				'ok'       => (bool) $check['ok'],
 				'side'     => (string) $check['side'],
+				'severity' => Self_Check::severity( $check ),
 				'who'      => Self_Check::who( $check['side'] ),
 				'sentence' => Self_Check::sentence( $check ),
 			);
@@ -242,6 +243,10 @@ final class Abilities {
 							'side'     => array(
 								'type'        => 'string',
 								'description' => 'Who acts next when the check fails: shopper, store (the merchant), processor (the payment provider), outlinepay, unknown.',
+							),
+							'severity' => array(
+								'type'        => 'string',
+								'description' => 'blocking: needed to take payments. advisory: a failure only degrades how payments update.',
 							),
 							'who'      => array( 'type' => 'string' ),
 							'sentence' => array( 'type' => 'string' ),

@@ -126,7 +126,8 @@ class AbilitiesTest extends TestCase {
 		$this->assertFalse( $out['online'] );
 		$this->assertSame( '2026-09-21T14:13:20Z', $out['ran_at'] );
 		$this->assertSame( 1, $out['failed_count'] );
-		$this->assertSame( array( 'code', 'ok', 'side', 'who', 'sentence' ), array_keys( $out['checks'][0] ) );
+		$this->assertSame( array( 'code', 'ok', 'side', 'severity', 'who', 'sentence' ), array_keys( $out['checks'][0] ) );
+		$this->assertSame( 'blocking', $out['checks'][0]['severity'] );
 		$this->assertStringContainsString( 'USD', $out['checks'][0]['sentence'] );
 		$this->assertSame( 'You', $out['checks'][0]['who'] );
 	}

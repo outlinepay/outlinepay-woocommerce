@@ -5,7 +5,7 @@ Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
 WC requires at least: 9.9
-Stable tag: 0.5.2
+Stable tag: 0.5.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -41,7 +41,7 @@ What the plugin does:
 * Can let shoppers cancel their own paid orders from My Account. Cancelling refunds the full payment and cancels the order. Off until you turn on "Let shoppers cancel their own paid orders".
 * Shows a "View card receipt" link for card payments on the order screen, the thank-you page, the shopper's order page and the completed-order email.
 * Supports High-Performance Order Storage (HPOS).
-* Walks you through setup after you connect. The OutlinePay page lists each check. Fix all makes the fixes the plugin can make itself. Payment methods show at checkout once every check passes.
+* Walks you through setup after you connect. The OutlinePay page lists each check in two groups: needed to take payments, and keeps things running smoothly. Fix all makes the fixes the plugin can make itself. Payment methods show at checkout once every check needed to take payments passes.
 * Checks its own setup. The Self-check on the OutlinePay page shows each check, who needs to act when one fails, a button for the fixes the plugin can make, and a diagnostic code to send to your payment provider. It also runs once a day, and again when the store currency or the site address changes, or after an update.
 * Shows a notice on every admin page while a check you can fix fails, with a link to the OutlinePay page.
 * Emails the site admin address when a daily check starts failing. Turn off "Email me when a daily check fails" to stop it.
@@ -145,6 +145,14 @@ CookiePay is the payment provider that takes the payment. The shopper clicks Pay
 CookiePay privacy policy: https://www.cookiepayments.com/terms/private
 
 == Changelog ==
+
+= 0.5.3 =
+* After a cancel or a refusal in the payment window, the pay page always says what happened. The message no longer goes missing on the first load. It shows once per attempt.
+* The checks on the OutlinePay page come in two groups: "Needed to take payments" and "Keeps things running smoothly". Setup is done when every check in the first group passes, as before.
+* When OutlinePay cannot reach the store's payment update address, the check says what that changes: orders paid by shoppers who close the window update within 15 minutes instead of right away.
+* When setup is done but a recommended check fails, the page says how many need attention.
+* The admin notice now shows whenever a check needed to take payments fails: "OutlinePay: a check needed to take payments is failing." Other checks you can fix keep the softer notice.
+* Run check no longer says "A check ran less than a minute ago." when it did update the results.
 
 = 0.5.2 =
 * The self-check runs again when the store currency or the site address changes, and after WooCommerce or this plugin is updated.
