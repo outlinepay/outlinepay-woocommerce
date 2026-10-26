@@ -414,7 +414,8 @@ class SelfCheckTest extends TestCase {
 		$codes = array_column( $sent['checks'], 'code' );
 		$this->assertSame( array_keys( Self_Check::LETTERS ), $codes, 'every local check, letter order' );
 		foreach ( $sent['checks'] as $check ) {
-			$this->assertSame( array(), array_diff( array_keys( $check ), array( 'code', 'ok', 'side', 'detail' ) ) );
+			$this->assertSame( array(), array_diff( array_keys( $check ), array( 'code', 'ok', 'side', 'severity', 'detail' ) ) );
+			$this->assertSame( 'blocking', $check['severity'], 'every local check is needed to take payments' );
 			if ( isset( $check['detail'] ) ) {
 				$this->assertNotSame( array(), $check['detail'], 'an empty detail would go out as a JSON list' );
 			}

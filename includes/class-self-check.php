@@ -764,9 +764,10 @@ final class Self_Check {
 		$out = array();
 		foreach ( $checks as $check ) {
 			$row = array(
-				'code' => $check['code'],
-				'ok'   => $check['ok'],
-				'side' => $check['side'],
+				'code'     => $check['code'],
+				'ok'       => $check['ok'],
+				'side'     => $check['side'],
+				'severity' => self::severity( $check ),
 			);
 			if ( ! empty( $check['detail'] ) ) {
 				$row['detail'] = $check['detail'];
