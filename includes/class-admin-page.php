@@ -1056,7 +1056,7 @@ final class Admin_Page {
 				/* translators: 1: store currency code such as USD, 2: payment provider name, 3: currency codes the provider takes, such as KRW. */
 				__( 'Your store currency is %1$s. %2$s takes payments in %3$s only.', 'outlinepay-for-woocommerce' ),
 				get_woocommerce_currency(),
-				Settings::provider_display_name(),
+				Brand::user_name(),
 				implode( ', ', Settings::provider_currencies() )
 			)
 		) . ' ' . esc_html( self::prices_note() ) . '</p>';

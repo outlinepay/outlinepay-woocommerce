@@ -19,6 +19,7 @@ class PaymentsTabTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		Functions\stubTranslationFunctions();
+		Functions\stubEscapeFunctions();
 		Functions\when( 'wp_salt' )->justReturn( 'salt' );
 		Credentials::reset_cache();
 		$this->options = array(
