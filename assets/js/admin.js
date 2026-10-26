@@ -1,5 +1,6 @@
 /**
- * OutlinePay page: the Copy buttons for the diagnostic code.
+ * OutlinePay page and order screen: the Copy buttons for the diagnostic
+ * code and the provider's order number.
  *
  * Plain script, no build step. Every button with data-outlinepay-copy copies
  * the text of its data-target element and writes the outcome into its

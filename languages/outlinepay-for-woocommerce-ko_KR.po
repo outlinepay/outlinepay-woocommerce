@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: OutlinePay for WooCommerce 0.6.0\n"
 "Report-Msgid-Bugs-To: https://outlinepay.com\n"
-"POT-Creation-Date: 2026-10-26T02:37:32+00:00\n"
-"PO-Revision-Date: 2026-10-25 22:37-0400\n"
+"POT-Creation-Date: 2026-10-26T03:27:48+00:00\n"
+"PO-Revision-Date: 2026-10-25 23:27-0400\n"
 "Last-Translator: OutlinePay <dev@outlinepay.com>\n"
 "Language-Team: OutlinePay <dev@outlinepay.com>\n"
 "Language: ko_KR\n"
@@ -363,16 +363,17 @@ msgid "Give them this code:"
 msgstr "문의할 때 이 코드를 알려 주세요:"
 
 #: includes/class-admin-page.php:898 includes/class-admin-page.php:919
-#: includes/class-admin-page.php:1010
+#: includes/class-admin-page.php:1010 includes/class-order-display.php:241
 msgid "Copied"
 msgstr "복사했습니다"
 
 #: includes/class-admin-page.php:898 includes/class-admin-page.php:919
-#: includes/class-admin-page.php:1010
+#: includes/class-admin-page.php:1010 includes/class-order-display.php:241
 msgid "Selected. Press Ctrl+C to copy."
 msgstr "선택했습니다. Ctrl+C를 눌러 복사하세요."
 
 #: includes/class-admin-page.php:898 includes/class-admin-page.php:919
+#: includes/class-order-display.php:241
 msgid "Copy"
 msgstr "복사"
 
@@ -787,15 +788,27 @@ msgstr "결제 창이 열립니다. 결제 창에서 결제를 마치면 다음 
 msgid "The payment window was closed. Pay again or go back."
 msgstr "결제 창이 닫혔습니다. 다시 결제하거나 이전 단계로 돌아가십시오."
 
-#: includes/class-order-display.php:87 includes/class-order-display.php:137
+#: includes/class-order-display.php:88 includes/class-order-display.php:138
 msgid "View card receipt"
 msgstr "카드 전표 보기"
 
-#: includes/class-order-display.php:211
+#. translators: %s: payment provider name, such as CookiePay.
+#: includes/class-order-display.php:239
+#, php-format
+msgid "%s order number:"
+msgstr "%s 주문번호:"
+
+#. translators: %s: payment provider name, such as CookiePay.
+#: includes/class-order-display.php:245
+#, php-format
+msgid "To find this payment in the %s admin, search by this order number."
+msgstr "%s 관리자 페이지에서 이 결제를 찾으려면 이 주문번호로 검색하십시오."
+
+#: includes/class-order-display.php:260
 msgid "Test payment"
 msgstr "테스트 결제"
 
-#: includes/class-order-display.php:211
+#: includes/class-order-display.php:260
 msgid ""
 "OutlinePay took this payment in test mode. Your payment provider reverses "
 "it. Do not ship goods."
@@ -803,7 +816,7 @@ msgstr ""
 "OutlinePay가 테스트 모드로 받은 결제입니다. 결제대행사가 이 결제를 취소합니"
 "다. 상품을 발송하지 마십시오."
 
-#: includes/class-order-display.php:221
+#: includes/class-order-display.php:270
 msgid ""
 "Test payment. This order was paid through the payment provider's test system "
 "and is not a real sale."
@@ -811,12 +824,12 @@ msgstr ""
 "테스트 결제입니다. 이 주문은 결제대행사의 테스트 시스템으로 결제되었으며 실"
 "제 판매가 아닙니다."
 
-#: includes/class-order-display.php:270 includes/class-order-display.php:302
-#: includes/class-order-display.php:309
+#: includes/class-order-display.php:319 includes/class-order-display.php:351
+#: includes/class-order-display.php:358
 msgid "Deposit details"
 msgstr "입금 정보"
 
-#: includes/class-order-display.php:271
+#: includes/class-order-display.php:320
 msgid ""
 "Your order ships after the deposit arrives. Deposit the exact order total to "
 "this account."
@@ -824,15 +837,15 @@ msgstr ""
 "입금이 확인되면 주문이 발송됩니다. 아래 계좌로 주문 금액을 정확히 입금하십시"
 "오."
 
-#: includes/class-order-display.php:273 includes/class-order-display.php:297
+#: includes/class-order-display.php:322 includes/class-order-display.php:346
 msgid "Bank"
 msgstr "은행"
 
-#: includes/class-order-display.php:274 includes/class-order-display.php:298
+#: includes/class-order-display.php:323 includes/class-order-display.php:347
 msgid "Account number"
 msgstr "계좌번호"
 
-#: includes/class-order-display.php:275 includes/class-order-display.php:299
+#: includes/class-order-display.php:324 includes/class-order-display.php:348
 msgid "Deposit by"
 msgstr "입금 기한"
 

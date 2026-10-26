@@ -148,6 +148,7 @@ CookiePay privacy policy: https://www.cookiepayments.com/terms/private
 
 = 0.6.0 =
 * Inside the plugin, the page carries your payment provider's name and logo once the store is connected. Stores connected before this version get them within a day, with the daily check. Later changes by the provider arrive the same way.
+* Paid orders show your payment provider's order number (the ppay_ payment id) at the top of the order screen, with a Copy button, because your payment provider's admin searches by order number.
 * The Connection table names the plugin and its version.
 * The row on WooCommerce > Settings > Payments says "Get paid through your preferred local payment providers." and names the connected provider.
 

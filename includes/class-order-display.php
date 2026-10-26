@@ -2,8 +2,8 @@
 /**
  * Shows virtual account details and the card receipt link on the thank-you
  * page, the My Account order page and in customer emails, a test payment
- * notice on the thank-you page and in customer emails, and the receipt and
- * test mode lines in the admin order screen.
+ * notice on the thank-you page and in customer emails, and the provider's
+ * order number, the receipt and test mode lines in the admin order screen.
  *
  * @package OutlinePay\WooCommerce
  */
@@ -30,6 +30,7 @@ final class Order_Display {
 		add_action( 'woocommerce_email_before_order_table', array( self::class, 'email_test_payment' ), 5, 3 );
 		add_action( 'woocommerce_email_before_order_table', array( self::class, 'email' ), 10, 3 );
 		add_action( 'woocommerce_email_after_order_table', array( self::class, 'email_receipt' ), 10, 4 );
+		add_action( 'woocommerce_admin_order_data_after_payment_info', array( self::class, 'admin_order_number' ) );
 		add_action( 'woocommerce_admin_order_data_after_order_details', array( self::class, 'admin_test_mode' ) );
 		add_action( 'woocommerce_admin_order_data_after_order_details', array( self::class, 'admin_receipt' ) );
 	}
@@ -196,6 +197,54 @@ final class Order_Display {
 		return $order instanceof \WC_Order
 			&& null !== Settings::method_for_gateway( $order->get_payment_method() )
 			&& 'test' === $order->get_meta( Order_Sync::META_MODE );
+	}
+
+	/**
+	 * The payment id of the order's paid OutlinePay payment, or ''. It is the
+	 * order number the payment provider knows the payment by.
+	 *
+	 * @param mixed $order Order.
+	 * @return string
+	 */
+	public static function paid_payment_id( $order ) {
+		// The mode is written only when OutlinePay took the payment, so an
+		// order with attempts but no payment has none (see is_test_payment).
+		if ( ! $order instanceof \WC_Order
+			|| null === Settings::method_for_gateway( $order->get_payment_method() )
+			|| ! in_array( $order->get_meta( Order_Sync::META_MODE ), array( 'test', 'live' ), true ) ) {
+			return '';
+		}
+		$payment_id = $order->get_meta( Order_Sync::META_PAYMENT_ID );
+		return Api_Client::valid_payment_id( $payment_id ) ? $payment_id : '';
+	}
+
+	/**
+	 * The provider's order number at the top of the admin order view, with a
+	 * Copy button: the provider's admin finds a payment by this number.
+	 * WooCommerce's own transaction id stays where WooCommerce shows it.
+	 *
+	 * @param \WC_Order $order Order.
+	 * @return void
+	 */
+	public static function admin_order_number( $order ) {
+		$payment_id = self::paid_payment_id( $order );
+		if ( '' === $payment_id ) {
+			return;
+		}
+		wp_enqueue_script( Admin_Page::SCRIPT, plugins_url( 'assets/js/admin.js', OUTLINEPAY_PLUGIN_FILE ), array(), OUTLINEPAY_VERSION, true );
+		$name = Brand::user_name();
+		echo '<div class="outlinepay-order-number" style="clear:both;padding-top:12px">';
+		echo '<p style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0">';
+		/* translators: %s: payment provider name, such as CookiePay. */
+		echo '<strong>' . esc_html( sprintf( __( '%s order number:', 'outlinepay-for-woocommerce' ), $name ) ) . '</strong> ';
+		echo '<code id="outlinepay-order-number" style="user-select:all">' . esc_html( $payment_id ) . '</code>';
+		echo '<button type="button" class="button button-small" data-outlinepay-copy data-target="outlinepay-order-number" data-status="outlinepay-order-number-status" data-copied="' . esc_attr__( 'Copied', 'outlinepay-for-woocommerce' ) . '" data-manual="' . esc_attr__( 'Selected. Press Ctrl+C to copy.', 'outlinepay-for-woocommerce' ) . '">' . esc_html__( 'Copy', 'outlinepay-for-woocommerce' ) . '</button>';
+		echo '<span id="outlinepay-order-number-status" aria-live="polite"></span></p>';
+		if ( Brand::connected() ) {
+			/* translators: %s: payment provider name, such as CookiePay. */
+			echo '<p style="margin:4px 0 0;color:#646970">' . esc_html( sprintf( __( 'To find this payment in the %s admin, search by this order number.', 'outlinepay-for-woocommerce' ), $name ) ) . '</p>';
+		}
+		echo '</div>';
 	}
 
 	/**

@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-26T02:37:32+00:00\n"
+"POT-Creation-Date: 2026-10-26T03:27:48+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: outlinepay-for-woocommerce\n"
@@ -317,17 +317,20 @@ msgstr ""
 #: includes/class-admin-page.php:898
 #: includes/class-admin-page.php:919
 #: includes/class-admin-page.php:1010
+#: includes/class-order-display.php:241
 msgid "Copied"
 msgstr ""
 
 #: includes/class-admin-page.php:898
 #: includes/class-admin-page.php:919
 #: includes/class-admin-page.php:1010
+#: includes/class-order-display.php:241
 msgid "Selected. Press Ctrl+C to copy."
 msgstr ""
 
 #: includes/class-admin-page.php:898
 #: includes/class-admin-page.php:919
+#: includes/class-order-display.php:241
 msgid "Copy"
 msgstr ""
 
@@ -692,45 +695,57 @@ msgstr ""
 msgid "The payment window was closed. Pay again or go back."
 msgstr ""
 
-#: includes/class-order-display.php:87
-#: includes/class-order-display.php:137
+#: includes/class-order-display.php:88
+#: includes/class-order-display.php:138
 msgid "View card receipt"
 msgstr ""
 
-#: includes/class-order-display.php:211
+#. translators: %s: payment provider name, such as CookiePay.
+#: includes/class-order-display.php:239
+#, php-format
+msgid "%s order number:"
+msgstr ""
+
+#. translators: %s: payment provider name, such as CookiePay.
+#: includes/class-order-display.php:245
+#, php-format
+msgid "To find this payment in the %s admin, search by this order number."
+msgstr ""
+
+#: includes/class-order-display.php:260
 msgid "Test payment"
 msgstr ""
 
-#: includes/class-order-display.php:211
+#: includes/class-order-display.php:260
 msgid "OutlinePay took this payment in test mode. Your payment provider reverses it. Do not ship goods."
 msgstr ""
 
-#: includes/class-order-display.php:221
+#: includes/class-order-display.php:270
 msgid "Test payment. This order was paid through the payment provider's test system and is not a real sale."
 msgstr ""
 
-#: includes/class-order-display.php:270
-#: includes/class-order-display.php:302
-#: includes/class-order-display.php:309
+#: includes/class-order-display.php:319
+#: includes/class-order-display.php:351
+#: includes/class-order-display.php:358
 msgid "Deposit details"
 msgstr ""
 
-#: includes/class-order-display.php:271
+#: includes/class-order-display.php:320
 msgid "Your order ships after the deposit arrives. Deposit the exact order total to this account."
 msgstr ""
 
-#: includes/class-order-display.php:273
-#: includes/class-order-display.php:297
+#: includes/class-order-display.php:322
+#: includes/class-order-display.php:346
 msgid "Bank"
 msgstr ""
 
-#: includes/class-order-display.php:274
-#: includes/class-order-display.php:298
+#: includes/class-order-display.php:323
+#: includes/class-order-display.php:347
 msgid "Account number"
 msgstr ""
 
-#: includes/class-order-display.php:275
-#: includes/class-order-display.php:299
+#: includes/class-order-display.php:324
+#: includes/class-order-display.php:348
 msgid "Deposit by"
 msgstr ""
 

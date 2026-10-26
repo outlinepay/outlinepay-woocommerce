@@ -6,6 +6,7 @@ use OutlinePay\WooCommerce\Admin_Page;
 use OutlinePay\WooCommerce\Brand;
 use OutlinePay\WooCommerce\Credentials;
 use OutlinePay\WooCommerce\Gateway;
+use OutlinePay\WooCommerce\Order_Display;
 use OutlinePay\WooCommerce\Order_Sync;
 use OutlinePay\WooCommerce\Settings;
 
@@ -247,5 +248,90 @@ class BrandTest extends TestCase {
 		$order = new \WC_Order( 42 );
 		Order_Sync::note_refused( $order, 'provider_error', 'card' );
 		$this->assertSame( array( 'An OutlinePay payment by Credit or debit card could not start: CookiePay returned an error. The shopper saw an error and can try again.' ), $order->notes );
+	}
+
+	private static function paid_order( $mode = 'live' ) {
+		$order                                    = new \WC_Order( 42 );
+		$order->status                            = 'processing';
+		$order->meta[ Order_Sync::META_PAYMENT_ID ] = 'ppay_test1';
+		$order->meta[ Order_Sync::META_MODE ]       = $mode;
+		return $order;
+	}
+
+	private function order_number( $order ) {
+		Functions\when( 'wp_enqueue_script' )->justReturn( null );
+		ob_start();
+		Order_Display::admin_order_number( $order );
+		return ob_get_clean();
+	}
+
+	public function test_a_paid_order_shows_the_provider_order_number_with_a_copy_button() {
+		$this->brand( self::full() );
+		Functions\expect( 'wp_enqueue_script' )->once()->with( 'outlinepay-admin', \Mockery::type( 'string' ), array(), OUTLINEPAY_VERSION, true );
+		ob_start();
+		Order_Display::admin_order_number( self::paid_order() );
+		$html = ob_get_clean();
+		$this->assertSame(
+			'<div class="outlinepay-order-number" style="clear:both;padding-top:12px">'
+			. '<p style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0">'
+			. '<strong>CookiePay order number:</strong> '
+			. '<code id="outlinepay-order-number" style="user-select:all">ppay_test1</code>'
+			. '<button type="button" class="button button-small" data-outlinepay-copy data-target="outlinepay-order-number" data-status="outlinepay-order-number-status" data-copied="Copied" data-manual="Selected. Press Ctrl+C to copy.">Copy</button>'
+			. '<span id="outlinepay-order-number-status" aria-live="polite"></span></p>'
+			. '<p style="margin:4px 0 0;color:#646970">To find this payment in the CookiePay admin, search by this order number.</p>'
+			. '</div>',
+			$html
+		);
+	}
+
+	public function test_a_refunded_test_payment_still_shows_its_order_number() {
+		$order         = self::paid_order( 'test' );
+		$order->status = 'refunded';
+		$this->assertStringContainsString( '>ppay_test1</code>', $this->order_number( $order ) );
+	}
+
+	public function test_a_korean_admin_reads_the_korean_provider_name() {
+		$this->brand( self::full() );
+		$this->user_locale = 'ko_KR';
+		$this->assertStringContainsString( '<strong>쿠키페이 order number:</strong>', $this->order_number( self::paid_order() ) );
+	}
+
+	public function test_an_unpaid_order_with_attempts_shows_nothing() {
+		$order                                    = new \WC_Order( 42 );
+		$order->meta[ Order_Sync::META_PAYMENT_ID ] = 'ppay_test1';
+		$order->meta[ Order_Sync::META_ATTEMPTS ]   = array( 'ppay_test1' );
+		$this->assertSame( '', $this->order_number( $order ) );
+	}
+
+	public function test_an_order_without_an_outlinepay_payment_shows_nothing() {
+		$order                 = self::paid_order();
+		$order->payment_method = 'bacs';
+		$this->assertSame( '', $this->order_number( $order ), 'paid with another gateway' );
+		$order = self::paid_order();
+		unset( $order->meta[ Order_Sync::META_PAYMENT_ID ] );
+		$this->assertSame( '', $this->order_number( $order ) );
+		$order = self::paid_order();
+		$order->meta[ Order_Sync::META_PAYMENT_ID ] = 'ppay_<b>"x';
+		$this->assertSame( '', $this->order_number( $order ), 'not a payment id' );
+		$this->assertSame( '', $this->order_number( null ) );
+	}
+
+	public function test_the_order_number_line_escapes_the_brand_name() {
+		Functions\when( 'esc_html' )->alias(
+			static function ( $text ) {
+				return htmlspecialchars( (string) $text, ENT_QUOTES );
+			}
+		);
+		$this->brand( array( 'name' => '<i>Pay</i>' ) );
+		$html = $this->order_number( self::paid_order() );
+		$this->assertStringNotContainsString( '<i>', $html );
+		$this->assertStringContainsString( '&lt;i&gt;Pay&lt;/i&gt; order number:', $html );
+	}
+
+	public function test_before_connect_the_line_shows_without_the_search_hint() {
+		$this->disconnect();
+		$html = $this->order_number( self::paid_order() );
+		$this->assertStringContainsString( '<strong>OutlinePay order number:</strong>', $html );
+		$this->assertStringNotContainsString( 'search by this order number', $html );
 	}
 }
