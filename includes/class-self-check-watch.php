@@ -252,12 +252,10 @@ final class Self_Check_Watch {
 		$level = $last ? self::notice_level( $last ) : '';
 		if ( self::NOTICE_BLOCKING === $level ) {
 			// Whoever acts next: the page says who.
-			/* translators: %s: payment provider name, such as CookiePay. */
-			echo '<div class="notice notice-error outlinepay-check-notice"><p>' . esc_html( sprintf( __( '%s: a check needed to take payments is failing.', 'outlinepay-for-woocommerce' ), Brand::user_name() ) );
+			echo '<div class="notice notice-error outlinepay-check-notice"><p>' . esc_html__( 'OutlinePay: a check needed to take payments is failing.', 'outlinepay-for-woocommerce' );
 			$link = __( 'Open the OutlinePay page to see what to do.', 'outlinepay-for-woocommerce' );
 		} elseif ( self::NOTICE_PROBLEM === $level ) {
-			/* translators: %s: payment provider name, such as CookiePay. */
-			echo '<div class="notice notice-warning outlinepay-check-notice"><p>' . esc_html( sprintf( __( '%s: the self-check found a problem.', 'outlinepay-for-woocommerce' ), Brand::user_name() ) );
+			echo '<div class="notice notice-warning outlinepay-check-notice"><p>' . esc_html__( 'OutlinePay\'s self-check found a problem.', 'outlinepay-for-woocommerce' );
 			$link = __( 'Open the OutlinePay page to fix it.', 'outlinepay-for-woocommerce' );
 		} else {
 			return;

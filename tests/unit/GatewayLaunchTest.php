@@ -297,7 +297,7 @@ class GatewayLaunchTest extends RefundTestCase {
 
 		$this->assertSame( 'failure', $result['result'] );
 		$this->assertCount( 1, $this->order->notes, 'one note for three presses' );
-		$this->assertStringContainsString( 'OutlinePay payment by Credit or debit card could not start:', $this->order->notes[0] );
+		$this->assertStringContainsString( 'An OutlinePay payment by Credit or debit card could not start:', $this->order->notes[0] );
 		$this->assertStringContainsString( 'returned an error. The shopper saw an error and can try again.', $this->order->notes[0] );
 	}
 
@@ -317,7 +317,7 @@ class GatewayLaunchTest extends RefundTestCase {
 
 		$this->gateway->process_payment( 42 );
 
-		$this->assertSame( array( 'OutlinePay payment by Credit or debit card could not start (invalid_request). The shopper saw an error and can try again.' ), $this->order->notes );
+		$this->assertSame( array( 'An OutlinePay payment by Credit or debit card could not start (invalid_request). The shopper saw an error and can try again.' ), $this->order->notes );
 	}
 
 	public function test_an_answer_the_store_cannot_use_gets_a_note() {
@@ -325,7 +325,7 @@ class GatewayLaunchTest extends RefundTestCase {
 
 		$this->gateway->process_payment( 42 );
 
-		$this->assertSame( array( "OutlinePay payment by Credit or debit card could not start: OutlinePay's answer could not be used. The shopper saw an error and can try again." ), $this->order->notes );
+		$this->assertSame( array( "An OutlinePay payment by Credit or debit card could not start: OutlinePay's answer could not be used. The shopper saw an error and can try again." ), $this->order->notes );
 	}
 
 	public function test_a_site_that_cannot_reach_outlinepay_gets_its_own_note() {
@@ -336,7 +336,7 @@ class GatewayLaunchTest extends RefundTestCase {
 		$this->gateway->process_payment( 42 );
 
 		$this->assertSame( array( 'The payment could not be started. Try again in a moment.', 'The payment could not be started. Try again in a moment.' ), $this->notices, 'the shopper sees the same message as before' );
-		$this->assertSame( array( 'OutlinePay payment by Credit or debit card could not start: this site could not reach OutlinePay. The shopper saw an error and can try again.' ), $this->order->notes );
+		$this->assertSame( array( 'An OutlinePay payment by Credit or debit card could not start: this site could not reach OutlinePay. The shopper saw an error and can try again.' ), $this->order->notes );
 	}
 
 	public function test_an_answer_without_a_payment_id_gets_the_answer_note() {
@@ -344,7 +344,7 @@ class GatewayLaunchTest extends RefundTestCase {
 
 		$this->gateway->process_payment( 42 );
 
-		$this->assertSame( array( "OutlinePay payment by Credit or debit card could not start: OutlinePay's answer could not be used. The shopper saw an error and can try again." ), $this->order->notes );
+		$this->assertSame( array( "An OutlinePay payment by Credit or debit card could not start: OutlinePay's answer could not be used. The shopper saw an error and can try again." ), $this->order->notes );
 	}
 
 	public function test_a_total_that_is_not_whole_won_gets_a_note_and_calls_nothing() {
@@ -354,7 +354,7 @@ class GatewayLaunchTest extends RefundTestCase {
 
 		$this->assertSame( 'failure', $result['result'] );
 		$this->assertSame( array(), $this->requests );
-		$this->assertSame( array( 'OutlinePay payment by Credit or debit card could not start: the order total is not a whole number of won. Check the product prices.' ), $this->order->notes );
+		$this->assertSame( array( 'An OutlinePay payment by Credit or debit card could not start: the order total is not a whole number of won. Check the product prices.' ), $this->order->notes );
 	}
 
 	public function test_a_failure_after_a_started_payment_is_noted_again() {

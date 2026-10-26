@@ -148,7 +148,6 @@ CookiePay privacy policy: https://www.cookiepayments.com/terms/private
 
 = 0.6.0 =
 * Inside the plugin, the page carries your payment provider's name and logo once the store is connected. Stores connected before this version get them within a day, with the daily check. Later changes by the provider arrive the same way.
-* Order notes and the admin notices use your payment provider's name, for example "CookiePay payment ... is paid." A line under the heading says "Powered by OutlinePay".
 * The Connection table names the plugin and its version.
 * The row on WooCommerce > Settings > Payments says "Get paid through your preferred local payment providers." and names the connected provider.
 

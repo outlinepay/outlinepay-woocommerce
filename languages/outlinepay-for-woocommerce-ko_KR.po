@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: OutlinePay for WooCommerce 0.6.0\n"
 "Report-Msgid-Bugs-To: https://outlinepay.com\n"
-"POT-Creation-Date: 2026-10-26T01:48:25+00:00\n"
-"PO-Revision-Date: 2026-10-25 21:49-0400\n"
+"POT-Creation-Date: 2026-10-26T02:37:32+00:00\n"
+"PO-Revision-Date: 2026-10-25 22:37-0400\n"
 "Last-Translator: OutlinePay <dev@outlinepay.com>\n"
 "Language-Team: OutlinePay <dev@outlinepay.com>\n"
 "Language: ko_KR\n"
@@ -38,7 +38,7 @@ msgstr ""
 #: outlinepay-for-woocommerce.php includes/class-abilities.php:58
 #: includes/class-admin-page.php:94 includes/class-admin-page.php:95
 #: includes/class-admin-page.php:765 includes/class-gateway.php:87
-#: includes/class-self-check.php:1041
+#: includes/class-self-check.php:1047
 msgid "OutlinePay"
 msgstr "OutlinePay"
 
@@ -836,201 +836,202 @@ msgstr "계좌번호"
 msgid "Deposit by"
 msgstr "입금 기한"
 
-#. translators: 1: payment provider name such as CookiePay, 2: payment method name, 3: payment provider name.
-#: includes/class-order-sync.php:184
+#. translators: 1: payment method name, 2: payment provider name such as CookiePay.
+#: includes/class-order-sync.php:183
 #, php-format
 msgid ""
-"%1$s payment by %2$s could not start: %3$s returned an error. The shopper "
-"saw an error and can try again."
+"An OutlinePay payment by %1$s could not start: %2$s returned an error. The "
+"shopper saw an error and can try again."
 msgstr ""
-"%2$s(으)로 %1$s 결제를 시작하지 못했습니다. %3$s에서 오류를 반환했습니다. 구"
-"매자에게 오류가 표시되었으며 다시 시도할 수 있습니다."
+"%1$s(으)로 OutlinePay 결제를 시작하지 못했습니다. %2$s에서 오류를 반환했습니"
+"다. 구매자에게 오류가 표시되었으며 다시 시도할 수 있습니다."
 
-#. translators: 1: payment provider name such as CookiePay, 2: payment method name.
-#: includes/class-order-sync.php:188
+#. translators: %s: payment method name.
+#: includes/class-order-sync.php:187
 #, php-format
 msgid ""
-"%1$s payment by %2$s could not start: this site could not reach OutlinePay. "
-"The shopper saw an error and can try again."
+"An OutlinePay payment by %s could not start: this site could not reach "
+"OutlinePay. The shopper saw an error and can try again."
 msgstr ""
-"%2$s(으)로 %1$s 결제를 시작하지 못했습니다. 이 사이트에서 OutlinePay에 연결"
-"할 수 없었습니다. 구매자에게 오류가 표시되었으며 다시 시도할 수 있습니다."
+"%s(으)로 OutlinePay 결제를 시작하지 못했습니다. 이 사이트에서 OutlinePay에 연"
+"결할 수 없었습니다. 구매자에게 오류가 표시되었으며 다시 시도할 수 있습니다."
 
-#. translators: 1: payment provider name such as CookiePay, 2: payment method name, 3: payment provider name.
-#: includes/class-order-sync.php:192
+#. translators: 1: payment method name, 2: payment provider name such as CookiePay.
+#: includes/class-order-sync.php:191
 #, php-format
 msgid ""
-"%1$s payment by %2$s could not start: %3$s has not enabled this method for "
-"the store. The shopper was asked to choose another method."
+"An OutlinePay payment by %1$s could not start: %2$s has not enabled this "
+"method for the store. The shopper was asked to choose another method."
 msgstr ""
-"%2$s(으)로 %1$s 결제를 시작하지 못했습니다. %3$s에서 이 스토어에 해당 결제수"
-"단을 활성화하지 않았습니다. 구매자에게 다른 결제수단을 선택하도록 안내했습니"
-"다."
+"%1$s(으)로 OutlinePay 결제를 시작하지 못했습니다. %2$s에서 이 스토어에 해당 "
+"결제수단을 활성화하지 않았습니다. 구매자에게 다른 결제수단을 선택하도록 안내"
+"했습니다."
 
-#. translators: 1: payment provider name such as CookiePay, 2: payment method name.
-#: includes/class-order-sync.php:196
+#. translators: %s: payment method name.
+#: includes/class-order-sync.php:195
 #, php-format
 msgid ""
-"%1$s payment by %2$s could not start: OutlinePay's answer could not be used. "
-"The shopper saw an error and can try again."
+"An OutlinePay payment by %s could not start: OutlinePay's answer could not "
+"be used. The shopper saw an error and can try again."
 msgstr ""
-"%2$s(으)로 %1$s 결제를 시작하지 못했습니다. OutlinePay의 응답을 사용할 수 없"
-"었습니다. 구매자에게 오류가 표시되었으며 다시 시도할 수 있습니다."
+"%s(으)로 OutlinePay 결제를 시작하지 못했습니다. OutlinePay의 응답을 사용할 "
+"수 없었습니다. 구매자에게 오류가 표시되었으며 다시 시도할 수 있습니다."
 
-#. translators: 1: payment provider name such as CookiePay, 2: payment method name.
-#: includes/class-order-sync.php:200
+#. translators: %s: payment method name.
+#: includes/class-order-sync.php:199
 #, php-format
 msgid ""
-"%1$s payment by %2$s could not start: the order total is not a whole number "
-"of won. Check the product prices."
+"An OutlinePay payment by %s could not start: the order total is not a whole "
+"number of won. Check the product prices."
 msgstr ""
-"%2$s(으)로 %1$s 결제를 시작하지 못했습니다. 주문 금액이 원 단위 정수가 아닙니"
-"다. 상품 가격을 확인하십시오."
+"%s(으)로 OutlinePay 결제를 시작하지 못했습니다. 주문 금액이 원 단위 정수가 아"
+"닙니다. 상품 가격을 확인하세요."
 
-#. translators: 1: payment provider name such as CookiePay, 2: payment method name, 3: OutlinePay error code.
-#: includes/class-order-sync.php:204
+#. translators: 1: payment method name, 2: OutlinePay error code.
+#: includes/class-order-sync.php:203
 #, php-format
 msgid ""
-"%1$s payment by %2$s could not start (%3$s). The shopper saw an error and "
-"can try again."
+"An OutlinePay payment by %1$s could not start (%2$s). The shopper saw an "
+"error and can try again."
 msgstr ""
-"%2$s(으)로 %1$s 결제를 시작하지 못했습니다(%3$s). 구매자에게 오류가 표시되었"
-"으며 다시 시도할 수 있습니다."
+"%1$s(으)로 OutlinePay 결제를 시작하지 못했습니다(%2$s). 구매자에게 오류가 표"
+"시되었으며 다시 시도할 수 있습니다."
 
-#. translators: 1: payment provider name such as CookiePay, 2: payment id.
-#: includes/class-order-sync.php:232
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:231
 #, php-format
-msgid "%1$s payment %2$s started. Waiting for the shopper."
-msgstr "%1$s 결제 %2$s가 시작되었습니다. 구매자의 결제를 기다립니다."
+msgid "OutlinePay payment %s started. Waiting for the shopper."
+msgstr "OutlinePay 결제 %s가 시작되었습니다. 구매자의 결제를 기다립니다."
 
-#. translators: 1: payment provider name such as CookiePay, 2: payment id.
-#: includes/class-order-sync.php:235
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:234
 #, php-format
-msgid "%1$s payment %2$s expired. The shopper did not finish."
-msgstr "%1$s 결제 %2$s가 만료되었습니다. 구매자가 결제를 마치지 않았습니다."
+msgid "OutlinePay payment %s expired. The shopper did not finish."
+msgstr ""
+"OutlinePay 결제 %s가 만료되었습니다. 구매자가 결제를 마치지 않았습니다."
 
-#. translators: 1: payment provider name such as CookiePay, 2: payment id.
-#: includes/class-order-sync.php:238
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:237
 #, php-format
 msgid ""
-"%1$s payment %2$s: the shopper cancelled in the payment window. The order is "
-"still waiting for payment."
+"OutlinePay payment %s: the shopper cancelled in the payment window. The "
+"order is still waiting for payment."
 msgstr ""
-"%1$s 결제 %2$s: 구매자가 결제 창에서 결제를 취소했습니다. 주문은 아직 결제를 "
-"기다립니다."
+"OutlinePay 결제 %s: 구매자가 결제 창에서 결제를 취소했습니다. 주문은 아직 결"
+"제를 기다립니다."
 
-#. translators: 1: payment provider name such as CookiePay, 2: payment id.
-#: includes/class-order-sync.php:241
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:240
 #, php-format
 msgid ""
-"%1$s payment %2$s: the payment provider refused the payment in its window "
-"and did not say why. The order is still waiting for payment."
+"OutlinePay payment %s: the payment provider refused the payment in its "
+"window and did not say why. The order is still waiting for payment."
 msgstr ""
-"%1$s 결제 %2$s: 결제대행사가 결제 창에서 결제를 거절했으며 사유는 알려 주지 "
-"않았습니다. 주문은 아직 결제를 기다립니다."
+"OutlinePay 결제 %s: 결제대행사가 결제 창에서 결제를 거절했으며 사유는 알려 주"
+"지 않았습니다. 주문은 아직 결제를 기다립니다."
 
-#: includes/class-order-sync.php:490
+#: includes/class-order-sync.php:489
 msgid "(test mode)"
 msgstr "(테스트 모드)"
 
-#. translators: 1: payment provider name such as CookiePay, 2: payment id.
-#: includes/class-order-sync.php:519
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:518
 #, php-format
 msgid ""
-"%1$s payment %2$s was paid, but this order was already paid with another "
-"payment method. The shopper paid twice. To refund the %1$s payment, use your "
-"payment provider dashboard."
+"OutlinePay payment %s was paid, but this order was already paid with another "
+"payment method. The shopper paid twice. To refund the OutlinePay payment, "
+"use your payment provider dashboard."
 msgstr ""
-"%1$s 결제 %2$s가 완료되었지만 이 주문은 이미 다른 결제수단으로 결제되었습니"
-"다. 구매자가 두 번 결제했습니다. %1$s 결제를 환불하려면 결제대행사 관리 화면"
-"을 이용하십시오."
+"OutlinePay 결제 %s가 완료되었지만 이 주문은 이미 다른 결제수단으로 결제되었습"
+"니다. 구매자가 두 번 결제했습니다. OutlinePay 결제를 환불하려면 결제대행사 관"
+"리 화면을 이용하십시오."
 
-#. translators: 1: payment provider name such as CookiePay, 2: payment id.
-#: includes/class-order-sync.php:538
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:537
 #, php-format
-msgid "%1$s payment %2$s is paid."
-msgstr "%1$s 결제 %2$s가 완료되었습니다."
+msgid "OutlinePay payment %s is paid."
+msgstr "OutlinePay 결제 %s가 완료되었습니다."
 
-#. translators: 1: payment provider name such as CookiePay, 2: payment id.
-#: includes/class-order-sync.php:550
-#, php-format
-msgid ""
-"%1$s payment %2$s was made for this order number from another copy of this "
-"store, such as a staging site. It does not pay this order. Check it before "
-"shipping."
-msgstr ""
-"%1$s 결제 %2$s는 스테이징 사이트 같은 이 스토어의 다른 사본에서 같은 주문 번"
-"호로 결제되었습니다. 이 주문의 결제가 아닙니다. 발송 전에 확인하십시오."
-
-#. translators: 1: payment provider name such as CookiePay, 2: payment id.
-#: includes/class-order-sync.php:574
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:549
 #, php-format
 msgid ""
-"%1$s payment %2$s reports paid, but the amount or currency does not match "
-"this order. Check it before shipping."
+"OutlinePay payment %s was made for this order number from another copy of "
+"this store, such as a staging site. It does not pay this order. Check it "
+"before shipping."
 msgstr ""
-"%1$s 결제 %2$s가 완료로 보고되었지만 금액이나 통화가 이 주문과 다릅니다. 발"
-"송 전에 확인하십시오."
+"OutlinePay 결제 %s는 스테이징 사이트 같은 이 스토어의 다른 사본에서 같은 주"
+"문 번호로 결제되었습니다. 이 주문의 결제가 아닙니다. 발송 전에 확인하십시오."
 
-#: includes/class-order-sync.php:597
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:573
+#, php-format
+msgid ""
+"OutlinePay payment %s reports paid, but the amount or currency does not "
+"match this order. Check it before shipping."
+msgstr ""
+"OutlinePay 결제 %s가 완료로 보고되었지만 금액이나 통화가 이 주문과 다릅니다. "
+"발송 전에 확인하십시오."
+
+#: includes/class-order-sync.php:596
 msgid "OutlinePay issued a virtual account. Waiting for the deposit."
 msgstr "OutlinePay가 가상계좌를 발급했습니다. 입금을 기다립니다."
 
-#. translators: 1: payment provider name such as CookiePay, 2: payment id.
-#: includes/class-order-sync.php:613
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:612
 #, php-format
-msgid "%1$s payment %2$s expired before the deposit arrived."
-msgstr "%1$s 결제 %2$s가 입금 전에 만료되었습니다."
+msgid "OutlinePay payment %s expired before the deposit arrived."
+msgstr "OutlinePay 결제 %s가 입금 전에 만료되었습니다."
 
-#. translators: 1: payment provider name such as CookiePay, 2: payment id, 3: status such as failed or expired.
-#: includes/class-order-sync.php:628
+#. translators: 1: OutlinePay payment id, 2: status such as failed or expired.
+#: includes/class-order-sync.php:627
 #, php-format
-msgid "%1$s payment %2$s is %3$s. The order is waiting for payment."
-msgstr "%1$s 결제 %2$s의 상태는 %3$s입니다. 주문은 결제를 기다립니다."
+msgid "OutlinePay payment %1$s is %2$s. The order is waiting for payment."
+msgstr "OutlinePay 결제 %1$s의 상태는 %2$s입니다. 주문은 결제를 기다립니다."
 
-#. translators: 1: payment provider name such as CookiePay, 2: payment id.
-#: includes/class-order-sync.php:645
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:644
 #, php-format
 msgid ""
-"%1$s payment %2$s needs review: it was paid for a different amount than "
+"OutlinePay payment %s needs review: it was paid for a different amount than "
 "ordered. OutlinePay has been alerted. Do not ship until it is settled."
 msgstr ""
-"%1$s 결제 %2$s는 확인이 필요합니다. 주문 금액과 다른 금액이 결제되었습니다. "
-"OutlinePay에 알림이 갔습니다. 해결될 때까지 발송하지 마십시오."
+"OutlinePay 결제 %s는 확인이 필요합니다. 주문 금액과 다른 금액이 결제되었습니"
+"다. OutlinePay에 알림이 갔습니다. 해결될 때까지 발송하지 마십시오."
 
-#. translators: 1: payment provider name such as CookiePay, 2: payment id.
-#: includes/class-order-sync.php:660
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:659
 #, php-format
 msgid ""
-"%1$s payment %2$s is probably the shopper's real payment for this order. The "
-"earlier payment came from another copy of this store. Check both payments "
-"before you refund anything. The order stays on hold."
+"OutlinePay payment %s is probably the shopper's real payment for this order. "
+"The earlier payment came from another copy of this store. Check both "
+"payments before you refund anything. The order stays on hold."
 msgstr ""
-"%1$s 결제 %2$s는 이 주문에 대한 구매자의 실제 결제일 가능성이 높습니다. 앞선 "
-"결제는 이 스토어의 다른 사본에서 왔습니다. 환불하기 전에 두 결제를 모두 확인"
-"하십시오. 주문은 보류 상태로 유지됩니다."
+"OutlinePay 결제 %s는 이 주문에 대한 구매자의 실제 결제일 가능성이 높습니다. "
+"앞선 결제는 이 스토어의 다른 사본에서 왔습니다. 환불하기 전에 두 결제를 모두 "
+"확인하십시오. 주문은 보류 상태로 유지됩니다."
 
-#. translators: 1: payment provider name such as CookiePay, 2: payment id.
-#: includes/class-order-sync.php:671
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:670
 #, php-format
 msgid ""
-"%1$s payment %2$s was paid after this order was already paid. The shopper "
-"paid twice. OutlinePay has been alerted. Refund the second payment in your "
-"payment provider dashboard."
+"OutlinePay payment %s was paid after this order was already paid. The "
+"shopper paid twice. OutlinePay has been alerted. Refund the second payment "
+"in your payment provider dashboard."
 msgstr ""
-"%1$s 결제 %2$s는 이 주문이 이미 결제된 뒤에 결제되었습니다. 구매자가 두 번 결"
-"제했습니다. OutlinePay에 알림이 갔습니다. 두 번째 결제는 결제대행사 관리 화면"
-"에서 환불하십시오."
+"OutlinePay 결제 %s는 이 주문이 이미 결제된 뒤에 결제되었습니다. 구매자가 두 "
+"번 결제했습니다. OutlinePay에 알림이 갔습니다. 두 번째 결제는 결제대행사 관"
+"리 화면에서 환불하십시오."
 
-#. translators: 1: payment provider name such as CookiePay, 2: payment id.
-#: includes/class-order-sync.php:698
+#. translators: %s: OutlinePay payment id.
+#: includes/class-order-sync.php:697
 #, php-format
 msgid ""
-"The shopper chose another payment method for this order, but then paid %1$s "
-"payment %2$s. The payment method is set back to OutlinePay."
+"The shopper chose another payment method for this order, but then paid "
+"OutlinePay payment %s. The payment method is set back to OutlinePay."
 msgstr ""
-"구매자가 이 주문에 다른 결제수단을 선택한 뒤 %1$s 결제 %2$s를 완료했습니다. "
-"결제수단을 OutlinePay로 되돌렸습니다."
+"구매자가 이 주문에 다른 결제수단을 선택한 뒤 OutlinePay 결제 %s를 완료했습니"
+"다. 결제수단을 OutlinePay로 되돌렸습니다."
 
 #: includes/class-plugin.php:101
 msgid ""
@@ -1262,15 +1263,15 @@ msgstr ""
 "OutlinePay가 중복 결제 %2$s를 자동으로 취소했습니다. %1$s이 구매자에게 환불되"
 "었습니다. 이 주문의 결제는 그대로입니다."
 
-#. translators: 1: amount such as 5,000 won, 2: payment provider name such as CookiePay, 3: payment id.
+#. translators: 1: amount such as 5,000 won, 2: OutlinePay payment id.
 #: includes/class-refunds.php:418
 #, php-format
 msgid ""
-"%1$s of %2$s payment %3$s was refunded. That payment did not pay this order, "
-"so no refund is added to it."
+"%1$s of OutlinePay payment %2$s was refunded. That payment did not pay this "
+"order, so no refund is added to it."
 msgstr ""
-"%2$s 결제 %3$s에서 %1$s이 환불되었습니다. 그 결제는 이 주문의 결제가 아니므"
-"로 이 주문에는 환불이 추가되지 않습니다."
+"OutlinePay 결제 %2$s에서 %1$s이 환불되었습니다. 그 결제는 이 주문의 결제가 아"
+"니므로 이 주문에는 환불이 추가되지 않습니다."
 
 #. translators: 1: amount such as 5,000 won, 2: OutlinePay refund id.
 #: includes/class-refunds.php:483
@@ -1338,44 +1339,40 @@ msgid "The payment was refused. Try another card or payment method."
 msgstr ""
 "결제가 거절되었습니다. 다른 카드나 다른 결제수단으로 다시 시도하십시오."
 
-#. translators: %s: payment provider name, such as CookiePay.
-#: includes/class-self-check-watch.php:256
-#, php-format
-msgid "%s: a check needed to take payments is failing."
-msgstr "%s: 결제를 받는 데 필요한 점검이 실패했습니다."
+#: includes/class-self-check-watch.php:255
+msgid "OutlinePay: a check needed to take payments is failing."
+msgstr "OutlinePay: 결제를 받는 데 필요한 점검이 실패했습니다."
 
-#: includes/class-self-check-watch.php:257
+#: includes/class-self-check-watch.php:256
 msgid "Open the OutlinePay page to see what to do."
 msgstr "OutlinePay 페이지를 열어 조치 방법을 확인하십시오."
 
-#. translators: %s: payment provider name, such as CookiePay.
-#: includes/class-self-check-watch.php:260
-#, php-format
-msgid "%s: the self-check found a problem."
-msgstr "%s: 자체 점검에서 문제가 발견되었습니다."
+#: includes/class-self-check-watch.php:258
+msgid "OutlinePay's self-check found a problem."
+msgstr "OutlinePay 자체 점검에서 문제가 발견되었습니다."
 
-#: includes/class-self-check-watch.php:261
+#: includes/class-self-check-watch.php:259
 msgid "Open the OutlinePay page to fix it."
 msgstr "OutlinePay 페이지를 열어 문제를 해결하십시오."
 
-#: includes/class-self-check.php:1037
+#: includes/class-self-check.php:1043
 msgid "You"
 msgstr "스토어 운영자"
 
-#: includes/class-self-check.php:1039 includes/class-self-check.php:1046
-#: includes/class-self-check.php:1112 includes/class-settings.php:429
+#: includes/class-self-check.php:1045 includes/class-self-check.php:1052
+#: includes/class-self-check.php:1118 includes/class-settings.php:429
 msgid "Your payment provider"
 msgstr "결제대행사"
 
-#: includes/class-self-check.php:1043
+#: includes/class-self-check.php:1049
 msgid "Shopper"
 msgstr "구매자"
 
-#: includes/class-self-check.php:1063
+#: includes/class-self-check.php:1069
 msgid "The connection is saved on this site."
 msgstr "이 사이트에 연결 정보가 저장되어 있습니다."
 
-#: includes/class-self-check.php:1064
+#: includes/class-self-check.php:1070
 msgid ""
 "The saved connection is missing or can no longer be read. Disconnect, then "
 "connect again with a new code from your payment provider."
@@ -1383,17 +1380,17 @@ msgstr ""
 "저장된 연결 정보가 없거나 더 이상 읽을 수 없습니다. 연결을 해제한 뒤 결제대행"
 "사에서 받은 새 코드로 다시 연결하세요."
 
-#: includes/class-self-check.php:1067
+#: includes/class-self-check.php:1073
 msgid "The store is connected."
 msgstr "스토어가 연결되어 있습니다."
 
-#: includes/class-self-check.php:1070
+#: includes/class-self-check.php:1076
 msgid ""
 "This connection was turned off. Ask your payment provider for a new connect "
 "code."
 msgstr "이 연결이 해제되었습니다. 결제대행사에 새 연결 코드를 요청하세요."
 
-#: includes/class-self-check.php:1071
+#: includes/class-self-check.php:1077
 msgid ""
 "The store is not connected. Connect it with a code from your payment "
 "provider."
@@ -1401,12 +1398,12 @@ msgstr ""
 "스토어가 연결되어 있지 않습니다. 결제대행사에서 받은 코드로 연결하세요."
 
 #. translators: %s: milliseconds, such as 120.
-#: includes/class-self-check.php:1076
+#: includes/class-self-check.php:1082
 #, php-format
 msgid "OutlinePay answered in %s ms."
 msgstr "OutlinePay가 %s ms 만에 응답했습니다."
 
-#: includes/class-self-check.php:1081
+#: includes/class-self-check.php:1087
 msgid ""
 "This site could not reach OutlinePay. Check that the server can make "
 "outgoing HTTPS requests."
@@ -1414,7 +1411,7 @@ msgstr ""
 "이 사이트에서 OutlinePay에 연결할 수 없습니다. 서버가 외부로 HTTPS 요청을 보"
 "낼 수 있는지 확인하세요."
 
-#: includes/class-self-check.php:1084
+#: includes/class-self-check.php:1090
 msgid ""
 "OutlinePay refused this store's connection. Ask your payment provider for a "
 "new connect code."
@@ -1422,15 +1419,15 @@ msgstr ""
 "OutlinePay가 이 스토어의 연결을 거부했습니다. 결제대행사에 새 연결 코드를 요"
 "청하세요."
 
-#: includes/class-self-check.php:1086
+#: includes/class-self-check.php:1092
 msgid "OutlinePay could not answer the check. Try again in a few minutes."
 msgstr "OutlinePay가 점검에 응답하지 못했습니다. 몇 분 뒤에 다시 시도하세요."
 
-#: includes/class-self-check.php:1089
+#: includes/class-self-check.php:1095
 msgid "Background payment checks are scheduled."
 msgstr "백그라운드 결제 확인 작업이 예약되어 있습니다."
 
-#: includes/class-self-check.php:1090
+#: includes/class-self-check.php:1096
 msgid ""
 "Background payment checks are missing or late. Open WooCommerce > Status > "
 "Scheduled Actions and look for failed outlinepay actions."
@@ -1438,11 +1435,11 @@ msgstr ""
 "백그라운드 결제 확인 작업이 없거나 지연되고 있습니다. WooCommerce > 상태 > 예"
 "약된 작업에서 실패한 outlinepay 작업을 확인하세요."
 
-#: includes/class-self-check.php:1093
+#: includes/class-self-check.php:1099
 msgid "Scheduled tasks are running."
 msgstr "예약 작업이 실행되고 있습니다."
 
-#: includes/class-self-check.php:1094
+#: includes/class-self-check.php:1100
 msgid ""
 "WP-Cron is turned off and no scheduled task ran in the last 2 hours. Ask "
 "your host to run wp-cron.php from a server cron job."
@@ -1450,13 +1447,13 @@ msgstr ""
 "WP-Cron이 꺼져 있고 지난 2시간 동안 실행된 예약 작업이 없습니다. 호스팅 업체"
 "에 서버 크론으로 wp-cron.php를 실행해 달라고 요청하세요."
 
-#: includes/class-self-check.php:1097
+#: includes/class-self-check.php:1103
 msgid ""
 "The payment method list is up to date and at least one method shows at "
 "checkout."
 msgstr "결제수단 목록이 최신이며 결제 화면에 결제수단이 하나 이상 표시됩니다."
 
-#: includes/class-self-check.php:1100
+#: includes/class-self-check.php:1106
 msgid ""
 "No OutlinePay method shows at checkout. Turn one on under Payment methods on "
 "the OutlinePay page, or ask your payment provider to enable one."
@@ -1464,37 +1461,37 @@ msgstr ""
 "결제 화면에 표시되는 OutlinePay 결제수단이 없습니다. OutlinePay 페이지의 결제"
 "수단에서 하나 이상 켜거나, 결제대행사에 결제수단 활성화를 요청하세요."
 
-#: includes/class-self-check.php:1101
+#: includes/class-self-check.php:1107
 msgid "The payment method list was not refreshed in the last 2 hours."
 msgstr "지난 2시간 동안 결제수단 목록이 갱신되지 않았습니다."
 
 #. translators: %s: currency code such as KRW.
-#: includes/class-self-check.php:1106
+#: includes/class-self-check.php:1112
 #, php-format
 msgid "The store currency is %s."
 msgstr "스토어 통화가 %s입니다."
 
 #. translators: 1: store currency code such as USD, 2: payment provider name, 3: currency codes the provider takes, such as KRW.
-#: includes/class-self-check.php:1110
+#: includes/class-self-check.php:1116
 #, php-format
 msgid "The store currency is %1$s. %2$s takes payments in %3$s only."
 msgstr "스토어 통화가 %1$s입니다. %2$s에서는 %3$s 결제만 받습니다."
 
-#: includes/class-self-check.php:1117
+#: includes/class-self-check.php:1123
 msgid "This site is at the address the store was connected at."
 msgstr "이 사이트는 스토어를 연결한 주소에 있습니다."
 
-#: includes/class-self-check.php:1118
+#: includes/class-self-check.php:1124
 msgid "This site looks like a copy of your store. OutlinePay is off here."
 msgstr ""
 "이 사이트는 스토어의 복사본으로 보입니다. 여기서는 OutlinePay가 꺼져 있습니"
 "다."
 
-#: includes/class-self-check.php:1121
+#: includes/class-self-check.php:1127
 msgid "PHP, WordPress and WooCommerce meet this plugin's requirements."
 msgstr "PHP, WordPress, WooCommerce가 이 플러그인의 요구 사항을 충족합니다."
 
-#: includes/class-self-check.php:1122
+#: includes/class-self-check.php:1128
 msgid ""
 "PHP, WordPress or WooCommerce is older than this plugin needs, or "
 "WooCommerce did not register its order storage support."
@@ -1502,11 +1499,11 @@ msgstr ""
 "PHP, WordPress 또는 WooCommerce 버전이 이 플러그인의 요구 사항보다 낮거나, "
 "WooCommerce에 주문 저장소 지원이 등록되지 않았습니다."
 
-#: includes/class-self-check.php:1125
+#: includes/class-self-check.php:1131
 msgid "OutlinePay reached this store's payment update address."
 msgstr "OutlinePay가 이 스토어의 결제 알림 주소에 연결했습니다."
 
-#: includes/class-self-check.php:1126
+#: includes/class-self-check.php:1132
 msgid ""
 "OutlinePay could not reach this store's payment update address. Check that "
 "the site is online and that no firewall or security plugin blocks /wp-json/"
@@ -1516,7 +1513,7 @@ msgstr ""
 "가능한지, 방화벽이나 보안 플러그인이 /wp-json/outlinepay/v1/callback을 막고 "
 "있지 않은지 확인하세요."
 
-#: includes/class-self-check.php:1126
+#: includes/class-self-check.php:1132
 msgid ""
 "Until this passes, orders paid by shoppers who close the window update "
 "within 15 minutes instead of right away."
@@ -1524,28 +1521,28 @@ msgstr ""
 "이 점검을 통과하기 전까지는 구매자가 결제한 뒤 결제 창을 닫으면 주문이 바로 "
 "갱신되지 않고 15분 안에 갱신됩니다."
 
-#: includes/class-self-check.php:1129
+#: includes/class-self-check.php:1135
 msgid "This store talked to OutlinePay in the last 24 hours."
 msgstr "지난 24시간 안에 이 스토어가 OutlinePay와 통신했습니다."
 
-#: includes/class-self-check.php:1130
+#: includes/class-self-check.php:1136
 msgid "This store has not talked to OutlinePay in the last 24 hours."
 msgstr "지난 24시간 동안 이 스토어가 OutlinePay와 통신하지 않았습니다."
 
-#: includes/class-self-check.php:1133
+#: includes/class-self-check.php:1139
 msgid "Every payment update in the last 7 days reached the store."
 msgstr "지난 7일 동안의 결제 알림이 모두 스토어에 전달되었습니다."
 
-#: includes/class-self-check.php:1134
+#: includes/class-self-check.php:1140
 msgid ""
 "Some payment updates in the last 7 days could not be delivered to the store."
 msgstr "지난 7일 동안 일부 결제 알림을 스토어에 전달하지 못했습니다."
 
-#: includes/class-self-check.php:1137
+#: includes/class-self-check.php:1143
 msgid "No open problems in the last 7 days."
 msgstr "지난 7일 동안 해결되지 않은 문제가 없습니다."
 
-#: includes/class-self-check.php:1140
+#: includes/class-self-check.php:1146
 msgid ""
 "OutlinePay recorded problems in the last 7 days that are not resolved yet. "
 "Send the diagnostic code to your payment provider."
@@ -1553,17 +1550,17 @@ msgstr ""
 "OutlinePay가 지난 7일 동안 기록한 문제 중 아직 해결되지 않은 것이 있습니다. "
 "진단 코드를 결제대행사에 보내십시오."
 
-#: includes/class-self-check.php:1141
+#: includes/class-self-check.php:1147
 msgid ""
 "OutlinePay recorded problems in the last 7 days that are not resolved yet."
 msgstr ""
 "OutlinePay가 지난 7일 동안 기록한 문제 중 아직 해결되지 않은 것이 있습니다."
 
-#: includes/class-self-check.php:1144
+#: includes/class-self-check.php:1150
 msgid "Passed."
 msgstr "통과했습니다."
 
-#: includes/class-self-check.php:1145
+#: includes/class-self-check.php:1151
 msgid "Failed."
 msgstr "실패했습니다."
 

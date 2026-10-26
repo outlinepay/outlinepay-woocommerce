@@ -173,35 +173,34 @@ final class Order_Sync {
 		if ( in_array( $key, $noted, true ) ) {
 			return false;
 		}
-		// The names are read inside each note's closure, so they come out in
+		// Both names are read inside each note's closure, so they come out in
 		// the store's language with the rest of the note (see Notes::write).
 		$name     = fn () => Settings::method_name( $method );
 		$provider = fn () => Settings::provider_display_name();
-		$brand    = fn () => Brand::site_name();
 		switch ( $reason ) {
 			case 'provider_error':
-				/* translators: 1: payment provider name such as CookiePay, 2: payment method name, 3: payment provider name. */
-				$text = fn () => sprintf( __( '%1$s payment by %2$s could not start: %3$s returned an error. The shopper saw an error and can try again.', 'outlinepay-for-woocommerce' ), $brand(), $name(), $provider() );
+				/* translators: 1: payment method name, 2: payment provider name such as CookiePay. */
+				$text = fn () => sprintf( __( 'An OutlinePay payment by %1$s could not start: %2$s returned an error. The shopper saw an error and can try again.', 'outlinepay-for-woocommerce' ), $name(), $provider() );
 				break;
 			case 'unreachable':
-				/* translators: 1: payment provider name such as CookiePay, 2: payment method name. */
-				$text = fn () => sprintf( __( '%1$s payment by %2$s could not start: this site could not reach OutlinePay. The shopper saw an error and can try again.', 'outlinepay-for-woocommerce' ), $brand(), $name() );
+				/* translators: %s: payment method name. */
+				$text = fn () => sprintf( __( 'An OutlinePay payment by %s could not start: this site could not reach OutlinePay. The shopper saw an error and can try again.', 'outlinepay-for-woocommerce' ), $name() );
 				break;
 			case 'method_not_enabled':
-				/* translators: 1: payment provider name such as CookiePay, 2: payment method name, 3: payment provider name. */
-				$text = fn () => sprintf( __( '%1$s payment by %2$s could not start: %3$s has not enabled this method for the store. The shopper was asked to choose another method.', 'outlinepay-for-woocommerce' ), $brand(), $name(), $provider() );
+				/* translators: 1: payment method name, 2: payment provider name such as CookiePay. */
+				$text = fn () => sprintf( __( 'An OutlinePay payment by %1$s could not start: %2$s has not enabled this method for the store. The shopper was asked to choose another method.', 'outlinepay-for-woocommerce' ), $name(), $provider() );
 				break;
 			case 'bad_answer':
-				/* translators: 1: payment provider name such as CookiePay, 2: payment method name. */
-				$text = fn () => sprintf( __( '%1$s payment by %2$s could not start: OutlinePay\'s answer could not be used. The shopper saw an error and can try again.', 'outlinepay-for-woocommerce' ), $brand(), $name() );
+				/* translators: %s: payment method name. */
+				$text = fn () => sprintf( __( 'An OutlinePay payment by %s could not start: OutlinePay\'s answer could not be used. The shopper saw an error and can try again.', 'outlinepay-for-woocommerce' ), $name() );
 				break;
 			case 'not_whole_won':
-				/* translators: 1: payment provider name such as CookiePay, 2: payment method name. */
-				$text = fn () => sprintf( __( '%1$s payment by %2$s could not start: the order total is not a whole number of won. Check the product prices.', 'outlinepay-for-woocommerce' ), $brand(), $name() );
+				/* translators: %s: payment method name. */
+				$text = fn () => sprintf( __( 'An OutlinePay payment by %s could not start: the order total is not a whole number of won. Check the product prices.', 'outlinepay-for-woocommerce' ), $name() );
 				break;
 			default:
-				/* translators: 1: payment provider name such as CookiePay, 2: payment method name, 3: OutlinePay error code. */
-				$text = fn () => sprintf( __( '%1$s payment by %2$s could not start (%3$s). The shopper saw an error and can try again.', 'outlinepay-for-woocommerce' ), $brand(), $name(), $reason );
+				/* translators: 1: payment method name, 2: OutlinePay error code. */
+				$text = fn () => sprintf( __( 'An OutlinePay payment by %1$s could not start (%2$s). The shopper saw an error and can try again.', 'outlinepay-for-woocommerce' ), $name(), $reason );
 		}
 		Notes::write( $order, $text );
 		$noted[] = $key;
@@ -228,17 +227,17 @@ final class Order_Sync {
 			return false;
 		}
 		if ( 'started' === $event ) {
-			/* translators: 1: payment provider name such as CookiePay, 2: payment id. */
-			Notes::write( $order, fn () => sprintf( __( '%1$s payment %2$s started. Waiting for the shopper.', 'outlinepay-for-woocommerce' ), Brand::site_name(), $payment_id ) );
+			/* translators: %s: OutlinePay payment id. */
+			Notes::write( $order, fn () => sprintf( __( 'OutlinePay payment %s started. Waiting for the shopper.', 'outlinepay-for-woocommerce' ), $payment_id ) );
 		} elseif ( 'expired' === $event ) {
-			/* translators: 1: payment provider name such as CookiePay, 2: payment id. */
-			Notes::write( $order, fn () => sprintf( __( '%1$s payment %2$s expired. The shopper did not finish.', 'outlinepay-for-woocommerce' ), Brand::site_name(), $payment_id ) );
+			/* translators: %s: OutlinePay payment id. */
+			Notes::write( $order, fn () => sprintf( __( 'OutlinePay payment %s expired. The shopper did not finish.', 'outlinepay-for-woocommerce' ), $payment_id ) );
 		} elseif ( 'window_cancelled' === $event ) {
-			/* translators: 1: payment provider name such as CookiePay, 2: payment id. */
-			Notes::write( $order, fn () => self::note( sprintf( __( '%1$s payment %2$s: the shopper cancelled in the payment window. The order is still waiting for payment.', 'outlinepay-for-woocommerce' ), Brand::site_name(), $payment_id ), is_array( $payment ) ? $payment : array() ) );
+			/* translators: %s: OutlinePay payment id. */
+			Notes::write( $order, fn () => self::note( sprintf( __( 'OutlinePay payment %s: the shopper cancelled in the payment window. The order is still waiting for payment.', 'outlinepay-for-woocommerce' ), $payment_id ), is_array( $payment ) ? $payment : array() ) );
 		} elseif ( 'window_failed' === $event ) {
-			/* translators: 1: payment provider name such as CookiePay, 2: payment id. */
-			Notes::write( $order, fn () => self::note( sprintf( __( '%1$s payment %2$s: the payment provider refused the payment in its window and did not say why. The order is still waiting for payment.', 'outlinepay-for-woocommerce' ), Brand::site_name(), $payment_id ), is_array( $payment ) ? $payment : array() ) );
+			/* translators: %s: OutlinePay payment id. */
+			Notes::write( $order, fn () => self::note( sprintf( __( 'OutlinePay payment %s: the payment provider refused the payment in its window and did not say why. The order is still waiting for payment.', 'outlinepay-for-woocommerce' ), $payment_id ), is_array( $payment ) ? $payment : array() ) );
 		} else {
 			return false;
 		}
@@ -515,8 +514,8 @@ final class Order_Sync {
 						Notes::write(
 							$order,
 							fn () => self::note(
-								/* translators: 1: payment provider name such as CookiePay, 2: payment id. */
-								sprintf( __( '%1$s payment %2$s was paid, but this order was already paid with another payment method. The shopper paid twice. To refund the %1$s payment, use your payment provider dashboard.', 'outlinepay-for-woocommerce' ), Brand::site_name(), $payment_id ),
+								/* translators: %s: OutlinePay payment id. */
+								sprintf( __( 'OutlinePay payment %s was paid, but this order was already paid with another payment method. The shopper paid twice. To refund the OutlinePay payment, use your payment provider dashboard.', 'outlinepay-for-woocommerce' ), $payment_id ),
 								$payment
 							)
 						);
@@ -534,8 +533,8 @@ final class Order_Sync {
 				Notes::write(
 					$order,
 					fn () => self::note(
-						/* translators: 1: payment provider name such as CookiePay, 2: payment id. */
-						sprintf( __( '%1$s payment %2$s is paid.', 'outlinepay-for-woocommerce' ), Brand::site_name(), $payment_id ),
+						/* translators: %s: OutlinePay payment id. */
+						sprintf( __( 'OutlinePay payment %s is paid.', 'outlinepay-for-woocommerce' ), $payment_id ),
 						$payment
 					)
 				);
@@ -546,8 +545,8 @@ final class Order_Sync {
 				Logger::warning( 'Payment from another copy of this store', $context );
 				$note = Notes::text(
 					fn () => self::note(
-						/* translators: 1: payment provider name such as CookiePay, 2: payment id. */
-						sprintf( __( '%1$s payment %2$s was made for this order number from another copy of this store, such as a staging site. It does not pay this order. Check it before shipping.', 'outlinepay-for-woocommerce' ), Brand::site_name(), $payment_id ),
+						/* translators: %s: OutlinePay payment id. */
+						sprintf( __( 'OutlinePay payment %s was made for this order number from another copy of this store, such as a staging site. It does not pay this order. Check it before shipping.', 'outlinepay-for-woocommerce' ), $payment_id ),
 						$payment
 					)
 				);
@@ -570,8 +569,8 @@ final class Order_Sync {
 					fn () => $order->update_status(
 						'on-hold',
 						self::note(
-							/* translators: 1: payment provider name such as CookiePay, 2: payment id. */
-							sprintf( __( '%1$s payment %2$s reports paid, but the amount or currency does not match this order. Check it before shipping.', 'outlinepay-for-woocommerce' ), Brand::site_name(), $payment_id ),
+							/* translators: %s: OutlinePay payment id. */
+							sprintf( __( 'OutlinePay payment %s reports paid, but the amount or currency does not match this order. Check it before shipping.', 'outlinepay-for-woocommerce' ), $payment_id ),
 							$payment
 						)
 					)
@@ -609,8 +608,8 @@ final class Order_Sync {
 						fn () => $order->update_status(
 							'pending',
 							self::note(
-								/* translators: 1: payment provider name such as CookiePay, 2: payment id. */
-								sprintf( __( '%1$s payment %2$s expired before the deposit arrived.', 'outlinepay-for-woocommerce' ), Brand::site_name(), $payment_id ),
+								/* translators: %s: OutlinePay payment id. */
+								sprintf( __( 'OutlinePay payment %s expired before the deposit arrived.', 'outlinepay-for-woocommerce' ), $payment_id ),
 								$payment
 							)
 						)
@@ -624,8 +623,8 @@ final class Order_Sync {
 				Notes::write(
 					$order,
 					fn () => self::note(
-						/* translators: 1: payment provider name such as CookiePay, 2: payment id, 3: status such as failed or expired. */
-						sprintf( __( '%1$s payment %2$s is %3$s. The order is waiting for payment.', 'outlinepay-for-woocommerce' ), Brand::site_name(), $payment_id, $payment['status'] ),
+						/* translators: 1: OutlinePay payment id, 2: status such as failed or expired. */
+						sprintf( __( 'OutlinePay payment %1$s is %2$s. The order is waiting for payment.', 'outlinepay-for-woocommerce' ), $payment_id, $payment['status'] ),
 						$payment
 					)
 				);
@@ -641,8 +640,8 @@ final class Order_Sync {
 					fn () => $order->update_status(
 						'on-hold',
 						self::note(
-							/* translators: 1: payment provider name such as CookiePay, 2: payment id. */
-							sprintf( __( '%1$s payment %2$s needs review: it was paid for a different amount than ordered. OutlinePay has been alerted. Do not ship until it is settled.', 'outlinepay-for-woocommerce' ), Brand::site_name(), $payment_id ),
+							/* translators: %s: OutlinePay payment id. */
+							sprintf( __( 'OutlinePay payment %s needs review: it was paid for a different amount than ordered. OutlinePay has been alerted. Do not ship until it is settled.', 'outlinepay-for-woocommerce' ), $payment_id ),
 							$payment
 						)
 					)
@@ -656,8 +655,8 @@ final class Order_Sync {
 					Notes::write(
 						$order,
 						fn () => self::note(
-							/* translators: 1: payment provider name such as CookiePay, 2: payment id. */
-							sprintf( __( '%1$s payment %2$s is probably the shopper\'s real payment for this order. The earlier payment came from another copy of this store. Check both payments before you refund anything. The order stays on hold.', 'outlinepay-for-woocommerce' ), Brand::site_name(), $payment_id ),
+							/* translators: %s: OutlinePay payment id. */
+							sprintf( __( 'OutlinePay payment %s is probably the shopper\'s real payment for this order. The earlier payment came from another copy of this store. Check both payments before you refund anything. The order stays on hold.', 'outlinepay-for-woocommerce' ), $payment_id ),
 							$payment
 						)
 					);
@@ -667,8 +666,8 @@ final class Order_Sync {
 				Notes::write(
 					$order,
 					fn () => self::note(
-						/* translators: 1: payment provider name such as CookiePay, 2: payment id. */
-						sprintf( __( '%1$s payment %2$s was paid after this order was already paid. The shopper paid twice. OutlinePay has been alerted. Refund the second payment in your payment provider dashboard.', 'outlinepay-for-woocommerce' ), Brand::site_name(), $payment_id ),
+						/* translators: %s: OutlinePay payment id. */
+						sprintf( __( 'OutlinePay payment %s was paid after this order was already paid. The shopper paid twice. OutlinePay has been alerted. Refund the second payment in your payment provider dashboard.', 'outlinepay-for-woocommerce' ), $payment_id ),
 						$payment
 					)
 				);
@@ -694,8 +693,8 @@ final class Order_Sync {
 		Notes::write(
 			$order,
 			fn () => self::note(
-				/* translators: 1: payment provider name such as CookiePay, 2: payment id. */
-				sprintf( __( 'The shopper chose another payment method for this order, but then paid %1$s payment %2$s. The payment method is set back to OutlinePay.', 'outlinepay-for-woocommerce' ), Brand::site_name(), (string) $payment['id'] ),
+				/* translators: %s: OutlinePay payment id. */
+				sprintf( __( 'The shopper chose another payment method for this order, but then paid OutlinePay payment %s. The payment method is set back to OutlinePay.', 'outlinepay-for-woocommerce' ), (string) $payment['id'] ),
 				$payment
 			)
 		);

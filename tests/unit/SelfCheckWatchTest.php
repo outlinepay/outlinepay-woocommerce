@@ -421,17 +421,17 @@ class SelfCheckWatchTest extends TestCase {
 		$this->assertSame( '', $this->notice(), 'cleared by a passing run' );
 	}
 
-	public function test_the_notices_carry_the_provider_name_once_it_is_known() {
+	public function test_the_notices_say_outlinepay_with_a_brand() {
 		$this->options[ Settings::OPTION_INSTALLATION ]['provider'] = 'cookiepay';
-		$this->options[ Settings::OPTION_INSTALLATION ]['brand']    = array( 'name' => 'CookiePay<b>' );
+		$this->options[ Settings::OPTION_INSTALLATION ]['brand']    = array( 'name' => 'CookiePay' );
 		$this->facts['currency'] = 'USD';
 		Self_Check_Watch::record_local();
 		$html = $this->notice();
-		$this->assertStringContainsString( 'CookiePay&lt;b&gt;: a check needed to take payments is failing.', $html );
-		$this->assertStringContainsString( 'Open the OutlinePay page to see what to do.', $html, 'the menu entry is still OutlinePay' );
+		$this->assertStringContainsString( 'OutlinePay: a check needed to take payments is failing.', $html );
+		$this->assertStringNotContainsString( 'CookiePay', $html );
 
 		$this->options[ Self_Check::OPTION_LAST ] = Self_Check::offline( array( Self_Check::check( 'methods_fresh', false, 'store', array( 'problem' => 'stale' ) ) ), 'page', self::NOW );
-		$this->assertStringContainsString( 'CookiePay&lt;b&gt;: the self-check found a problem.', $this->notice() );
+		$this->assertStringContainsString( 'OutlinePay&#039;s self-check found a problem.', $this->notice() );
 	}
 
 	public function test_a_run_that_reaches_outlinepay_saves_the_installation_record_with_its_brand() {

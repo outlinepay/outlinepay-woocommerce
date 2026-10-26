@@ -228,25 +228,24 @@ class BrandTest extends TestCase {
 		$this->assertSame( 'Get paid through your preferred local payment providers.', $gateway->method_description );
 	}
 
-	public function test_order_notes_carry_the_brand_name() {
+	public function test_order_notes_keep_outlinepay_with_a_brand() {
 		$this->brand( self::full() );
 		$order = new \WC_Order( 42 );
 		Order_Sync::note_attempt( $order, 'ppay_test1', 'started' );
 		Order_Sync::note_refused( $order, 'unreachable', 'card' );
 		$this->assertSame(
 			array(
-				'CookiePay payment ppay_test1 started. Waiting for the shopper.',
-				'CookiePay payment by Credit or debit card could not start: this site could not reach OutlinePay. The shopper saw an error and can try again.',
+				'OutlinePay payment ppay_test1 started. Waiting for the shopper.',
+				'An OutlinePay payment by Credit or debit card could not start: this site could not reach OutlinePay. The shopper saw an error and can try again.',
 			),
 			$order->notes
 		);
 	}
 
-	public function test_order_notes_on_a_korean_site_use_the_korean_name() {
+	public function test_a_note_that_names_the_provider_uses_the_brand_name() {
 		$this->brand( self::full() );
-		Functions\when( 'get_locale' )->justReturn( 'ko_KR' );
 		$order = new \WC_Order( 42 );
-		Order_Sync::note_attempt( $order, 'ppay_test1', 'expired' );
-		$this->assertSame( array( '쿠키페이 payment ppay_test1 expired. The shopper did not finish.' ), $order->notes, 'the translation puts the name in Korean text' );
+		Order_Sync::note_refused( $order, 'provider_error', 'card' );
+		$this->assertSame( array( 'An OutlinePay payment by Credit or debit card could not start: CookiePay returned an error. The shopper saw an error and can try again.' ), $order->notes );
 	}
 }

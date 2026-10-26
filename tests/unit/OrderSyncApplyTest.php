@@ -153,7 +153,7 @@ class OrderSyncApplyTest extends TestCase {
 		);
 		$korean = array(
 			'Order status changed from %1$s to %2$s.' => '주문 상태가 %1$s에서 %2$s(으)로 변경되었습니다.',
-			'%1$s payment %2$s reports paid, but the amount or currency does not match this order. Check it before shipping.' => 'KO %2$s',
+			'OutlinePay payment %s reports paid, but the amount or currency does not match this order. Check it before shipping.' => 'KO %s',
 		);
 		Functions\when( '__' )->alias(
 			static function ( $text ) use ( &$locales, $korean ) {
