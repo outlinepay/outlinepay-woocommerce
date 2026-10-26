@@ -330,6 +330,7 @@ final class Self_Check {
 	/**
 	 * GET /installation, timed. A network failure is the store's to fix, a
 	 * refused token the provider's (a new connect code), anything else ours.
+	 * A connected answer is saved as the installation record.
 	 *
 	 * @param Api_Client $client Client with a short timeout.
 	 * @return array array( 'check' => check, 'status' => installation status or null ).
@@ -347,6 +348,11 @@ final class Self_Check {
 			);
 		}
 		$elapsed = (int) round( ( microtime( true ) - $started ) * 1000 );
+		if ( is_array( $installation ) && isset( $installation['status'] ) && 'connected' === $installation['status'] ) {
+			// The same record the OutlinePay page saves. The daily run keeps it
+			// fresh, so a brand change reaches stores whose page nobody opens.
+			Settings::save_installation( $installation );
+		}
 		return array(
 			'check'  => self::check(
 				'api_reachable',

@@ -36,6 +36,9 @@ class SelfCheckWatchTest extends TestCase {
 	/** @var array Rows the fake POST /self_checks answer carries. */
 	private $server_rows = array();
 
+	/** @var array|null What the fake GET /installation answers, null for a network failure. */
+	private $installation_answer = array( 'status' => 'connected' );
+
 	protected function setUp(): void {
 		parent::setUp();
 		Functions\stubTranslationFunctions();
@@ -116,7 +119,8 @@ class SelfCheckWatchTest extends TestCase {
 				'side' => 'store',
 			),
 		);
-		$transport         = static function ( $method, $url ) use ( &$requests, &$rows ) {
+		$answer            = &$this->installation_answer;
+		$transport         = static function ( $method, $url ) use ( &$requests, &$rows, &$answer ) {
 			$requests[] = $method . ' ' . $url;
 			if ( false !== strpos( $url, '/self_checks' ) ) {
 				return array(
@@ -129,9 +133,12 @@ class SelfCheckWatchTest extends TestCase {
 					),
 				);
 			}
+			if ( null === $answer ) {
+				throw new \OutlinePay\WooCommerce\Api_Error( 0, 'network_error', 'unreachable' );
+			}
 			return array(
 				'status' => 200,
-				'body'   => json_encode( array( 'status' => 'connected' ) ),
+				'body'   => json_encode( $answer ),
 			);
 		};
 		Self_Check_Watch::set_self_check(
@@ -425,6 +432,34 @@ class SelfCheckWatchTest extends TestCase {
 
 		$this->options[ Self_Check::OPTION_LAST ] = Self_Check::offline( array( Self_Check::check( 'methods_fresh', false, 'store', array( 'problem' => 'stale' ) ) ), 'page', self::NOW );
 		$this->assertStringContainsString( 'CookiePay&lt;b&gt;: the self-check found a problem.', $this->notice() );
+	}
+
+	public function test_a_run_that_reaches_outlinepay_saves_the_installation_record_with_its_brand() {
+		$brand                     = array( 'name' => 'CookiePay', 'logo_url' => 'https://api.example.test/brands/cookiepay.png' );
+		$this->installation_answer = array( 'id' => 'inst_test', 'status' => 'connected', 'provider' => 'cookiepay', 'brand' => $brand, 'token' => 'olp_it_never_kept' );
+		Self_Check_Watch::run_now();
+		$this->assertSame( 1, $this->posted_runs() );
+		$this->assertSame( $brand, $this->options[ Settings::OPTION_INSTALLATION ]['brand'] );
+		$this->assertArrayNotHasKey( 'token', $this->options[ Settings::OPTION_INSTALLATION ] );
+	}
+
+	public function test_a_run_without_a_connected_answer_leaves_the_record_alone() {
+		$before = $this->options[ Settings::OPTION_INSTALLATION ];
+
+		// The hourly local record calls nothing.
+		$this->installation_answer = array( 'status' => 'connected', 'brand' => array( 'name' => 'Other' ) );
+		Self_Check_Watch::record_local();
+		$this->assertSame( $before, $this->options[ Settings::OPTION_INSTALLATION ] );
+
+		// OutlinePay not reached: an offline result, nothing saved.
+		$this->installation_answer = null;
+		Self_Check_Watch::run_now();
+		$this->assertSame( $before, $this->options[ Settings::OPTION_INSTALLATION ] );
+
+		// A revoked answer is not saved over the record.
+		$this->installation_answer = array( 'status' => 'revoked', 'brand' => array( 'name' => 'Other' ) );
+		Self_Check_Watch::run_now();
+		$this->assertSame( $before, $this->options[ Settings::OPTION_INSTALLATION ] );
 	}
 
 	public function test_the_notice_is_not_shown_on_the_outlinepay_page() {
