@@ -14,6 +14,8 @@ use OutlinePay\WooCommerce\Return_Handler;
  */
 class GatewayLaunchTest extends RefundTestCase {
 
+	use ContractsFixture;
+
 	/** @var Gateway */
 	private $gateway;
 
@@ -379,5 +381,74 @@ class GatewayLaunchTest extends RefundTestCase {
 
 		$this->assertCount( 2, $this->order->notes );
 		$this->assertSame( 'OutlinePay payment ppay_new started. Waiting for the shopper.', $this->order->notes[1] );
+	}
+
+	public function test_the_payment_names_the_pg_chosen_for_the_method_contract() {
+		$this->options['outlinepay_methods'] = self::methods_option();
+		$this->options['outlinepay_pg']      = array( '3' => '토스페이' );
+		$this->answers[]                     = self::opened( array( 'window' => self::form_window() ) );
+
+		$this->gateway->process_payment( 42 );
+
+		$this->assertSame( '토스페이', $this->requests[0]['body']['pg'] );
+	}
+
+	public function test_the_payment_names_the_first_pg_when_none_was_chosen() {
+		$this->options['outlinepay_methods'] = self::methods_option();
+		$this->gateway->outlinepay_method    = 'foreign_card_krw';
+		$this->answers[]                     = self::opened( array( 'window' => self::form_window() ) );
+
+		$this->gateway->process_payment( 42 );
+
+		$this->assertSame( '키움페이', $this->requests[0]['body']['pg'] );
+	}
+
+	public function test_an_unnamed_pg_is_sent_as_an_empty_string() {
+		$option                                 = self::methods_option();
+		$option['contracts'][1]['pgs'][0]['pg'] = '';
+		$this->options['outlinepay_methods']    = $option;
+		$this->gateway->outlinepay_method       = 'foreign_card_krw';
+		$this->answers[]                        = self::opened( array( 'window' => self::form_window() ) );
+
+		$this->gateway->process_payment( 42 );
+
+		$this->assertArrayHasKey( 'pg', $this->requests[0]['body'] );
+		$this->assertSame( '', $this->requests[0]['body']['pg'] );
+	}
+
+	public function test_without_contracts_the_payment_sends_no_pg() {
+		$this->answers[] = self::opened( array( 'window' => self::form_window() ) );
+
+		$this->gateway->process_payment( 42 );
+
+		$this->assertArrayNotHasKey( 'pg', $this->requests[0]['body'] );
+	}
+
+	public function test_a_refused_pg_refreshes_the_methods_like_a_method_not_enabled() {
+		$queued = array();
+		Functions\when( 'as_has_scheduled_action' )->justReturn( false );
+		Functions\when( 'as_enqueue_async_action' )->alias(
+			static function ( $hook ) use ( &$queued ) {
+				$queued[] = $hook;
+				return 1;
+			}
+		);
+		$this->options['outlinepay_methods'] = self::methods_option();
+		$this->answers[]                     = self::json(
+			400,
+			array(
+				'error' => array(
+					'code'    => 'invalid_request',
+					'param'   => 'pg',
+					'message' => 'Unknown pg.',
+				),
+			)
+		);
+
+		$this->gateway->process_payment( 42 );
+
+		$this->assertSame( array( \OutlinePay\WooCommerce\Scheduler::HOOK_METHODS_NOW ), $queued );
+		$this->assertSame( array( 'This payment method is not available right now. Choose another method.' ), $this->notices );
+		$this->assertStringContainsString( 'has not enabled this method for the store.', $this->order->notes[0] );
 	}
 }

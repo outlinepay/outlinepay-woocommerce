@@ -7,6 +7,8 @@ use OutlinePay\WooCommerce\Api_Error;
 
 class ApiClientTest extends TestCase {
 
+	use ContractsFixture;
+
 	const TOKEN = 'olp_it_test_SECRETTOKEN1234567890';
 	const BASE  = 'https://api.example.test/plugin/v1';
 
@@ -295,5 +297,108 @@ class ApiClientTest extends TestCase {
 			$this->assertSame( 'invalid_refund_id', $error->get_error_code() );
 		}
 		$this->assertSame( array(), $this->requests );
+	}
+
+	public function test_the_method_catalog_groups_methods_by_contract_and_payment_gateway() {
+		$catalog = $this->client( array( self::json( 200, self::methods_answer() ) ) )->get_method_catalog();
+
+		$this->assertCount( 6, $catalog['methods'] );
+		$this->assertSame( array( 3, 7 ), array_column( $catalog['contracts'], 'contract_type' ) );
+		$this->assertSame( '인증 일반', $catalog['contracts'][0]['label_ko'] );
+		$this->assertSame( array( '키움페이', '토스페이' ), array_column( $catalog['contracts'][0]['pgs'], 'pg' ) );
+		$this->assertSame( array( 'card', 'kakaopay' ), array_column( $catalog['contracts'][0]['pgs'][1]['methods'], 'method' ) );
+		$this->assertSame(
+			array(
+				'method'   => 'foreign_card_krw',
+				'label_ko' => '해외카드 (원화 결제)',
+			),
+			$catalog['contracts'][1]['pgs'][0]['methods'][0]
+		);
+	}
+
+	public function test_an_answer_without_contracts_keeps_the_flat_list_and_no_contracts() {
+		$answer = self::methods_answer();
+		unset( $answer['contracts'] );
+		$client = $this->client( array( self::json( 200, $answer ), self::json( 200, $answer ) ) );
+
+		$catalog = $client->get_method_catalog();
+		$this->assertNull( $catalog['contracts'] );
+		$this->assertCount( 6, $catalog['methods'] );
+		$this->assertSame( $catalog['methods'], $client->get_methods(), 'get_methods still answers the flat list' );
+	}
+
+	public function test_junk_in_the_contracts_is_dropped() {
+		$contracts = Api_Client::parse_contracts(
+			array(
+				'junk',
+				array( 'label_ko' => 'no type' ),
+				array(
+					'contract_type' => 0,
+					'pgs'           => array( array( 'pg' => 'A', 'methods' => array( array( 'method' => 'card' ) ) ) ),
+				),
+				array(
+					'contract_type' => 4,
+					'label_ko'      => 'no pgs',
+					'pgs'           => array(),
+				),
+				array(
+					'contract_type' => '3',
+					'label_ko'      => array( 'not a string' ),
+					'extra'         => 'ignored',
+					'pgs'           => array(
+						'junk',
+						array( 'methods' => array( array( 'method' => 'card' ) ) ),
+						array( 'pg' => 5, 'methods' => array( array( 'method' => 'card' ) ) ),
+						array( 'pg' => 'empty', 'methods' => array( array( 'method' => 'paypal' ), 'junk' ) ),
+						array(
+							'pg'      => '',
+							'methods' => array(
+								array( 'method' => 'card', 'label_ko' => '신용카드', 'fee' => 1 ),
+								array( 'method' => 'card', 'label_ko' => 'again' ),
+								array( 'method' => 'crypto' ),
+								array( 'method' => 'kakaopay', 'label_ko' => 9 ),
+							),
+						),
+						array( 'pg' => '', 'methods' => array( array( 'method' => 'naverpay' ) ) ),
+					),
+				),
+				array(
+					'contract_type' => 3,
+					'pgs'           => array( array( 'pg' => 'later', 'methods' => array( array( 'method' => 'card' ) ) ) ),
+				),
+			)
+		);
+
+		$this->assertSame(
+			array(
+				array(
+					'contract_type' => 3,
+					'label_ko'      => '',
+					'pgs'           => array(
+						array(
+							'pg'      => '',
+							'methods' => array(
+								array(
+									'method'   => 'card',
+									'label_ko' => '신용카드',
+								),
+								array(
+									'method'   => 'kakaopay',
+									'label_ko' => '',
+								),
+							),
+						),
+					),
+				),
+			),
+			$contracts
+		);
+		$this->assertSame( array(), Api_Client::parse_contracts( 'junk' ) );
+	}
+
+	public function test_a_contracts_value_that_is_not_a_list_counts_as_none() {
+		$answer              = self::methods_answer();
+		$answer['contracts'] = 'junk';
+		$this->assertNull( $this->client( array( self::json( 200, $answer ) ) )->get_method_catalog()['contracts'] );
 	}
 }

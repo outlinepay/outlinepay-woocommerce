@@ -31,6 +31,7 @@ OutlinePay\WooCommerce\Scheduler::unschedule_all();
 delete_option( OutlinePay\WooCommerce\Self_Check::OPTION_EMAIL );
 delete_option( OutlinePay\WooCommerce\Scheduler::OPTION_DAILY_AT );
 delete_option( OutlinePay\WooCommerce\Settings::OPTION_CANCEL );
+delete_option( OutlinePay\WooCommerce\Settings::OPTION_PG );
 
 foreach ( OutlinePay\WooCommerce\Settings::gateway_ids() as $outlinepay_gateway_id ) {
 	delete_option( 'woocommerce_' . $outlinepay_gateway_id . '_settings' );

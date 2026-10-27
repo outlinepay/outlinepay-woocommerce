@@ -256,6 +256,12 @@ class Gateway extends \WC_Payment_Gateway {
 		if ( '' !== $product_name ) {
 			$fields['product_name'] = $product_name;
 		}
+		// The payment gateway the merchant chose for the method's contract. None
+		// when the server sent no contracts (a server older than 0.7.0).
+		$pg = Settings::pg_for_contract( Settings::contract_for_method( $this->outlinepay_method ) );
+		if ( null !== $pg ) {
+			$fields['pg'] = $pg;
+		}
 
 		try {
 			$payment = self::client()->create_payment( $fields );
@@ -421,6 +427,11 @@ class Gateway extends \WC_Payment_Gateway {
 				'method'      => $this->outlinepay_method,
 			)
 		);
+
+		if ( 'invalid_request' === $code && 'pg' === $error->get_param() ) {
+			// The provider changed the contract's payment gateways since the last refresh.
+			$code = 'payment_method_not_enabled';
+		}
 
 		switch ( $code ) {
 			case 'order_already_paid':

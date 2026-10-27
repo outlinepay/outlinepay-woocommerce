@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: OutlinePay for WooCommerce 0.6.0\n"
+"Project-Id-Version: OutlinePay for WooCommerce 0.7.0\n"
 "Report-Msgid-Bugs-To: https://outlinepay.com\n"
 "POT-Creation-Date: 2026-10-26T03:27:48+00:00\n"
 "PO-Revision-Date: 2026-10-25 23:27-0400\n"
@@ -544,6 +544,28 @@ msgstr "결제 화면에 표시"
 #: includes/class-admin-page.php:1177
 msgid "Save methods"
 msgstr "결제수단 저장"
+
+#: includes/class-admin-page.php:1215
+msgid ""
+"These are the methods your payment provider has enabled for your store, "
+"grouped by contract. Choose which to show at checkout. Where a contract runs "
+"on more than one payment gateway, choose the one to use."
+msgstr ""
+"결제대행사가 이 스토어에 활성화한 결제수단을 계약별로 보여 줍니다. 결제 화면"
+"에 표시할 결제수단을 선택하십시오. 한 계약에 PG사가 둘 이상이면 사용할 PG사를 "
+"선택하십시오."
+
+#: includes/class-admin-page.php:1231
+msgid "Payment gateway"
+msgstr "PG사"
+
+#: includes/class-admin-page.php:1232
+msgid "PG"
+msgstr "PG사"
+
+#: includes/class-admin-page.php:1234
+msgid "Default"
+msgstr "기본"
 
 #: includes/class-admin-page.php:1191 includes/class-admin-page.php:1196
 msgid "Disconnect"

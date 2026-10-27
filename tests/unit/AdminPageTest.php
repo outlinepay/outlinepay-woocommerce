@@ -17,6 +17,8 @@ use OutlinePay\WooCommerce\Setup;
  */
 class AdminPageTest extends TestCase {
 
+	use ContractsFixture;
+
 	/** @var array Options in memory. */
 	private $options = array();
 
@@ -1140,5 +1142,121 @@ class AdminPageTest extends TestCase {
 		$this->assertStringContainsString( 'Set store currency to KRW', $warning );
 		$this->currency = 'KRW';
 		$this->assertSame( '', $this->render_private( 'render_currency_warning' ) );
+	}
+
+	/** A store whose provider sends methods grouped by contract. */
+	private function store_with_contracts() {
+		$this->options['outlinepay_methods'] = self::methods_option();
+		Functions\when( 'sanitize_key' )->returnArg();
+		Functions\when( 'sanitize_text_field' )->alias( 'trim' );
+		Functions\when( 'wp_unslash' )->returnArg();
+		Functions\when( 'absint' )->alias(
+			static function ( $value ) {
+				return abs( (int) $value );
+			}
+		);
+	}
+
+	public function test_saving_methods_saves_the_shown_set_and_the_pg_choice() {
+		$this->store_with_contracts();
+		$_POST['outlinepay_shown'] = array( 'card', 'kakaopay' );
+		$_POST['outlinepay_pg']    = array( '3' => '토스페이' );
+
+		$result = $this->post( 'save_methods', 'outlinepay_methods' );
+		unset( $_POST['outlinepay_shown'], $_POST['outlinepay_pg'] );
+
+		$this->assertStringContainsString( 'outlinepay_result=methods_saved', $result );
+		$this->assertSame( '토스페이', Settings::pg_for_contract( 3 ) );
+		$this->assertTrue( Settings::shown( 'card' ) );
+		$this->assertTrue( Settings::shown( 'kakaopay' ) );
+		$this->assertFalse( Settings::shown( 'foreign_card_krw' ) );
+		$this->assertArrayNotHasKey( 'woocommerce_outlinepay_naverpay_settings', $this->options, 'not on the form for Toss: left as it was' );
+		$this->assertFalse( Settings::method_enabled_by_server( 'naverpay' ) );
+	}
+
+	public function test_saving_methods_ignores_a_pg_the_contract_does_not_list() {
+		$this->store_with_contracts();
+		$this->options['outlinepay_pg'] = array( '3' => '토스페이' );
+		$_POST['outlinepay_shown']      = array( 'card' );
+		$_POST['outlinepay_pg']         = array(
+			'3' => 'NicePay',
+			'7' => array( 'not a string' ),
+		);
+
+		$result = $this->post( 'save_methods', 'outlinepay_methods' );
+		unset( $_POST['outlinepay_shown'], $_POST['outlinepay_pg'] );
+
+		$this->assertStringContainsString( 'outlinepay_result=methods_saved', $result );
+		$this->assertSame( '토스페이', Settings::pg_for_contract( 3 ) );
+		$this->assertSame( '키움페이', Settings::pg_for_contract( 7 ) );
+	}
+
+	public function test_saving_methods_needs_the_capability_and_a_good_nonce() {
+		$this->store_with_contracts();
+		$_POST['outlinepay_pg'] = array( '3' => '토스페이' );
+		$this->assertSame( 'wp_die', $this->post( 'save_methods', 'outlinepay_methods', false ) );
+		$this->assertSame( 'bad nonce', $this->post( 'save_methods', 'outlinepay_methods', true, false ) );
+		unset( $_POST['outlinepay_pg'] );
+		$this->assertArrayNotHasKey( 'outlinepay_pg', $this->options );
+	}
+
+	public function test_saving_methods_without_contracts_works_as_before() {
+		Functions\when( 'sanitize_key' )->returnArg();
+		Functions\when( 'wp_unslash' )->returnArg();
+		$this->options['outlinepay_methods'] = array(
+			'methods' => array(
+				array( 'method' => 'card', 'label_ko' => '' ),
+				array( 'method' => 'naverpay', 'label_ko' => '' ),
+			),
+		);
+		$_POST['outlinepay_shown'] = array( 'card' );
+
+		$this->post( 'save_methods', 'outlinepay_methods' );
+		unset( $_POST['outlinepay_shown'] );
+
+		$this->assertTrue( Settings::shown( 'card' ) );
+		$this->assertFalse( Settings::shown( 'naverpay' ) );
+		$this->assertArrayNotHasKey( 'outlinepay_pg', $this->options );
+	}
+
+	public function test_the_methods_section_groups_methods_by_contract_with_a_pg_choice() {
+		$this->store_with_contracts();
+		$this->options['outlinepay_pg'] = array( '3' => '토스페이' );
+		Functions\when( 'wp_nonce_field' )->justReturn( '' );
+		Functions\when( 'submit_button' )->justReturn( '' );
+		Functions\when( 'checked' )->alias(
+			static function ( $checked, $current ) {
+				return $checked === $current ? ' checked=\'checked\'' : '';
+			}
+		);
+
+		$html = $this->render_private( 'render_methods' );
+
+		$this->assertStringContainsString( 'grouped by contract. Choose which to show at checkout. Where a contract runs on more than one payment gateway, choose the one to use.', $html );
+		$this->assertStringContainsString( '<strong>3. 인증 일반</strong>', $html );
+		$this->assertStringContainsString( '<strong>7. 인증 해외원화</strong>', $html );
+		$this->assertSame( 2, substr_count( $html, 'type="radio"' ), 'one radio per pg, contract 7 has none' );
+		$this->assertStringContainsString( 'name="outlinepay_pg[3]" value="토스페이" data-outlinepay-pg-choice data-contract="3" checked', $html );
+		$this->assertStringContainsString( 'PG: ', $html );
+		$this->assertStringNotContainsString( 'outlinepay_pg[7]', $html );
+		// Kiwoom's rows are in the page, hidden and disabled. Toss's are live.
+		$this->assertMatchesRegularExpression( '#<tr data-outlinepay-pg-rows data-contract="3" data-pg="키움페이" style="display:none">.*?value="naverpay"[^>]* disabled>#u', $html );
+		$this->assertMatchesRegularExpression( '#<tr data-outlinepay-pg-rows data-contract="3" data-pg="토스페이"><td></td>.*?value="kakaopay"[^>]*>#u', $html );
+		$this->assertDoesNotMatchRegularExpression( '#data-pg="토스페이"><td></td>[^\n]*?value="kakaopay"[^>]* disabled>#u', $html );
+		$this->assertSame( 1, preg_match_all( '#value="naverpay"#', $html ), 'Toss has no NaverPay row' );
+		$this->assertStringContainsString( 'value="outlinepay_methods"', $html );
+	}
+
+	public function test_the_methods_section_without_contracts_is_the_flat_table() {
+		$this->options['outlinepay_methods'] = array( 'methods' => array( array( 'method' => 'card', 'label_ko' => '신용카드' ) ) );
+		Functions\when( 'wp_nonce_field' )->justReturn( '' );
+		Functions\when( 'submit_button' )->justReturn( '' );
+		Functions\when( 'checked' )->justReturn( '' );
+
+		$html = $this->render_private( 'render_methods' );
+
+		$this->assertStringContainsString( 'You can hide any of them. To add a method, ask your payment provider.', $html );
+		$this->assertStringContainsString( 'id="outlinepay_shown_card"', $html );
+		$this->assertStringNotContainsString( 'type="radio"', $html );
 	}
 }

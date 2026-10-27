@@ -488,7 +488,24 @@ final class Admin_Page {
 		self::require_capability();
 		check_admin_referer( 'outlinepay_methods' );
 		$shown = isset( $_POST['outlinepay_shown'] ) && is_array( $_POST['outlinepay_shown'] ) ? array_map( 'sanitize_key', wp_unslash( $_POST['outlinepay_shown'] ) ) : array();
+		$pgs   = array();
+		if ( isset( $_POST['outlinepay_pg'] ) && is_array( $_POST['outlinepay_pg'] ) ) {
+			foreach ( wp_unslash( $_POST['outlinepay_pg'] ) as $contract_type => $pg ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each value is sanitized below and must match a PG name the server sent.
+				if ( is_string( $pg ) ) {
+					$pgs[ (string) absint( $contract_type ) ] = sanitize_text_field( $pg );
+				}
+			}
+		}
+		$contracts = Settings::contracts();
+		if ( $contracts ) {
+			Settings::save_pgs( $pgs );
+		}
 		foreach ( Settings::methods() as $row ) {
+			if ( $contracts && ! Settings::method_enabled_by_server( $row['method'] ) ) {
+				// Not on the form: the chosen PG lacks it. Keep the merchant's
+				// choice for when that PG is chosen again.
+				continue;
+			}
 			Settings::set_shown( $row['method'], in_array( $row['method'], $shown, true ) );
 		}
 		self::back( 'methods_saved' );
@@ -1163,6 +1180,11 @@ final class Admin_Page {
 			echo '<p>' . esc_html__( 'Your payment provider has no methods enabled for this store yet. Reload this page later.', 'outlinepay-for-woocommerce' ) . '</p>';
 			return;
 		}
+		$contracts = Settings::contracts();
+		if ( $contracts ) {
+			self::render_contract_methods( $contracts );
+			return;
+		}
 		echo '<p>' . esc_html__( 'These are the methods your payment provider has enabled for your store. You can hide any of them. To add a method, ask your payment provider.', 'outlinepay-for-woocommerce' ) . '</p>';
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( 'outlinepay_methods' );
@@ -1176,6 +1198,84 @@ final class Admin_Page {
 		echo '</tbody></table>';
 		submit_button( __( 'Save methods', 'outlinepay-for-woocommerce' ) );
 		echo '</form>';
+	}
+
+	/**
+	 * The method switches grouped by contract, in the server's order. Each
+	 * contract has a heading row with its first method and, when it runs on
+	 * two or more payment gateways (PGs), a PG choice. Every PG's rows are in
+	 * the page: those of the PGs not chosen are hidden and their boxes
+	 * disabled, so they are not sent. admin.js swaps them when the choice
+	 * changes.
+	 *
+	 * @param array $contracts From Settings::contracts().
+	 * @return void
+	 */
+	private static function render_contract_methods( array $contracts ) {
+		echo '<p>' . esc_html__( 'These are the methods your payment provider has enabled for your store, grouped by contract. Choose which to show at checkout. Where a contract runs on more than one payment gateway, choose the one to use.', 'outlinepay-for-woocommerce' ) . '</p>';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		wp_nonce_field( 'outlinepay_methods' );
+		echo '<input type="hidden" name="action" value="outlinepay_methods">';
+		echo '<table class="widefat outlinepay-contracts" style="max-width:640px"><tbody>';
+		foreach ( $contracts as $contract ) {
+			$type   = (int) $contract['contract_type'];
+			$chosen = Settings::pg_for_contract( $type );
+			echo '<tr class="outlinepay-contract-head"><td style="white-space:nowrap"><strong>' . esc_html( $type . '. ' . $contract['label_ko'] ) . '</strong></td><td>';
+			foreach ( $contract['pgs'] as $index => $pg ) {
+				echo '<span' . self::pg_attributes( $type, $pg['pg'], $chosen ) . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pg_attributes() escapes.
+				self::method_box( $type, $index, $pg['methods'][0]['method'], $pg['pg'] === $chosen );
+				echo '</span>';
+			}
+			echo '</td><td>';
+			if ( count( $contract['pgs'] ) > 1 ) {
+				echo '<fieldset><legend class="screen-reader-text">' . esc_html__( 'Payment gateway', 'outlinepay-for-woocommerce' ) . '</legend>';
+				echo esc_html__( 'PG', 'outlinepay-for-woocommerce' ) . ': ';
+				foreach ( $contract['pgs'] as $pg ) {
+					$name = '' !== $pg['pg'] ? $pg['pg'] : __( 'Default', 'outlinepay-for-woocommerce' );
+					echo '<label style="margin-right:12px"><input type="radio" name="outlinepay_pg[' . esc_attr( (string) $type ) . ']" value="' . esc_attr( $pg['pg'] ) . '" data-outlinepay-pg-choice data-contract="' . esc_attr( (string) $type ) . '"' . checked( $pg['pg'], $chosen, false ) . '> ' . esc_html( $name ) . '</label>';
+				}
+				echo '</fieldset>';
+			}
+			echo '</td></tr>';
+			foreach ( $contract['pgs'] as $index => $pg ) {
+				foreach ( array_slice( $pg['methods'], 1 ) as $row ) {
+					echo '<tr' . self::pg_attributes( $type, $pg['pg'], $chosen ) . '><td></td><td colspan="2" style="padding-left:32px">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pg_attributes() escapes.
+					self::method_box( $type, $index, $row['method'], $pg['pg'] === $chosen );
+					echo '</td></tr>';
+				}
+			}
+		}
+		echo '</tbody></table>';
+		submit_button( __( 'Save methods', 'outlinepay-for-woocommerce' ) );
+		echo '</form>';
+	}
+
+	/**
+	 * The attributes that tie an element to one PG of a contract, hidden
+	 * when that PG is not the chosen one.
+	 *
+	 * @param int    $contract_type Contract number.
+	 * @param string $pg            PG name.
+	 * @param string $chosen        The chosen PG name.
+	 * @return string Escaped attributes with a leading space.
+	 */
+	private static function pg_attributes( $contract_type, $pg, $chosen ) {
+		return ' data-outlinepay-pg-rows data-contract="' . esc_attr( (string) $contract_type ) . '" data-pg="' . esc_attr( $pg ) . '"' . ( $pg === $chosen ? '' : ' style="display:none"' );
+	}
+
+	/**
+	 * One "show at checkout" box with the method's name. Disabled when its
+	 * PG is not the chosen one.
+	 *
+	 * @param int    $contract_type Contract number.
+	 * @param int    $pg_index      The PG's place in the contract.
+	 * @param string $method        Method key.
+	 * @param bool   $active        Whether its PG is the chosen one.
+	 * @return void
+	 */
+	private static function method_box( $contract_type, $pg_index, $method, $active ) {
+		$id = 'outlinepay_shown_' . $contract_type . '_' . $pg_index . '_' . $method;
+		echo '<label for="' . esc_attr( $id ) . '"><input type="checkbox" id="' . esc_attr( $id ) . '" name="outlinepay_shown[]" value="' . esc_attr( $method ) . '"' . checked( Settings::shown( $method ), true, false ) . ( $active ? '' : ' disabled' ) . '> ' . esc_html( Settings::method_name( $method ) ) . '</label>';
 	}
 
 	/**

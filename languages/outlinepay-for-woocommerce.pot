@@ -2,7 +2,7 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: OutlinePay for WooCommerce 0.6.0\n"
+"Project-Id-Version: OutlinePay for WooCommerce 0.7.0\n"
 "Report-Msgid-Bugs-To: https://outlinepay.com\n"
 "Last-Translator: OutlinePay <dev@outlinepay.com>\n"
 "Language-Team: OutlinePay <dev@outlinepay.com>\n"
@@ -476,6 +476,22 @@ msgstr ""
 
 #: includes/class-admin-page.php:1177
 msgid "Save methods"
+msgstr ""
+
+#: includes/class-admin-page.php:1215
+msgid "These are the methods your payment provider has enabled for your store, grouped by contract. Choose which to show at checkout. Where a contract runs on more than one payment gateway, choose the one to use."
+msgstr ""
+
+#: includes/class-admin-page.php:1231
+msgid "Payment gateway"
+msgstr ""
+
+#: includes/class-admin-page.php:1232
+msgid "PG"
+msgstr ""
+
+#: includes/class-admin-page.php:1234
+msgid "Default"
 msgstr ""
 
 #: includes/class-admin-page.php:1191

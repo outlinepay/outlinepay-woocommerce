@@ -152,12 +152,24 @@ class Api_Client {
 	}
 
 	/**
-	 * GET /methods.
+	 * GET /methods, the flat list only.
 	 *
 	 * @return array List of array( 'method' => ..., 'label_ko' => ... ).
 	 * @throws Api_Error On any refusal.
 	 */
 	public function get_methods() {
+		$catalog = $this->get_method_catalog();
+		return $catalog['methods'];
+	}
+
+	/**
+	 * GET /methods, the flat list and the methods grouped by contract.
+	 *
+	 * @return array array( 'methods' => list, 'contracts' => list|null ). Contracts
+	 *               is null when the server sent none (a server older than 0.7.0).
+	 * @throws Api_Error On any refusal.
+	 */
+	public function get_method_catalog() {
 		$response = $this->request( 'GET', '/methods' );
 		$methods  = array();
 		$data     = isset( $response['data'] ) && is_array( $response['data'] ) ? $response['data'] : array();
@@ -169,7 +181,73 @@ class Api_Client {
 				);
 			}
 		}
-		return $methods;
+		return array(
+			'methods'   => $methods,
+			'contracts' => isset( $response['contracts'] ) && is_array( $response['contracts'] ) ? self::parse_contracts( $response['contracts'] ) : null,
+		);
+	}
+
+	/**
+	 * The contracts of a /methods answer, keeping only what this plugin can
+	 * use: a contract needs a positive contract_type and a pg with a method,
+	 * a pg needs a string name, a method must be one of Settings::METHODS.
+	 * Repeats of a contract, a pg or a method keep the first.
+	 *
+	 * @param mixed $raw The contracts value.
+	 * @return array List of array( 'contract_type' => int, 'label_ko' => string, 'pgs' => list of array( 'pg' => string, 'methods' => list ) ).
+	 */
+	public static function parse_contracts( $raw ) {
+		$contracts = array();
+		if ( ! is_array( $raw ) ) {
+			return $contracts;
+		}
+		$seen = array();
+		foreach ( $raw as $contract ) {
+			if ( ! is_array( $contract ) || ! isset( $contract['contract_type'] ) ) {
+				continue;
+			}
+			$type = $contract['contract_type'];
+			if ( is_string( $type ) && ctype_digit( $type ) ) {
+				$type = (int) $type;
+			}
+			if ( ! is_int( $type ) || $type <= 0 || isset( $seen[ $type ] ) ) {
+				continue;
+			}
+			$pgs     = array();
+			$raw_pgs = isset( $contract['pgs'] ) && is_array( $contract['pgs'] ) ? $contract['pgs'] : array();
+			foreach ( $raw_pgs as $pg ) {
+				if ( ! is_array( $pg ) || ! isset( $pg['pg'] ) || ! is_string( $pg['pg'] ) || isset( $pgs[ $pg['pg'] ] ) ) {
+					continue;
+				}
+				$methods     = array();
+				$raw_methods = isset( $pg['methods'] ) && is_array( $pg['methods'] ) ? $pg['methods'] : array();
+				foreach ( $raw_methods as $row ) {
+					if ( ! is_array( $row ) || ! isset( $row['method'] ) || ! is_string( $row['method'] ) || ! in_array( $row['method'], Settings::METHODS, true ) || isset( $methods[ $row['method'] ] ) ) {
+						continue;
+					}
+					$methods[ $row['method'] ] = array(
+						'method'   => $row['method'],
+						'label_ko' => isset( $row['label_ko'] ) && is_string( $row['label_ko'] ) ? $row['label_ko'] : '',
+					);
+				}
+				if ( $methods ) {
+					$pgs[ $pg['pg'] ] = array(
+						'pg'      => $pg['pg'],
+						'methods' => array_values( $methods ),
+					);
+				}
+			}
+			if ( ! $pgs ) {
+				continue;
+			}
+			$seen[ $type ] = true;
+			$contracts[]   = array(
+				'contract_type' => $type,
+				'label_ko'      => isset( $contract['label_ko'] ) && is_string( $contract['label_ko'] ) ? $contract['label_ko'] : '',
+				'pgs'           => array_values( $pgs ),
+			);
+		}
+		return $contracts;
 	}
 
 	/**

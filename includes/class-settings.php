@@ -18,6 +18,7 @@ final class Settings {
 	const OPTION_METHODS      = 'outlinepay_methods';
 	const OPTION_VERSION      = 'outlinepay_reported_version';
 	const OPTION_CANCEL       = 'outlinepay_shopper_cancel';
+	const OPTION_PG           = 'outlinepay_pg';
 
 	/**
 	 * Every method key the server may offer, in checkout order.
@@ -241,12 +242,14 @@ final class Settings {
 	}
 
 	/**
-	 * Saves the method list, keeping only keys this plugin knows.
+	 * Saves the method list, keeping only keys this plugin knows, and the
+	 * methods grouped by contract when the server sent them.
 	 *
-	 * @param array $methods From Api_Client::get_methods().
+	 * @param array      $methods   From Api_Client::get_method_catalog().
+	 * @param array|null $contracts From Api_Client::get_method_catalog(), null when the server sent none.
 	 * @return void
 	 */
-	public static function save_methods( array $methods ) {
+	public static function save_methods( array $methods, $contracts = null ) {
 		$known = array();
 		foreach ( $methods as $row ) {
 			if ( isset( $row['method'] ) && in_array( $row['method'], self::METHODS, true ) ) {
@@ -256,23 +259,154 @@ final class Settings {
 				);
 			}
 		}
-		update_option(
-			self::OPTION_METHODS,
-			array(
-				'fetched_at' => time(),
-				'methods'    => $known,
-			),
-			true
+		$value     = array(
+			'fetched_at' => time(),
+			'methods'    => $known,
 		);
+		$contracts = Api_Client::parse_contracts( $contracts );
+		if ( $contracts ) {
+			$value['contracts'] = $contracts;
+		}
+		update_option( self::OPTION_METHODS, $value, true );
 	}
 
 	/**
-	 * True when the server has the method enabled for this store.
+	 * Cached methods grouped by contract, in the server's order. Empty when
+	 * the server sent none: the flat list then decides alone.
+	 *
+	 * @return array See Api_Client::parse_contracts().
+	 */
+	public static function contracts() {
+		$value = get_option( self::OPTION_METHODS, array() );
+		return is_array( $value ) && isset( $value['contracts'] ) && is_array( $value['contracts'] ) ? $value['contracts'] : array();
+	}
+
+	/**
+	 * One cached contract, or null.
+	 *
+	 * @param int|string|null $contract_type Contract number.
+	 * @return array|null
+	 */
+	private static function contract( $contract_type ) {
+		if ( null === $contract_type ) {
+			return null;
+		}
+		foreach ( self::contracts() as $contract ) {
+			if ( (string) $contract['contract_type'] === (string) $contract_type ) {
+				return $contract;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * The payment gateway (PG) the merchant chose for a contract. The first
+	 * PG when the merchant chose none, or chose one the provider no longer
+	 * lists. Null when there is no such contract.
+	 *
+	 * @param int|string|null $contract_type Contract number.
+	 * @return string|null
+	 */
+	public static function pg_for_contract( $contract_type ) {
+		$contract = self::contract( $contract_type );
+		if ( null === $contract ) {
+			return null;
+		}
+		$chosen = get_option( self::OPTION_PG, array() );
+		$key    = (string) $contract['contract_type'];
+		if ( is_array( $chosen ) && isset( $chosen[ $key ] ) && is_string( $chosen[ $key ] ) ) {
+			foreach ( $contract['pgs'] as $pg ) {
+				if ( $pg['pg'] === $chosen[ $key ] ) {
+					return $pg['pg'];
+				}
+			}
+		}
+		return $contract['pgs'][0]['pg'];
+	}
+
+	/**
+	 * The methods of the chosen PG of a contract.
+	 *
+	 * @param array $contract A cached contract.
+	 * @return string[] Method keys.
+	 */
+	private static function chosen_methods( array $contract ) {
+		$chosen = self::pg_for_contract( $contract['contract_type'] );
+		foreach ( $contract['pgs'] as $pg ) {
+			if ( $pg['pg'] === $chosen ) {
+				return array_column( $pg['methods'], 'method' );
+			}
+		}
+		return array();
+	}
+
+	/**
+	 * Saves the merchant's PG choices. A choice for an unknown contract, or
+	 * of a PG the contract does not list, is ignored and the earlier choice stays.
+	 *
+	 * @param array $choices Contract number => PG name.
+	 * @return void
+	 */
+	public static function save_pgs( array $choices ) {
+		$stored = get_option( self::OPTION_PG, array() );
+		$stored = is_array( $stored ) ? $stored : array();
+		foreach ( self::contracts() as $contract ) {
+			$key = (string) $contract['contract_type'];
+			if ( ! isset( $choices[ $key ] ) || ! is_string( $choices[ $key ] ) ) {
+				continue;
+			}
+			foreach ( $contract['pgs'] as $pg ) {
+				if ( $pg['pg'] === $choices[ $key ] ) {
+					$stored[ $key ] = $pg['pg'];
+				}
+			}
+		}
+		update_option( self::OPTION_PG, $stored, true );
+	}
+
+	/**
+	 * The contract a method belongs to: the first contract whose chosen PG
+	 * lists it, else the first contract with any PG that lists it. Null when
+	 * no contract lists it, or the server sent no contracts.
+	 *
+	 * @param string $method Method key.
+	 * @return int|null Contract number.
+	 */
+	public static function contract_for_method( $method ) {
+		$fallback = null;
+		foreach ( self::contracts() as $contract ) {
+			if ( in_array( $method, self::chosen_methods( $contract ), true ) ) {
+				return (int) $contract['contract_type'];
+			}
+			if ( null === $fallback ) {
+				foreach ( $contract['pgs'] as $pg ) {
+					if ( in_array( $method, array_column( $pg['methods'], 'method' ), true ) ) {
+						$fallback = (int) $contract['contract_type'];
+						break;
+					}
+				}
+			}
+		}
+		return $fallback;
+	}
+
+	/**
+	 * True when the server has the method enabled for this store. With
+	 * contracts, only when the chosen PG of a contract lists it.
 	 *
 	 * @param string $method Method key.
 	 * @return bool
 	 */
 	public static function method_enabled_by_server( $method ) {
+		$contracts = self::contracts();
+		if ( $contracts ) {
+			foreach ( $contracts as $contract ) {
+				if ( in_array( $method, self::chosen_methods( $contract ), true ) ) {
+					return true;
+				}
+			}
+			return false;
+		}
 		foreach ( self::methods() as $row ) {
 			if ( $row['method'] === $method ) {
 				return true;

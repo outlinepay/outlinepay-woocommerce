@@ -1,6 +1,7 @@
 /**
  * OutlinePay page and order screen: the Copy buttons for the diagnostic
- * code and the provider's order number.
+ * code and the provider's order number, the shopper cancel switch and the
+ * payment gateway choice under Payment methods.
  *
  * Plain script, no build step. Every button with data-outlinepay-copy copies
  * the text of its data-target element and writes the outcome into its
@@ -77,5 +78,32 @@
 		};
 		cancelSwitch.addEventListener( 'change', syncCancel );
 		syncCancel();
+	}
+
+	// Payment methods: choosing a contract's payment gateway shows that
+	// gateway's methods and hides the others. Hidden boxes are disabled, so
+	// the form sends only what the merchant sees.
+	var pgChoices = document.querySelectorAll( '[data-outlinepay-pg-choice]' );
+	var pgRows = document.querySelectorAll( '[data-outlinepay-pg-rows]' );
+	var showPg = function ( choice ) {
+		var contract = choice.getAttribute( 'data-contract' );
+		for ( var k = 0; k < pgRows.length; k++ ) {
+			if ( pgRows[ k ].getAttribute( 'data-contract' ) !== contract ) {
+				continue;
+			}
+			var on = pgRows[ k ].getAttribute( 'data-pg' ) === choice.value;
+			pgRows[ k ].style.display = on ? '' : 'none';
+			var boxes = pgRows[ k ].querySelectorAll( 'input' );
+			for ( var m = 0; m < boxes.length; m++ ) {
+				boxes[ m ].disabled = ! on;
+			}
+		}
+	};
+	for ( var n = 0; n < pgChoices.length; n++ ) {
+		pgChoices[ n ].addEventListener( 'change', function ( event ) {
+			if ( event.target.checked ) {
+				showPg( event.target );
+			}
+		} );
 	}
 } )();

@@ -176,7 +176,8 @@ final class Scheduler {
 			return false;
 		}
 		try {
-			Settings::save_methods( ( new Api_Client() )->get_methods() );
+			$catalog = ( new Api_Client() )->get_method_catalog();
+			Settings::save_methods( $catalog['methods'], $catalog['contracts'] );
 			return true;
 		} catch ( Api_Error $error ) {
 			return false;
