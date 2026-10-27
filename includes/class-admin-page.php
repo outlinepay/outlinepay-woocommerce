@@ -1221,7 +1221,7 @@ final class Admin_Page {
 		foreach ( $contracts as $contract ) {
 			$type   = (int) $contract['contract_type'];
 			$chosen = Settings::pg_for_contract( $type );
-			echo '<tr class="outlinepay-contract-head"><td style="white-space:nowrap"><strong>' . esc_html( $type . '. ' . $contract['label_ko'] ) . '</strong></td><td>';
+			echo '<tr class="outlinepay-contract-head"><td style="white-space:nowrap"><strong>' . esc_html( $type . '. ' . Settings::contract_name( $contract ) ) . '</strong></td><td>';
 			foreach ( $contract['pgs'] as $index => $pg ) {
 				echo '<span' . self::pg_attributes( $type, $pg['pg'], $chosen ) . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pg_attributes() escapes.
 				self::method_box( $type, $index, $pg['methods'][0]['method'], $pg['pg'] === $chosen );

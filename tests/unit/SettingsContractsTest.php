@@ -123,4 +123,14 @@ class SettingsContractsTest extends TestCase {
 		$this->assertNull( Settings::contract_for_method( 'card' ) );
 		$this->assertNull( Settings::pg_for_contract( Settings::contract_for_method( 'card' ) ) );
 	}
+
+	public function test_the_contract_name_follows_the_site_language() {
+		$contract = array( 'contract_type' => 3, 'label' => 'Authenticated general', 'label_ko' => '인증 일반' );
+
+		$this->assertSame( 'Authenticated general', Settings::contract_name( $contract ) );
+		Functions\when( 'get_locale' )->justReturn( 'ko_KR' );
+		$this->assertSame( '인증 일반', Settings::contract_name( $contract ) );
+		$this->assertSame( '인증 일반', Settings::contract_name( array( 'contract_type' => 3, 'label_ko' => '인증 일반' ) ) );
+		$this->assertSame( '9', Settings::contract_name( array( 'contract_type' => 9 ) ) );
+	}
 }

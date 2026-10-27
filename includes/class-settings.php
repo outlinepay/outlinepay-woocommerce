@@ -282,6 +282,25 @@ final class Settings {
 	}
 
 	/**
+	 * The name of a contract in the site language: the server's Korean name on
+	 * a Korean site, its English name elsewhere, the number when it sent none.
+	 *
+	 * @param array $contract One entry of contracts().
+	 * @return string
+	 */
+	public static function contract_name( array $contract ) {
+		$ko = isset( $contract['label_ko'] ) ? (string) $contract['label_ko'] : '';
+		$en = isset( $contract['label'] ) ? (string) $contract['label'] : '';
+		if ( 0 === strpos( (string) get_locale(), 'ko' ) && '' !== $ko ) {
+			return $ko;
+		}
+		if ( '' !== $en ) {
+			return $en;
+		}
+		return '' !== $ko ? $ko : (string) $contract['contract_type'];
+	}
+
+	/**
 	 * One cached contract, or null.
 	 *
 	 * @param int|string|null $contract_type Contract number.

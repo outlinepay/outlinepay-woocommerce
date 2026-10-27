@@ -305,6 +305,7 @@ class ApiClientTest extends TestCase {
 		$this->assertCount( 6, $catalog['methods'] );
 		$this->assertSame( array( 3, 7 ), array_column( $catalog['contracts'], 'contract_type' ) );
 		$this->assertSame( '인증 일반', $catalog['contracts'][0]['label_ko'] );
+		$this->assertSame( 'Authenticated general', $catalog['contracts'][0]['label'] );
 		$this->assertSame( array( '키움페이', '토스페이' ), array_column( $catalog['contracts'][0]['pgs'], 'pg' ) );
 		$this->assertSame( array( 'card', 'kakaopay' ), array_column( $catalog['contracts'][0]['pgs'][1]['methods'], 'method' ) );
 		$this->assertSame(
@@ -373,6 +374,7 @@ class ApiClientTest extends TestCase {
 			array(
 				array(
 					'contract_type' => 3,
+					'label'         => '',
 					'label_ko'      => '',
 					'pgs'           => array(
 						array(

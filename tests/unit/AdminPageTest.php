@@ -1234,8 +1234,8 @@ class AdminPageTest extends TestCase {
 		$html = $this->render_private( 'render_methods' );
 
 		$this->assertStringContainsString( 'grouped by contract. Choose which to show at checkout. Where a contract runs on more than one payment gateway, choose the one to use.', $html );
-		$this->assertStringContainsString( '<strong>3. 인증 일반</strong>', $html );
-		$this->assertStringContainsString( '<strong>7. 인증 해외원화</strong>', $html );
+		$this->assertStringContainsString( '<strong>3. Authenticated general</strong>', $html );
+		$this->assertStringContainsString( '<strong>7. Authenticated overseas card (KRW)</strong>', $html );
 		$this->assertSame( 2, substr_count( $html, 'type="radio"' ), 'one radio per pg, contract 7 has none' );
 		$this->assertStringContainsString( 'name="outlinepay_pg[3]" value="토스페이" data-outlinepay-pg-choice data-contract="3" checked', $html );
 		$this->assertStringContainsString( 'PG: ', $html );

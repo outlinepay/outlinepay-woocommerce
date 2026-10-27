@@ -30,6 +30,7 @@ trait ContractsFixture {
 				array(
 					'object'        => 'contract',
 					'contract_type' => 3,
+					'label'         => 'Authenticated general',
 					'label_ko'      => '인증 일반',
 					'pgs'           => array(
 						array(
@@ -54,6 +55,7 @@ trait ContractsFixture {
 				array(
 					'object'        => 'contract',
 					'contract_type' => 7,
+					'label'         => 'Authenticated overseas card (KRW)',
 					'label_ko'      => '인증 해외원화',
 					'pgs'           => array(
 						array(
