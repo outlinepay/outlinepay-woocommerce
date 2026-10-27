@@ -1159,11 +1159,12 @@ class AdminPageTest extends TestCase {
 
 	public function test_saving_methods_saves_the_shown_set_and_the_pg_choice() {
 		$this->store_with_contracts();
-		$_POST['outlinepay_shown'] = array( 'card', 'kakaopay' );
-		$_POST['outlinepay_pg']    = array( '3' => '토스페이' );
+		$_POST['outlinepay_shown']   = array( 'card', 'kakaopay' );
+		$_POST['outlinepay_offered'] = array( 'card', 'kakaopay', 'foreign_card_krw' );
+		$_POST['outlinepay_pg']      = array( '3' => '토스페이' );
 
 		$result = $this->post( 'save_methods', 'outlinepay_methods' );
-		unset( $_POST['outlinepay_shown'], $_POST['outlinepay_pg'] );
+		unset( $_POST['outlinepay_shown'], $_POST['outlinepay_offered'], $_POST['outlinepay_pg'] );
 
 		$this->assertStringContainsString( 'outlinepay_result=methods_saved', $result );
 		$this->assertSame( '토스페이', Settings::pg_for_contract( 3 ) );
@@ -1243,7 +1244,9 @@ class AdminPageTest extends TestCase {
 		$this->assertMatchesRegularExpression( '#<tr data-outlinepay-pg-rows data-contract="3" data-pg="키움페이" style="display:none">.*?value="naverpay"[^>]* disabled>#u', $html );
 		$this->assertMatchesRegularExpression( '#<tr data-outlinepay-pg-rows data-contract="3" data-pg="토스페이"><td></td>.*?value="kakaopay"[^>]*>#u', $html );
 		$this->assertDoesNotMatchRegularExpression( '#data-pg="토스페이"><td></td>[^\n]*?value="kakaopay"[^>]* disabled>#u', $html );
-		$this->assertSame( 1, preg_match_all( '#value="naverpay"#', $html ), 'Toss has no NaverPay row' );
+		$this->assertSame( 1, preg_match_all( '#type="checkbox"[^>]*value="naverpay"#', $html ), 'Toss has no NaverPay row' );
+		$this->assertStringContainsString( '<input type="hidden" name="outlinepay_offered[]" value="naverpay" disabled>', $html, 'disabled with its box' );
+		$this->assertStringContainsString( '<input type="hidden" name="outlinepay_offered[]" value="kakaopay">', $html );
 		$this->assertStringContainsString( 'value="outlinepay_methods"', $html );
 	}
 

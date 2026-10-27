@@ -496,14 +496,15 @@ final class Admin_Page {
 				}
 			}
 		}
+		$offered   = isset( $_POST['outlinepay_offered'] ) && is_array( $_POST['outlinepay_offered'] ) ? array_map( 'sanitize_key', wp_unslash( $_POST['outlinepay_offered'] ) ) : array();
 		$contracts = Settings::contracts();
 		if ( $contracts ) {
 			Settings::save_pgs( $pgs );
 		}
 		foreach ( Settings::methods() as $row ) {
-			if ( $contracts && ! Settings::method_enabled_by_server( $row['method'] ) ) {
-				// Not on the form: the chosen PG lacks it. Keep the merchant's
-				// choice for when that PG is chosen again.
+			if ( $contracts && ! in_array( $row['method'], $offered, true ) ) {
+				// Its box was not sent (another PG's, or the PG radio changed
+				// without JavaScript). Keep the merchant's choice.
 				continue;
 			}
 			Settings::set_shown( $row['method'], in_array( $row['method'], $shown, true ) );
@@ -1276,6 +1277,8 @@ final class Admin_Page {
 	private static function method_box( $contract_type, $pg_index, $method, $active ) {
 		$id = 'outlinepay_shown_' . $contract_type . '_' . $pg_index . '_' . $method;
 		echo '<label for="' . esc_attr( $id ) . '"><input type="checkbox" id="' . esc_attr( $id ) . '" name="outlinepay_shown[]" value="' . esc_attr( $method ) . '"' . checked( Settings::shown( $method ), true, false ) . ( $active ? '' : ' disabled' ) . '> ' . esc_html( Settings::method_name( $method ) ) . '</label>';
+		// Tells save_methods the box was on the form, ticked or not.
+		echo '<input type="hidden" name="outlinepay_offered[]" value="' . esc_attr( $method ) . '"' . ( $active ? '' : ' disabled' ) . '>';
 	}
 
 	/**

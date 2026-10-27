@@ -657,7 +657,8 @@ final class Self_Check {
 		$enabled = 0;
 		foreach ( Settings::methods() as $row ) {
 			++$enabled;
-			if ( Settings::shown( $row['method'] ) ) {
+			// A switched-on method the chosen PG does not list is not at checkout.
+			if ( Settings::shown( $row['method'] ) && Settings::method_enabled_by_server( $row['method'] ) ) {
 				++$shown;
 			}
 		}
