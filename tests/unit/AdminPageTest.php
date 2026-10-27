@@ -1238,7 +1238,7 @@ class AdminPageTest extends TestCase {
 		$this->assertStringContainsString( '<strong>7. Authenticated overseas card (KRW)</strong>', $html );
 		$this->assertSame( 2, substr_count( $html, 'type="radio"' ), 'one radio per pg, contract 7 has none' );
 		$this->assertStringContainsString( 'name="outlinepay_pg[3]" value="토스페이" data-outlinepay-pg-choice data-contract="3" checked', $html );
-		$this->assertStringContainsString( 'PG: ', $html );
+		$this->assertStringContainsString( '<span style="color:#646970">PG</span>', $html );
 		$this->assertStringNotContainsString( 'outlinepay_pg[7]', $html );
 		// Kiwoom's rows are in the page, hidden and disabled. Toss's are live.
 		$this->assertMatchesRegularExpression( '#<tr data-outlinepay-pg-rows data-contract="3" data-pg="키움페이" style="display:none">.*?value="naverpay"[^>]* disabled>#u', $html );

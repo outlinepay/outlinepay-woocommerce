@@ -1217,32 +1217,32 @@ final class Admin_Page {
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( 'outlinepay_methods' );
 		echo '<input type="hidden" name="action" value="outlinepay_methods">';
-		echo '<table class="widefat outlinepay-contracts" style="max-width:640px"><tbody>';
+		echo '<table class="widefat outlinepay-contracts" style="max-width:760px"><tbody>';
 		foreach ( $contracts as $contract ) {
 			$type   = (int) $contract['contract_type'];
 			$chosen = Settings::pg_for_contract( $type );
-			echo '<tr class="outlinepay-contract-head"><td style="white-space:nowrap"><strong>' . esc_html( $type . '. ' . Settings::contract_name( $contract ) ) . '</strong></td><td>';
+			echo '<tr class="outlinepay-contract-head"><td style="white-space:nowrap;width:220px;vertical-align:middle"><strong>' . esc_html( $type . '. ' . Settings::contract_name( $contract ) ) . '</strong></td><td>';
 			foreach ( $contract['pgs'] as $index => $pg ) {
 				echo '<span' . self::pg_attributes( $type, $pg['pg'], $chosen ) . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pg_attributes() escapes.
 				self::method_box( $type, $index, $pg['methods'][0]['method'], $pg['pg'] === $chosen );
 				echo '</span>';
 			}
-			echo '</td><td>';
+			echo '</td><td style="white-space:nowrap;vertical-align:middle">';
 			if ( count( $contract['pgs'] ) > 1 ) {
 				echo '<fieldset><legend class="screen-reader-text">' . esc_html__( 'Payment gateway', 'outlinepay-for-woocommerce' ) . '</legend>';
-				echo esc_html__( 'PG', 'outlinepay-for-woocommerce' ) . ': ';
+				echo '<span style="color:#646970">' . esc_html__( 'PG', 'outlinepay-for-woocommerce' ) . '</span>';
 				foreach ( $contract['pgs'] as $pg ) {
 					$name = '' !== $pg['pg'] ? $pg['pg'] : __( 'Default', 'outlinepay-for-woocommerce' );
-					echo '<label style="margin-right:12px;white-space:nowrap"><input type="radio" name="outlinepay_pg[' . esc_attr( (string) $type ) . ']" value="' . esc_attr( $pg['pg'] ) . '" data-outlinepay-pg-choice data-contract="' . esc_attr( (string) $type ) . '"' . checked( $pg['pg'], $chosen, false ) . '> ' . esc_html( $name ) . '</label>';
+					echo '<label style="margin-left:12px;white-space:nowrap"><input type="radio" name="outlinepay_pg[' . esc_attr( (string) $type ) . ']" value="' . esc_attr( $pg['pg'] ) . '" data-outlinepay-pg-choice data-contract="' . esc_attr( (string) $type ) . '"' . checked( $pg['pg'], $chosen, false ) . '> ' . esc_html( $name ) . '</label>';
 				}
 				echo '</fieldset>';
 			}
 			echo '</td></tr>';
 			foreach ( $contract['pgs'] as $index => $pg ) {
 				foreach ( array_slice( $pg['methods'], 1 ) as $row ) {
-					echo '<tr' . self::pg_attributes( $type, $pg['pg'], $chosen ) . '><td></td><td colspan="2" style="padding-left:32px">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pg_attributes() escapes.
+					echo '<tr' . self::pg_attributes( $type, $pg['pg'], $chosen ) . '><td></td><td style="padding-left:34px">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pg_attributes() escapes.
 					self::method_box( $type, $index, $row['method'], $pg['pg'] === $chosen );
-					echo '</td></tr>';
+					echo '</td><td></td></tr>';
 				}
 			}
 		}
