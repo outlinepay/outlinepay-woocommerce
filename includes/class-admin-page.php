@@ -1233,7 +1233,7 @@ final class Admin_Page {
 				echo esc_html__( 'PG', 'outlinepay-for-woocommerce' ) . ': ';
 				foreach ( $contract['pgs'] as $pg ) {
 					$name = '' !== $pg['pg'] ? $pg['pg'] : __( 'Default', 'outlinepay-for-woocommerce' );
-					echo '<label style="margin-right:12px"><input type="radio" name="outlinepay_pg[' . esc_attr( (string) $type ) . ']" value="' . esc_attr( $pg['pg'] ) . '" data-outlinepay-pg-choice data-contract="' . esc_attr( (string) $type ) . '"' . checked( $pg['pg'], $chosen, false ) . '> ' . esc_html( $name ) . '</label>';
+					echo '<label style="margin-right:12px;white-space:nowrap"><input type="radio" name="outlinepay_pg[' . esc_attr( (string) $type ) . ']" value="' . esc_attr( $pg['pg'] ) . '" data-outlinepay-pg-choice data-contract="' . esc_attr( (string) $type ) . '"' . checked( $pg['pg'], $chosen, false ) . '> ' . esc_html( $name ) . '</label>';
 				}
 				echo '</fieldset>';
 			}
@@ -1276,7 +1276,7 @@ final class Admin_Page {
 	 */
 	private static function method_box( $contract_type, $pg_index, $method, $active ) {
 		$id = 'outlinepay_shown_' . $contract_type . '_' . $pg_index . '_' . $method;
-		echo '<label for="' . esc_attr( $id ) . '"><input type="checkbox" id="' . esc_attr( $id ) . '" name="outlinepay_shown[]" value="' . esc_attr( $method ) . '"' . checked( Settings::shown( $method ), true, false ) . ( $active ? '' : ' disabled' ) . '> ' . esc_html( Settings::method_name( $method ) ) . '</label>';
+		echo '<label for="' . esc_attr( $id ) . '" style="white-space:nowrap"><input type="checkbox" id="' . esc_attr( $id ) . '" name="outlinepay_shown[]" value="' . esc_attr( $method ) . '"' . checked( Settings::shown( $method ), true, false ) . ( $active ? '' : ' disabled' ) . '> ' . esc_html( Settings::method_name( $method ) ) . '</label>';
 		// Tells save_methods the box was on the form, ticked or not.
 		echo '<input type="hidden" name="outlinepay_offered[]" value="' . esc_attr( $method ) . '"' . ( $active ? '' : ' disabled' ) . '>';
 	}
