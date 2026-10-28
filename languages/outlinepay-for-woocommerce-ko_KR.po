@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: OutlinePay for WooCommerce 0.7.1\n"
-"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wt-plugin-071\n"
+"Report-Msgid-Bugs-To: https://outlinepay.com\n"
 "POT-Creation-Date: 2026-10-28T03:02:35+00:00\n"
 "PO-Revision-Date: 2026-10-27 22:41-0400\n"
 "Last-Translator: OutlinePay <dev@outlinepay.com>\n"
