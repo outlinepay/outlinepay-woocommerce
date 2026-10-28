@@ -128,6 +128,12 @@
 	outline-offset: 1px;
 }
 
+/* Focus fallback for browsers without :has(). */
+.outlinepay-seg-option:focus-within {
+	outline: 2px solid #2271b1;
+	outline-offset: 1px;
+}
+
 .outlinepay-pg-one {
 	display: inline-flex;
 	padding: 6px 14px;

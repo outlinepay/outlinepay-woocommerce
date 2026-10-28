@@ -568,13 +568,13 @@ msgstr "계약 %d"
 #: includes/class-admin-page.php:1236 includes/class-admin-page.php:1237
 #: includes/class-admin-page.php:1251
 msgid "Payment gateway"
-msgstr "PG사"
+msgstr "PG"
 
 #. translators: %s: the payment gateway's name.
 #: includes/class-admin-page.php:1257
 #, php-format
 msgid "Payments on this contract go through %s."
-msgstr "이 계약의 결제는 %s를 통해 처리됩니다."
+msgstr "이 계약의 결제는 %s을(를) 통해 처리됩니다."
 
 #: includes/class-admin-page.php:1265
 msgid "Ticked methods show at checkout."
