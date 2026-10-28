@@ -130,9 +130,11 @@
 }
 
 /* Focus fallback for browsers without :has(). */
-.outlinepay-seg-option:focus-within {
-	outline: 2px solid #2271b1;
-	outline-offset: 1px;
+@supports not selector(:has(input)) {
+	.outlinepay-seg-option:focus-within {
+		outline: 2px solid #2271b1;
+		outline-offset: 1px;
+	}
 }
 
 .outlinepay-pg-one {
