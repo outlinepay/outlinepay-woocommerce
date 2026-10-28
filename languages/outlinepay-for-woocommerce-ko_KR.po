@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: OutlinePay for WooCommerce 0.7.1\n"
-"Report-Msgid-Bugs-To: https://outlinepay.com\n"
-"POT-Creation-Date: 2026-10-28T02:41:00+00:00\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wt-plugin-071\n"
+"POT-Creation-Date: 2026-10-28T03:02:35+00:00\n"
 "PO-Revision-Date: 2026-10-27 22:41-0400\n"
 "Last-Translator: OutlinePay <dev@outlinepay.com>\n"
 "Language-Team: OutlinePay <dev@outlinepay.com>\n"
@@ -542,7 +542,7 @@ msgstr "결제수단"
 msgid "Show at checkout"
 msgstr "결제 화면에 표시"
 
-#: includes/class-admin-page.php:1202 includes/class-admin-page.php:1270
+#: includes/class-admin-page.php:1202 includes/class-admin-page.php:1261
 msgid "Save methods"
 msgstr "결제수단 저장"
 
@@ -565,34 +565,24 @@ msgstr ""
 msgid "Contract %d"
 msgstr "계약 %d"
 
-#: includes/class-admin-page.php:1236 includes/class-admin-page.php:1237
-#: includes/class-admin-page.php:1251
+#: includes/class-admin-page.php:1235 includes/class-admin-page.php:1236
+#: includes/class-admin-page.php:1246
 msgid "Payment gateway"
 msgstr "PG"
 
-#. translators: %s: the payment gateway's name.
-#: includes/class-admin-page.php:1257
-#, php-format
-msgid "Payments on this contract go through %s."
-msgstr "이 계약의 결제는 %s을(를) 통해 처리됩니다."
-
-#: includes/class-admin-page.php:1265
-msgid "Ticked methods show at checkout."
-msgstr "체크한 결제수단만 결제 페이지에 표시됩니다."
-
-#: includes/class-admin-page.php:1271
+#: includes/class-admin-page.php:1262
 msgid "Changes apply after you save."
 msgstr "저장 후 적용됩니다."
 
-#: includes/class-admin-page.php:1282
+#: includes/class-admin-page.php:1273
 msgid "Default"
 msgstr "기본"
 
-#: includes/class-admin-page.php:1326 includes/class-admin-page.php:1331
+#: includes/class-admin-page.php:1317 includes/class-admin-page.php:1322
 msgid "Disconnect"
 msgstr "연결 해제"
 
-#: includes/class-admin-page.php:1327
+#: includes/class-admin-page.php:1318
 msgid ""
 "Disconnecting turns off OutlinePay payments in this store. Reconnecting "
 "needs a new connect code from your payment provider."
@@ -600,31 +590,31 @@ msgstr ""
 "연결을 해제하면 이 스토어의 OutlinePay 결제가 꺼집니다. 다시 연결하려면 결제"
 "대행사의 새 연결 코드가 필요합니다."
 
-#: includes/class-admin-page.php:1328
+#: includes/class-admin-page.php:1319
 msgid "Disconnect this store from OutlinePay?"
 msgstr "이 스토어를 OutlinePay에서 연결 해제하시겠습니까?"
 
-#: includes/class-admin-page.php:1356
+#: includes/class-admin-page.php:1347
 msgid "Your store is connected. Finish setup below."
 msgstr "스토어가 연결되었습니다. 아래에서 설정을 마치십시오."
 
-#: includes/class-admin-page.php:1356
+#: includes/class-admin-page.php:1347
 msgid "Your store is connected."
 msgstr "스토어가 연결되었습니다."
 
-#: includes/class-admin-page.php:1357
+#: includes/class-admin-page.php:1348
 msgid "Your store is disconnected."
 msgstr "스토어 연결이 해제되었습니다."
 
-#: includes/class-admin-page.php:1358
+#: includes/class-admin-page.php:1349
 msgid "Payment methods saved."
 msgstr "결제수단을 저장했습니다."
 
-#: includes/class-admin-page.php:1359
+#: includes/class-admin-page.php:1350
 msgid "Enter the connect code from your payment provider."
 msgstr "결제대행사에서 받은 연결 코드를 입력하십시오."
 
-#: includes/class-admin-page.php:1360
+#: includes/class-admin-page.php:1351
 msgid ""
 "This connect code is not valid. It may have expired or already been used. "
 "Ask your payment provider for a new code."
@@ -632,7 +622,7 @@ msgstr ""
 "유효하지 않은 연결 코드입니다. 만료되었거나 이미 사용되었을 수 있습니다. 결제"
 "대행사에 새 코드를 요청하십시오."
 
-#: includes/class-admin-page.php:1361
+#: includes/class-admin-page.php:1352
 msgid ""
 "OutlinePay could not accept this store's address. The store must be "
 "reachable over HTTPS from the internet."
@@ -640,11 +630,11 @@ msgstr ""
 "OutlinePay가 이 스토어의 주소를 받을 수 없습니다. 스토어는 인터넷에서 HTTPS"
 "로 접속할 수 있어야 합니다."
 
-#: includes/class-admin-page.php:1362
+#: includes/class-admin-page.php:1353
 msgid "Too many connect attempts. Wait a minute and try again."
 msgstr "연결 시도가 너무 많습니다. 1분 뒤 다시 시도하십시오."
 
-#: includes/class-admin-page.php:1363
+#: includes/class-admin-page.php:1354
 msgid ""
 "OutlinePay could not be reached. Check that this server can make outgoing "
 "HTTPS requests, then try again."
@@ -652,26 +642,26 @@ msgstr ""
 "OutlinePay에 접속할 수 없습니다. 이 서버가 외부로 HTTPS 요청을 보낼 수 있는"
 "지 확인한 뒤 다시 시도하십시오."
 
-#: includes/class-admin-page.php:1364
+#: includes/class-admin-page.php:1355
 msgid "The store could not be connected. Try again in a moment."
 msgstr "스토어를 연결하지 못했습니다. 잠시 후 다시 시도하십시오."
 
-#: includes/class-admin-page.php:1365
+#: includes/class-admin-page.php:1356
 msgid ""
 "The copied connection is removed from this site. Your live store keeps "
 "working."
 msgstr ""
 "복사된 연결 정보를 이 사이트에서 지웠습니다. 실제 스토어는 그대로 작동합니다."
 
-#: includes/class-admin-page.php:1366
+#: includes/class-admin-page.php:1357
 msgid "This site no longer looks like a copy. Nothing changed."
 msgstr "이 사이트는 더 이상 사본으로 보이지 않습니다. 바뀐 것은 없습니다."
 
-#: includes/class-admin-page.php:1367
+#: includes/class-admin-page.php:1358
 msgid "This address is saved as your store. Payments are back on."
 msgstr "이 주소를 스토어 주소로 저장했습니다. 결제가 다시 켜졌습니다."
 
-#: includes/class-admin-page.php:1368
+#: includes/class-admin-page.php:1359
 msgid ""
 "This address is saved as your store and payments are back on. OutlinePay "
 "could not be told the new address yet. Open this page again later to retry."
@@ -679,19 +669,19 @@ msgstr ""
 "이 주소를 스토어 주소로 저장했고 결제가 다시 켜졌습니다. 아직 OutlinePay에 "
 "새 주소를 알리지 못했습니다. 나중에 이 페이지를 다시 열면 다시 시도합니다."
 
-#: includes/class-admin-page.php:1370
+#: includes/class-admin-page.php:1361
 msgid "Email setting saved."
 msgstr "이메일 설정을 저장했습니다."
 
-#: includes/class-admin-page.php:1371
+#: includes/class-admin-page.php:1362
 msgid "Cancellation setting saved."
 msgstr "주문 취소 설정을 저장했습니다."
 
-#: includes/class-admin-page.php:1372
+#: includes/class-admin-page.php:1363
 msgid "The payment check and the method refresh ran now."
 msgstr "결제 확인과 결제수단 목록 갱신을 지금 실행했습니다."
 
-#: includes/class-admin-page.php:1373
+#: includes/class-admin-page.php:1364
 msgid ""
 "The payment check ran now. The method list could not be refreshed. Try again "
 "in a few minutes."
@@ -699,12 +689,12 @@ msgstr ""
 "결제 확인을 지금 실행했습니다. 결제수단 목록은 갱신하지 못했습니다. 몇 분 뒤"
 "에 다시 시도하십시오."
 
-#: includes/class-admin-page.php:1374
+#: includes/class-admin-page.php:1365
 msgid "The store is not connected. Nothing ran."
 msgstr "스토어가 연결되어 있지 않습니다. 아무것도 실행하지 않았습니다."
 
 #. translators: %s: currency code such as KRW.
-#: includes/class-admin-page.php:1376
+#: includes/class-admin-page.php:1367
 #, php-format
 msgid ""
 "Store currency set to %s. Prices kept their numbers. Check your product "
@@ -713,11 +703,11 @@ msgstr ""
 "스토어 통화를 %s로 설정했습니다. 가격 숫자는 그대로 유지되었습니다. 상품 가격"
 "을 확인하십시오."
 
-#: includes/class-admin-page.php:1377 includes/class-admin-page.php:1378
+#: includes/class-admin-page.php:1368 includes/class-admin-page.php:1369
 msgid "The store is not connected. Nothing changed."
 msgstr "스토어가 연결되어 있지 않습니다. 바뀐 것은 없습니다."
 
-#: includes/class-admin-page.php:1417
+#: includes/class-admin-page.php:1408
 msgid "You do not have permission to change OutlinePay settings."
 msgstr "OutlinePay 설정을 변경할 권한이 없습니다."
 

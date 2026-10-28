@@ -1231,30 +1231,22 @@ final class Admin_Page {
 				echo '<p class="outlinepay-contract-desc">' . esc_html( $description ) . '</p>';
 			}
 			echo '</div><div class="outlinepay-pg">';
-			$chosen_name = '';
 			if ( count( $contract['pgs'] ) > 1 ) {
 				echo '<span class="outlinepay-pg-label" aria-hidden="true">' . esc_html__( 'Payment gateway', 'outlinepay-for-woocommerce' ) . '</span>';
 				echo '<fieldset class="outlinepay-seg"><legend class="screen-reader-text">' . esc_html__( 'Payment gateway', 'outlinepay-for-woocommerce' ) . '</legend>';
 				foreach ( $contract['pgs'] as $pg ) {
 					$name = self::pg_name( $pg['pg'] );
 					$on   = $pg['pg'] === $chosen;
-					if ( $on ) {
-						$chosen_name = $name;
-					}
-					echo '<label class="outlinepay-seg-option' . ( $on ? ' is-checked' : '' ) . '"><input type="radio" name="outlinepay_pg[' . esc_attr( (string) $type ) . ']" value="' . esc_attr( $pg['pg'] ) . '" data-outlinepay-pg-choice data-contract="' . esc_attr( (string) $type ) . '"' . checked( $pg['pg'], $chosen, false ) . ' data-name="' . esc_attr( $name ) . '">';
+					echo '<label class="outlinepay-seg-option' . ( $on ? ' is-checked' : '' ) . '"><input type="radio" name="outlinepay_pg[' . esc_attr( (string) $type ) . ']" value="' . esc_attr( $pg['pg'] ) . '" data-outlinepay-pg-choice data-contract="' . esc_attr( (string) $type ) . '"' . checked( $pg['pg'], $chosen, false ) . '>';
 					echo '<svg class="outlinepay-check" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 8.5l3 3 7-7"/></svg>';
 					echo '<span>' . esc_html( $name ) . '</span></label>';
 				}
 				echo '</fieldset>';
 			} else {
-				$chosen_name = self::pg_name( $contract['pgs'][0]['pg'] );
 				echo '<span class="outlinepay-pg-label">' . esc_html__( 'Payment gateway', 'outlinepay-for-woocommerce' ) . '</span>';
-				echo '<span class="outlinepay-pg-one">' . esc_html( $chosen_name ) . '</span>';
+				echo '<span class="outlinepay-pg-one">' . esc_html( self::pg_name( $contract['pgs'][0]['pg'] ) ) . '</span>';
 			}
 			echo '</div></div>';
-			$current = '<strong data-outlinepay-pg-current data-contract="' . esc_attr( (string) $type ) . '">' . esc_html( $chosen_name ) . '</strong>';
-			/* translators: %s: the payment gateway's name. */
-			echo '<p class="outlinepay-contract-route">' . sprintf( esc_html__( 'Payments on this contract go through %s.', 'outlinepay-for-woocommerce' ), $current ) . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the format and the name are escaped above.
 			foreach ( $contract['pgs'] as $index => $pg ) {
 				echo '<div class="outlinepay-methods"' . self::pg_attributes( $type, $pg['pg'], $chosen ) . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pg_attributes() escapes.
 				foreach ( $pg['methods'] as $row ) {
@@ -1262,7 +1254,6 @@ final class Admin_Page {
 				}
 				echo '</div>';
 			}
-			echo '<p class="outlinepay-contract-foot">' . esc_html__( 'Ticked methods show at checkout.', 'outlinepay-for-woocommerce' ) . '</p>';
 			echo '</div>';
 		}
 		echo '</div>';

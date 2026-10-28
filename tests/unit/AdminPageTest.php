@@ -1247,9 +1247,7 @@ class AdminPageTest extends TestCase {
 		$this->assertStringNotContainsString( 'outlinepay_pg[7]', $html );
 		// A single-PG contract names its PG in a static pill.
 		$this->assertStringContainsString( '<span class="outlinepay-pg-label">Payment gateway</span><span class="outlinepay-pg-one">키움페이</span>', $html );
-		// The route line names the chosen PG of each contract.
-		$this->assertStringContainsString( '<p class="outlinepay-contract-route">Payments on this contract go through <strong data-outlinepay-pg-current data-contract="3">토스페이</strong>.</p>', $html );
-		$this->assertStringContainsString( '<p class="outlinepay-contract-route">Payments on this contract go through <strong data-outlinepay-pg-current data-contract="7">키움페이</strong>.</p>', $html );
+		$this->assertStringNotContainsString( 'outlinepay-contract-route', $html, 'no route line: the gateway control shows the choice' );
 		// Kiwoom's tiles are in the page, hidden and disabled. Toss's are live.
 		$this->assertMatchesRegularExpression( '#<div class="outlinepay-methods" data-outlinepay-pg-rows data-contract="3" data-pg="키움페이" style="display:none">.*?value="naverpay"[^>]* disabled>#u', $html );
 		$this->assertMatchesRegularExpression( '#<div class="outlinepay-methods" data-outlinepay-pg-rows data-contract="3" data-pg="토스페이">.*?value="kakaopay"[^>]*>#u', $html );
@@ -1258,7 +1256,7 @@ class AdminPageTest extends TestCase {
 		$this->assertSame( 1, preg_match_all( '#type="checkbox"[^>]*value="naverpay"#', $html ), 'Toss has no NaverPay tile' );
 		$this->assertStringContainsString( '<input type="hidden" name="outlinepay_offered[]" value="naverpay" disabled>', $html, 'disabled with its box' );
 		$this->assertStringContainsString( '<input type="hidden" name="outlinepay_offered[]" value="kakaopay">', $html );
-		$this->assertSame( 2, substr_count( $html, '<p class="outlinepay-contract-foot">Ticked methods show at checkout.</p>' ) );
+		$this->assertStringNotContainsString( 'outlinepay-contract-foot', $html );
 		$this->assertStringContainsString( '<span class="outlinepay-save-note">Changes apply after you save.</span></p>', $html );
 		$this->assertStringNotContainsString( 'outlinepay-contract-desc', $html, 'no description line when the server sent none' );
 		$this->assertStringContainsString( 'value="outlinepay_methods"', $html );

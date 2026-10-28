@@ -86,7 +86,6 @@
 	// mirror the ticks for browsers without CSS :has().
 	var pgChoices = document.querySelectorAll( '[data-outlinepay-pg-choice]' );
 	var pgRows = document.querySelectorAll( '[data-outlinepay-pg-rows]' );
-	var pgCurrent = document.querySelectorAll( '[data-outlinepay-pg-current]' );
 	var markChecked = function ( input ) {
 		var label = input.closest( 'label' );
 		if ( label ) {
@@ -104,11 +103,6 @@
 			var boxes = pgRows[ k ].querySelectorAll( 'input' );
 			for ( var m = 0; m < boxes.length; m++ ) {
 				boxes[ m ].disabled = ! on;
-			}
-		}
-		for ( var c = 0; c < pgCurrent.length; c++ ) {
-			if ( pgCurrent[ c ].getAttribute( 'data-contract' ) === contract ) {
-				pgCurrent[ c ].textContent = choice.getAttribute( 'data-name' );
 			}
 		}
 		var group = document.querySelectorAll( '[data-outlinepay-pg-choice][data-contract="' + contract + '"]' );

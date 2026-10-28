@@ -24,7 +24,8 @@
 	align-items: center;
 	justify-content: space-between;
 	gap: 12px 16px;
-	padding: 14px 18px 0;
+	padding: 14px 18px;
+	border-bottom: 1px solid #f0f0f1;
 }
 
 .outlinepay-contract-title h3 {
@@ -144,24 +145,12 @@
 	white-space: nowrap;
 }
 
-.outlinepay-contract-route {
-	margin: 8px 0 0;
-	padding: 0 18px 14px;
-	border-bottom: 1px solid #f0f0f1;
-	font-size: 12px;
-	color: #787c82;
-}
-
-.outlinepay-contract-route strong {
-	color: #1d2327;
-	font-weight: 600;
-}
 
 .outlinepay-methods {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
 	gap: 10px;
-	padding: 16px 18px 0;
+	padding: 16px 18px;
 }
 
 .outlinepay-method {
@@ -191,12 +180,6 @@
 	margin: 0;
 }
 
-.outlinepay-contract-foot {
-	margin: 0;
-	padding: 12px 18px 14px;
-	font-size: 12px;
-	color: #787c82;
-}
 
 .outlinepay-save {
 	display: flex;
