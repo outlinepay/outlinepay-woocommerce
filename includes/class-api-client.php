@@ -194,7 +194,7 @@ class Api_Client {
 	 * Repeats of a contract, a pg or a method keep the first.
 	 *
 	 * @param mixed $raw The contracts value.
-	 * @return array List of array( 'contract_type' => int, 'label' => string, 'label_ko' => string, 'pgs' => list of array( 'pg' => string, 'methods' => list ) ).
+	 * @return array List of array( 'contract_type' => int, 'label' => string, 'label_ko' => string, 'description' => string, 'description_ko' => string, 'pgs' => list of array( 'pg' => string, 'methods' => list ) ).
 	 */
 	public static function parse_contracts( $raw ) {
 		$contracts = array();
@@ -242,10 +242,12 @@ class Api_Client {
 			}
 			$seen[ $type ] = true;
 			$contracts[]   = array(
-				'contract_type' => $type,
-				'label'         => isset( $contract['label'] ) && is_string( $contract['label'] ) ? $contract['label'] : '',
-				'label_ko'      => isset( $contract['label_ko'] ) && is_string( $contract['label_ko'] ) ? $contract['label_ko'] : '',
-				'pgs'           => array_values( $pgs ),
+				'contract_type'  => $type,
+				'label'          => isset( $contract['label'] ) && is_string( $contract['label'] ) ? $contract['label'] : '',
+				'label_ko'       => isset( $contract['label_ko'] ) && is_string( $contract['label_ko'] ) ? $contract['label_ko'] : '',
+				'description'    => isset( $contract['description'] ) && is_string( $contract['description'] ) ? $contract['description'] : '',
+				'description_ko' => isset( $contract['description_ko'] ) && is_string( $contract['description_ko'] ) ? $contract['description_ko'] : '',
+				'pgs'            => array_values( $pgs ),
 			);
 		}
 		return $contracts;

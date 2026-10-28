@@ -5,7 +5,7 @@ Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
 WC requires at least: 9.9
-Stable tag: 0.7.0
+Stable tag: 0.7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -145,6 +145,9 @@ CookiePay is the payment provider that takes the payment. The shopper clicks Pay
 CookiePay privacy policy: https://www.cookiepayments.com/terms/private
 
 == Changelog ==
+
+= 0.7.1 =
+* Payment methods page: one card per contract with a clearer gateway choice.
 
 = 0.7.0 =
 * Payment methods are grouped by your provider's contracts. Where a contract runs on more than one payment gateway, choose the one to use in the plugin settings.

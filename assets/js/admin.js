@@ -81,10 +81,18 @@
 	}
 
 	// Payment methods: choosing a contract's payment gateway shows that
-	// gateway's methods and hides the others. Hidden boxes are disabled, so
-	// the form sends only what the merchant sees.
+	// gateway's method tiles and hides the others. Hidden boxes are disabled,
+	// so the form sends only what the merchant sees. The is-checked classes
+	// mirror the ticks for browsers without CSS :has().
 	var pgChoices = document.querySelectorAll( '[data-outlinepay-pg-choice]' );
 	var pgRows = document.querySelectorAll( '[data-outlinepay-pg-rows]' );
+	var pgCurrent = document.querySelectorAll( '[data-outlinepay-pg-current]' );
+	var markChecked = function ( input ) {
+		var label = input.closest( 'label' );
+		if ( label ) {
+			label.classList.toggle( 'is-checked', input.checked );
+		}
+	};
 	var showPg = function ( choice ) {
 		var contract = choice.getAttribute( 'data-contract' );
 		for ( var k = 0; k < pgRows.length; k++ ) {
@@ -98,12 +106,27 @@
 				boxes[ m ].disabled = ! on;
 			}
 		}
+		for ( var c = 0; c < pgCurrent.length; c++ ) {
+			if ( pgCurrent[ c ].getAttribute( 'data-contract' ) === contract ) {
+				pgCurrent[ c ].textContent = choice.getAttribute( 'data-name' );
+			}
+		}
+		var group = document.querySelectorAll( '[data-outlinepay-pg-choice][data-contract="' + contract + '"]' );
+		for ( var g = 0; g < group.length; g++ ) {
+			markChecked( group[ g ] );
+		}
 	};
 	for ( var n = 0; n < pgChoices.length; n++ ) {
 		pgChoices[ n ].addEventListener( 'change', function ( event ) {
 			if ( event.target.checked ) {
 				showPg( event.target );
 			}
+		} );
+	}
+	var methodBoxes = document.querySelectorAll( '.outlinepay-method input[type="checkbox"]' );
+	for ( var b = 0; b < methodBoxes.length; b++ ) {
+		methodBoxes[ b ].addEventListener( 'change', function ( event ) {
+			markChecked( event.target );
 		} );
 	}
 } )();

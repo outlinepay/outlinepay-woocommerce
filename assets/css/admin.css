@@ -1,0 +1,211 @@
+/**
+ * OutlinePay page: payment methods grouped by contract, one card each.
+ * Plain stylesheet, no build step. Colors follow the WordPress admin.
+ * The selected states use :has() and, for older browsers, the is-checked
+ * class that the page renders and admin.js keeps in step.
+ */
+.outlinepay-contracts {
+	display: grid;
+	gap: 16px;
+	max-width: 720px;
+	margin-top: 4px;
+}
+
+.outlinepay-contract {
+	background: #fff;
+	border: 1px solid #e0e0e0;
+	border-radius: 10px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.outlinepay-contract-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px 16px;
+	padding: 14px 18px 0;
+}
+
+.outlinepay-contract-title h3 {
+	margin: 0;
+	font-size: 15px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.outlinepay-contract-tag {
+	display: inline-block;
+	margin-left: 6px;
+	padding: 1px 8px;
+	border-radius: 999px;
+	background: #f0f0f1;
+	font-size: 12px;
+	font-weight: 400;
+	color: #787c82;
+	vertical-align: middle;
+	white-space: nowrap;
+}
+
+.outlinepay-contract-desc {
+	margin: 2px 0 0;
+	font-size: 12px;
+	color: #787c82;
+}
+
+.outlinepay-pg {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.outlinepay-pg-label {
+	font-size: 12px;
+	color: #787c82;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	white-space: nowrap;
+}
+
+.outlinepay-seg {
+	display: inline-flex;
+	gap: 2px;
+	margin: 0;
+	padding: 3px;
+	border: 0;
+	border-radius: 999px;
+	background: #f0f0f1;
+}
+
+.outlinepay-seg-option {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 14px;
+	border-radius: 999px;
+	font-size: 13px;
+	color: #50575e;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.outlinepay-seg-option input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: 0;
+	opacity: 0;
+}
+
+.outlinepay-seg-option .outlinepay-check {
+	display: none;
+	color: #2271b1;
+}
+
+.outlinepay-seg-option input:checked ~ .outlinepay-check,
+.outlinepay-seg-option.is-checked .outlinepay-check {
+	display: inline-block;
+}
+
+/* Kept apart from the :has() rule: a browser without :has() drops the whole rule. */
+.outlinepay-seg-option.is-checked {
+	background: #fff;
+	color: #1d2327;
+	font-weight: 600;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.outlinepay-seg-option:has(input:checked) {
+	background: #fff;
+	color: #1d2327;
+	font-weight: 600;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.outlinepay-seg-option:has(input:focus-visible) {
+	outline: 2px solid #2271b1;
+	outline-offset: 1px;
+}
+
+.outlinepay-pg-one {
+	display: inline-flex;
+	padding: 6px 14px;
+	border-radius: 999px;
+	background: #f0f0f1;
+	font-size: 13px;
+	color: #1d2327;
+	white-space: nowrap;
+}
+
+.outlinepay-contract-route {
+	margin: 8px 0 0;
+	padding: 0 18px 14px;
+	border-bottom: 1px solid #f0f0f1;
+	font-size: 12px;
+	color: #787c82;
+}
+
+.outlinepay-contract-route strong {
+	color: #1d2327;
+	font-weight: 600;
+}
+
+.outlinepay-methods {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 10px;
+	padding: 16px 18px 0;
+}
+
+.outlinepay-method {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 12px;
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+	background: #fff;
+	font-size: 13px;
+	color: #1d2327;
+	cursor: pointer;
+}
+
+.outlinepay-method.is-checked {
+	border-color: #2271b1;
+	background: #f3f8fd;
+}
+
+.outlinepay-method:has(input:checked) {
+	border-color: #2271b1;
+	background: #f3f8fd;
+}
+
+.outlinepay-method input[type="checkbox"] {
+	margin: 0;
+}
+
+.outlinepay-contract-foot {
+	margin: 0;
+	padding: 12px 18px 14px;
+	font-size: 12px;
+	color: #787c82;
+}
+
+.outlinepay-save {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px;
+}
+
+.outlinepay-save-note {
+	font-size: 12px;
+	color: #787c82;
+}
+
+@media (max-width: 600px) {
+	.outlinepay-methods {
+		grid-template-columns: 1fr;
+	}
+}

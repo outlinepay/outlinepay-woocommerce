@@ -100,7 +100,8 @@ final class Admin_Page {
 	}
 
 	/**
-	 * The copy-code script, on this page only. Plain script, no build step.
+	 * The copy-code script and the page's styles, on this page only. Plain
+	 * files, no build step.
 	 *
 	 * @param string $hook_suffix Current admin page.
 	 * @return void
@@ -110,6 +111,7 @@ final class Admin_Page {
 			return;
 		}
 		wp_enqueue_script( self::SCRIPT, plugins_url( 'assets/js/admin.js', OUTLINEPAY_PLUGIN_FILE ), array(), OUTLINEPAY_VERSION, true );
+		wp_enqueue_style( self::SCRIPT, plugins_url( 'assets/css/admin.css', OUTLINEPAY_PLUGIN_FILE ), array(), OUTLINEPAY_VERSION );
 	}
 
 	/**
@@ -1148,7 +1150,7 @@ final class Admin_Page {
 		);
 		echo '<h2>' . esc_html__( 'Refunds and cancellations', 'outlinepay-for-woocommerce' ) . '</h2>';
 		if ( Settings::refunds_permitted() ) {
-			echo '<p>' . esc_html__( 'Refund card, foreign card, bank transfer, KakaoPay and NaverPay payments from the order screen with the Refund button. Partial refunds work for card payments only. Refund other payments in your payment provider\'s dashboard.', 'outlinepay-for-woocommerce' ) . '</p>';
+			echo '<p>' . esc_html__( 'Refund card, international card, bank transfer, KakaoPay and Naver Pay payments from the order screen with the Refund button. Partial refunds work for card payments only. Refund other payments in your payment provider\'s dashboard.', 'outlinepay-for-woocommerce' ) . '</p>';
 		} else {
 			echo '<p>' . esc_html__( 'Your payment provider has not turned on refunds for this store. Refund payments in your payment provider\'s dashboard. Shoppers cannot cancel paid orders until refunds are on.', 'outlinepay-for-woocommerce' ) . '</p>';
 		}
@@ -1202,58 +1204,87 @@ final class Admin_Page {
 	}
 
 	/**
-	 * The method switches grouped by contract, in the server's order. Each
-	 * contract has a heading row with its first method and, when it runs on
-	 * two or more payment gateways (PGs), a PG choice. Every PG's rows are in
-	 * the page: those of the PGs not chosen are hidden and their boxes
-	 * disabled, so they are not sent. admin.js swaps them when the choice
-	 * changes.
+	 * The method switches grouped by contract, one card per contract in the
+	 * server's order. A card's header holds the contract's name and number
+	 * and, when it runs on two or more payment gateways (PGs), a PG choice.
+	 * Every PG's method tiles are in the card: those of the PGs not chosen are
+	 * hidden and their boxes disabled, so they are not sent. admin.js swaps
+	 * them when the choice changes.
 	 *
 	 * @param array $contracts From Settings::contracts().
 	 * @return void
 	 */
 	private static function render_contract_methods( array $contracts ) {
-		echo '<p>' . esc_html__( 'These are the methods your payment provider has enabled for your store, grouped by contract. Choose which to show at checkout. Where a contract runs on more than one payment gateway, choose the one to use.', 'outlinepay-for-woocommerce' ) . '</p>';
+		echo '<p>' . esc_html__( 'These are the methods your payment provider has enabled for your store, grouped by contract. Tick the methods to show at checkout. Each contract takes payments through one payment gateway. Where you have more than one, pick the one that takes the payments. Switching the gateway hides the other gateway\'s methods at checkout. Your ticks are kept.', 'outlinepay-for-woocommerce' ) . '</p>';
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( 'outlinepay_methods' );
 		echo '<input type="hidden" name="action" value="outlinepay_methods">';
-		echo '<table class="widefat outlinepay-contracts" style="max-width:760px"><tbody>';
+		echo '<div class="outlinepay-contracts">';
 		foreach ( $contracts as $contract ) {
 			$type   = (int) $contract['contract_type'];
 			$chosen = Settings::pg_for_contract( $type );
-			echo '<tr class="outlinepay-contract-head"><td style="white-space:nowrap;width:220px;vertical-align:middle"><strong>' . esc_html( $type . '. ' . Settings::contract_name( $contract ) ) . '</strong></td><td>';
-			foreach ( $contract['pgs'] as $index => $pg ) {
-				echo '<span' . self::pg_attributes( $type, $pg['pg'], $chosen ) . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pg_attributes() escapes.
-				self::method_box( $type, $index, $pg['methods'][0]['method'], $pg['pg'] === $chosen );
-				echo '</span>';
+			echo '<div class="outlinepay-contract"><div class="outlinepay-contract-head"><div class="outlinepay-contract-title">';
+			/* translators: %d: the contract's number at the payment provider. */
+			echo '<h3><span class="outlinepay-contract-name">' . esc_html( Settings::contract_name( $contract ) ) . '</span> <span class="outlinepay-contract-tag">' . esc_html( sprintf( __( 'Contract %d', 'outlinepay-for-woocommerce' ), $type ) ) . '</span></h3>';
+			$description = Settings::contract_description( $contract );
+			if ( '' !== $description ) {
+				echo '<p class="outlinepay-contract-desc">' . esc_html( $description ) . '</p>';
 			}
-			echo '</td><td style="white-space:nowrap;vertical-align:middle">';
+			echo '</div><div class="outlinepay-pg">';
+			$chosen_name = '';
 			if ( count( $contract['pgs'] ) > 1 ) {
-				echo '<fieldset><legend class="screen-reader-text">' . esc_html__( 'Payment gateway', 'outlinepay-for-woocommerce' ) . '</legend>';
-				echo '<span style="color:#646970">' . esc_html__( 'PG', 'outlinepay-for-woocommerce' ) . '</span>';
+				echo '<span class="outlinepay-pg-label" aria-hidden="true">' . esc_html__( 'Payment gateway', 'outlinepay-for-woocommerce' ) . '</span>';
+				echo '<fieldset class="outlinepay-seg"><legend class="screen-reader-text">' . esc_html__( 'Payment gateway', 'outlinepay-for-woocommerce' ) . '</legend>';
 				foreach ( $contract['pgs'] as $pg ) {
-					$name = '' !== $pg['pg'] ? $pg['pg'] : __( 'Default', 'outlinepay-for-woocommerce' );
-					echo '<label style="margin-left:12px;white-space:nowrap"><input type="radio" name="outlinepay_pg[' . esc_attr( (string) $type ) . ']" value="' . esc_attr( $pg['pg'] ) . '" data-outlinepay-pg-choice data-contract="' . esc_attr( (string) $type ) . '"' . checked( $pg['pg'], $chosen, false ) . '> ' . esc_html( $name ) . '</label>';
+					$name = self::pg_name( $pg['pg'] );
+					$on   = $pg['pg'] === $chosen;
+					if ( $on ) {
+						$chosen_name = $name;
+					}
+					echo '<label class="outlinepay-seg-option' . ( $on ? ' is-checked' : '' ) . '"><input type="radio" name="outlinepay_pg[' . esc_attr( (string) $type ) . ']" value="' . esc_attr( $pg['pg'] ) . '" data-outlinepay-pg-choice data-contract="' . esc_attr( (string) $type ) . '"' . checked( $pg['pg'], $chosen, false ) . ' data-name="' . esc_attr( $name ) . '">';
+					echo '<svg class="outlinepay-check" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 8.5l3 3 7-7"/></svg>';
+					echo '<span>' . esc_html( $name ) . '</span></label>';
 				}
 				echo '</fieldset>';
+			} else {
+				$chosen_name = self::pg_name( $contract['pgs'][0]['pg'] );
+				echo '<span class="outlinepay-pg-label">' . esc_html__( 'Payment gateway', 'outlinepay-for-woocommerce' ) . '</span>';
+				echo '<span class="outlinepay-pg-one">' . esc_html( $chosen_name ) . '</span>';
 			}
-			echo '</td></tr>';
+			echo '</div></div>';
+			$current = '<strong data-outlinepay-pg-current data-contract="' . esc_attr( (string) $type ) . '">' . esc_html( $chosen_name ) . '</strong>';
+			/* translators: %s: the payment gateway's name. */
+			echo '<p class="outlinepay-contract-route">' . sprintf( esc_html__( 'Payments on this contract go through %s.', 'outlinepay-for-woocommerce' ), $current ) . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the format and the name are escaped above.
 			foreach ( $contract['pgs'] as $index => $pg ) {
-				foreach ( array_slice( $pg['methods'], 1 ) as $row ) {
-					echo '<tr' . self::pg_attributes( $type, $pg['pg'], $chosen ) . '><td></td><td style="padding-left:34px">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pg_attributes() escapes.
+				echo '<div class="outlinepay-methods"' . self::pg_attributes( $type, $pg['pg'], $chosen ) . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pg_attributes() escapes.
+				foreach ( $pg['methods'] as $row ) {
 					self::method_box( $type, $index, $row['method'], $pg['pg'] === $chosen );
-					echo '</td><td></td></tr>';
 				}
+				echo '</div>';
 			}
+			echo '<p class="outlinepay-contract-foot">' . esc_html__( 'Ticked methods show at checkout.', 'outlinepay-for-woocommerce' ) . '</p>';
+			echo '</div>';
 		}
-		echo '</tbody></table>';
-		submit_button( __( 'Save methods', 'outlinepay-for-woocommerce' ) );
+		echo '</div>';
+		echo '<p class="submit outlinepay-save">';
+		submit_button( __( 'Save methods', 'outlinepay-for-woocommerce' ), 'primary', 'submit', false );
+		echo ' <span class="outlinepay-save-note">' . esc_html__( 'Changes apply after you save.', 'outlinepay-for-woocommerce' ) . '</span></p>';
 		echo '</form>';
 	}
 
 	/**
-	 * The attributes that tie an element to one PG of a contract, hidden
-	 * when that PG is not the chosen one.
+	 * A PG's name as the merchant reads it.
+	 *
+	 * @param string $pg PG name from the server, empty for the default one.
+	 * @return string
+	 */
+	private static function pg_name( $pg ) {
+		return '' !== $pg ? $pg : __( 'Default', 'outlinepay-for-woocommerce' );
+	}
+
+	/**
+	 * The attributes that tie a group of method tiles to one PG of a
+	 * contract, hidden when that PG is not the chosen one.
 	 *
 	 * @param int    $contract_type Contract number.
 	 * @param string $pg            PG name.
@@ -1265,7 +1296,7 @@ final class Admin_Page {
 	}
 
 	/**
-	 * One "show at checkout" box with the method's name. Disabled when its
+	 * One "show at checkout" tile with the method's name. Disabled when its
 	 * PG is not the chosen one.
 	 *
 	 * @param int    $contract_type Contract number.
@@ -1275,8 +1306,9 @@ final class Admin_Page {
 	 * @return void
 	 */
 	private static function method_box( $contract_type, $pg_index, $method, $active ) {
-		$id = 'outlinepay_shown_' . $contract_type . '_' . $pg_index . '_' . $method;
-		echo '<label for="' . esc_attr( $id ) . '" style="white-space:nowrap"><input type="checkbox" id="' . esc_attr( $id ) . '" name="outlinepay_shown[]" value="' . esc_attr( $method ) . '"' . checked( Settings::shown( $method ), true, false ) . ( $active ? '' : ' disabled' ) . '> ' . esc_html( Settings::method_name( $method ) ) . '</label>';
+		$id    = 'outlinepay_shown_' . $contract_type . '_' . $pg_index . '_' . $method;
+		$shown = Settings::shown( $method );
+		echo '<label for="' . esc_attr( $id ) . '" class="outlinepay-method' . ( $shown ? ' is-checked' : '' ) . '"><input type="checkbox" id="' . esc_attr( $id ) . '" name="outlinepay_shown[]" value="' . esc_attr( $method ) . '"' . checked( $shown, true, false ) . ( $active ? '' : ' disabled' ) . '> <span>' . esc_html( Settings::method_name( $method ) ) . '</span></label>';
 		// Tells save_methods the box was on the form, ticked or not.
 		echo '<input type="hidden" name="outlinepay_offered[]" value="' . esc_attr( $method ) . '"' . ( $active ? '' : ' disabled' ) . '>';
 	}

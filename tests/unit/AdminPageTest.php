@@ -1233,21 +1233,49 @@ class AdminPageTest extends TestCase {
 
 		$html = $this->render_private( 'render_methods' );
 
-		$this->assertStringContainsString( 'grouped by contract. Choose which to show at checkout. Where a contract runs on more than one payment gateway, choose the one to use.', $html );
-		$this->assertStringContainsString( '<strong>3. Authenticated general</strong>', $html );
-		$this->assertStringContainsString( '<strong>7. Authenticated overseas card (KRW)</strong>', $html );
+		$this->assertStringContainsString( 'grouped by contract. Tick the methods to show at checkout. Each contract takes payments through one payment gateway. Where you have more than one, pick the one that takes the payments. Switching the gateway hides the other gateway&#039;s methods at checkout. Your ticks are kept.', $html );
+		$this->assertSame( 2, substr_count( $html, '<div class="outlinepay-contract">' ), 'one card per contract' );
+		// The name leads the heading. The number is a muted tag after it, never a prefix.
+		$this->assertStringContainsString( '<h3><span class="outlinepay-contract-name">Authenticated general</span> <span class="outlinepay-contract-tag">Contract 3</span></h3>', $html );
+		$this->assertStringContainsString( '<h3><span class="outlinepay-contract-name">Authenticated overseas card (KRW)</span> <span class="outlinepay-contract-tag">Contract 7</span></h3>', $html );
+		$this->assertStringNotContainsString( '3. Authenticated', $html );
+		$this->assertStringNotContainsString( '7. Authenticated', $html );
 		$this->assertSame( 2, substr_count( $html, 'type="radio"' ), 'one radio per pg, contract 7 has none' );
 		$this->assertStringContainsString( 'name="outlinepay_pg[3]" value="토스페이" data-outlinepay-pg-choice data-contract="3" checked', $html );
-		$this->assertStringContainsString( '<span style="color:#646970">PG</span>', $html );
+		$this->assertStringContainsString( '<label class="outlinepay-seg-option is-checked"><input type="radio" name="outlinepay_pg[3]" value="토스페이"', $html );
+		$this->assertStringContainsString( '<label class="outlinepay-seg-option"><input type="radio" name="outlinepay_pg[3]" value="키움페이"', $html );
 		$this->assertStringNotContainsString( 'outlinepay_pg[7]', $html );
-		// Kiwoom's rows are in the page, hidden and disabled. Toss's are live.
-		$this->assertMatchesRegularExpression( '#<tr data-outlinepay-pg-rows data-contract="3" data-pg="키움페이" style="display:none">.*?value="naverpay"[^>]* disabled>#u', $html );
-		$this->assertMatchesRegularExpression( '#<tr data-outlinepay-pg-rows data-contract="3" data-pg="토스페이"><td></td>.*?value="kakaopay"[^>]*>#u', $html );
-		$this->assertDoesNotMatchRegularExpression( '#data-pg="토스페이"><td></td>[^\n]*?value="kakaopay"[^>]* disabled>#u', $html );
-		$this->assertSame( 1, preg_match_all( '#type="checkbox"[^>]*value="naverpay"#', $html ), 'Toss has no NaverPay row' );
+		// A single-PG contract names its PG in a static pill.
+		$this->assertStringContainsString( '<span class="outlinepay-pg-label">Payment gateway</span><span class="outlinepay-pg-one">키움페이</span>', $html );
+		// The route line names the chosen PG of each contract.
+		$this->assertStringContainsString( '<p class="outlinepay-contract-route">Payments on this contract go through <strong data-outlinepay-pg-current data-contract="3">토스페이</strong>.</p>', $html );
+		$this->assertStringContainsString( '<p class="outlinepay-contract-route">Payments on this contract go through <strong data-outlinepay-pg-current data-contract="7">키움페이</strong>.</p>', $html );
+		// Kiwoom's tiles are in the page, hidden and disabled. Toss's are live.
+		$this->assertMatchesRegularExpression( '#<div class="outlinepay-methods" data-outlinepay-pg-rows data-contract="3" data-pg="키움페이" style="display:none">.*?value="naverpay"[^>]* disabled>#u', $html );
+		$this->assertMatchesRegularExpression( '#<div class="outlinepay-methods" data-outlinepay-pg-rows data-contract="3" data-pg="토스페이">.*?value="kakaopay"[^>]*>#u', $html );
+		$this->assertDoesNotMatchRegularExpression( '#data-pg="토스페이">[^\n]*?value="kakaopay"[^>]* disabled>#u', $html );
+		$this->assertSame( 2, preg_match_all( '#type="checkbox"[^>]*value="card"#', $html ), 'each pg of contract 3 has its own card tile' );
+		$this->assertSame( 1, preg_match_all( '#type="checkbox"[^>]*value="naverpay"#', $html ), 'Toss has no NaverPay tile' );
 		$this->assertStringContainsString( '<input type="hidden" name="outlinepay_offered[]" value="naverpay" disabled>', $html, 'disabled with its box' );
 		$this->assertStringContainsString( '<input type="hidden" name="outlinepay_offered[]" value="kakaopay">', $html );
+		$this->assertSame( 2, substr_count( $html, '<p class="outlinepay-contract-foot">Ticked methods show at checkout.</p>' ) );
+		$this->assertStringContainsString( '<span class="outlinepay-save-note">Changes apply after you save.</span></p>', $html );
+		$this->assertStringNotContainsString( 'outlinepay-contract-desc', $html, 'no description line when the server sent none' );
 		$this->assertStringContainsString( 'value="outlinepay_methods"', $html );
+	}
+
+	public function test_a_contract_card_shows_the_description_the_server_sent() {
+		$this->store_with_contracts();
+		$this->options['outlinepay_methods']['contracts'][0]['description']    = 'Cards, bank transfers and wallets for shoppers in Korea';
+		$this->options['outlinepay_methods']['contracts'][0]['description_ko'] = '국내 쇼핑객용 카드, 계좌이체, 간편결제';
+		Functions\when( 'wp_nonce_field' )->justReturn( '' );
+		Functions\when( 'submit_button' )->justReturn( '' );
+		Functions\when( 'checked' )->justReturn( '' );
+
+		$html = $this->render_private( 'render_methods' );
+
+		$this->assertStringContainsString( '<span class="outlinepay-contract-tag">Contract 3</span></h3><p class="outlinepay-contract-desc">Cards, bank transfers and wallets for shoppers in Korea</p>', $html );
+		$this->assertSame( 1, substr_count( $html, 'outlinepay-contract-desc' ), 'contract 7 sent none' );
 	}
 
 	public function test_the_methods_section_without_contracts_is_the_flat_table() {

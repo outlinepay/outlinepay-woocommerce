@@ -301,6 +301,22 @@ final class Settings {
 	}
 
 	/**
+	 * The one-line description of a contract in the site language, picked
+	 * like contract_name(). Empty when the server sent none.
+	 *
+	 * @param array $contract One entry of contracts().
+	 * @return string
+	 */
+	public static function contract_description( array $contract ) {
+		$ko = isset( $contract['description_ko'] ) ? (string) $contract['description_ko'] : '';
+		$en = isset( $contract['description'] ) ? (string) $contract['description'] : '';
+		if ( 0 === strpos( (string) get_locale(), 'ko' ) && '' !== $ko ) {
+			return $ko;
+		}
+		return '' !== $en ? $en : $ko;
+	}
+
+	/**
 	 * One cached contract, or null.
 	 *
 	 * @param int|string|null $contract_type Contract number.

@@ -306,6 +306,8 @@ class ApiClientTest extends TestCase {
 		$this->assertSame( array( 3, 7 ), array_column( $catalog['contracts'], 'contract_type' ) );
 		$this->assertSame( '인증 일반', $catalog['contracts'][0]['label_ko'] );
 		$this->assertSame( 'Authenticated general', $catalog['contracts'][0]['label'] );
+		$this->assertSame( '', $catalog['contracts'][0]['description'], 'optional: the server may not send it yet' );
+		$this->assertSame( '', $catalog['contracts'][0]['description_ko'] );
 		$this->assertSame( array( '키움페이', '토스페이' ), array_column( $catalog['contracts'][0]['pgs'], 'pg' ) );
 		$this->assertSame( array( 'card', 'kakaopay' ), array_column( $catalog['contracts'][0]['pgs'][1]['methods'], 'method' ) );
 		$this->assertSame(
@@ -315,6 +317,30 @@ class ApiClientTest extends TestCase {
 			),
 			$catalog['contracts'][1]['pgs'][0]['methods'][0]
 		);
+	}
+
+	public function test_a_contract_keeps_the_description_the_server_sent() {
+		$contracts = Api_Client::parse_contracts(
+			array(
+				array(
+					'contract_type'  => 3,
+					'description'    => 'Cards and wallets',
+					'description_ko' => '카드와 간편결제',
+					'pgs'            => array( array( 'pg' => 'A', 'methods' => array( array( 'method' => 'card' ) ) ) ),
+				),
+				array(
+					'contract_type'  => 7,
+					'description'    => array( 'not a string' ),
+					'description_ko' => 7,
+					'pgs'            => array( array( 'pg' => 'A', 'methods' => array( array( 'method' => 'card' ) ) ) ),
+				),
+			)
+		);
+
+		$this->assertSame( 'Cards and wallets', $contracts[0]['description'] );
+		$this->assertSame( '카드와 간편결제', $contracts[0]['description_ko'] );
+		$this->assertSame( '', $contracts[1]['description'] );
+		$this->assertSame( '', $contracts[1]['description_ko'] );
 	}
 
 	public function test_an_answer_without_contracts_keeps_the_flat_list_and_no_contracts() {
@@ -373,10 +399,12 @@ class ApiClientTest extends TestCase {
 		$this->assertSame(
 			array(
 				array(
-					'contract_type' => 3,
-					'label'         => '',
-					'label_ko'      => '',
-					'pgs'           => array(
+					'contract_type'  => 3,
+					'label'          => '',
+					'label_ko'       => '',
+					'description'    => '',
+					'description_ko' => '',
+					'pgs'            => array(
 						array(
 							'pg'      => '',
 							'methods' => array(

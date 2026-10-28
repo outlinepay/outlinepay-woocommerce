@@ -133,4 +133,15 @@ class SettingsContractsTest extends TestCase {
 		$this->assertSame( '인증 일반', Settings::contract_name( array( 'contract_type' => 3, 'label_ko' => '인증 일반' ) ) );
 		$this->assertSame( '9', Settings::contract_name( array( 'contract_type' => 9 ) ) );
 	}
+
+	public function test_the_contract_description_follows_the_site_language() {
+		$contract = array( 'contract_type' => 3, 'description' => 'Cards and wallets', 'description_ko' => '카드와 간편결제' );
+
+		$this->assertSame( 'Cards and wallets', Settings::contract_description( $contract ) );
+		$this->assertSame( '카드와 간편결제', Settings::contract_description( array( 'contract_type' => 3, 'description_ko' => '카드와 간편결제' ) ) );
+		$this->assertSame( '', Settings::contract_description( array( 'contract_type' => 3 ) ), 'none sent: no line' );
+		Functions\when( 'get_locale' )->justReturn( 'ko_KR' );
+		$this->assertSame( '카드와 간편결제', Settings::contract_description( $contract ) );
+		$this->assertSame( 'Cards and wallets', Settings::contract_description( array( 'contract_type' => 3, 'description' => 'Cards and wallets' ) ) );
+	}
 }
